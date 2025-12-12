@@ -1,17 +1,29 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
+import app from '../testServer.js';
 
 // Mock the cache module
-jest.mock('../../utils/cache.js', () => ({
-  default: {
+jest.mock('../../utils/cache.js', () => {
+  const mockCacheInstance = {
     clear: jest.fn(),
     size: jest.fn(),
     cache: {
       keys: jest.fn(() => [])
     }
-  }
+  };
+  
+  return {
+    __esModule: true,
+    default: mockCacheInstance
+  };
+});
+
+// Mock jwt.verify separately
+jest.mock('jsonwebtoken', () => ({
+  ...jest.requireActual('jsonwebtoken'),
+  verify: jest.fn(),
+  sign: jest.fn().mockReturnValue('jwt_token')
 }));
 
 describe('Cache Controller', () => {
