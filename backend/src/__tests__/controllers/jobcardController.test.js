@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
+import app from '../testServer.js';
 
 // Mock the database module
 jest.mock('../../config/database.js', () => ({
@@ -14,6 +14,13 @@ jest.mock('../../utils/cache.js', () => ({
   default: {
     delete: jest.fn()
   }
+}));
+
+// Mock jwt.verify separately
+jest.mock('jsonwebtoken', () => ({
+  ...jest.requireActual('jsonwebtoken'),
+  verify: jest.fn(),
+  sign: jest.fn().mockReturnValue('jwt_token')
 }));
 
 describe('Job Card Controller', () => {
@@ -273,7 +280,7 @@ describe('Job Card Controller', () => {
     });
   });
 
-  describe('POST /api/jobcards/:id/tasks', () => {
+  describe('PUT /api/jobcards/:id/add-task', () => {
     it('should add task to job card successfully', async () => {
       const taskData = {
         task_name: 'Oil change',
@@ -303,7 +310,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
-        .post('/api/jobcards/1/tasks')
+        .put('/api/jobcards/1/add-task')
         .set('Authorization', 'Bearer mechanic_token')
         .send(taskData)
         .expect(201);
@@ -338,7 +345,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
-        .post('/api/jobcards/999/tasks')
+        .put('/api/jobcards/999/add-task')
         .set('Authorization', 'Bearer mechanic_token')
         .send(taskData)
         .expect(404);
@@ -347,7 +354,7 @@ describe('Job Card Controller', () => {
     });
   });
 
-  describe('PUT /api/jobcards/:id/assign-mechanic', () => {
+  describe('PUT /api/jobcards/:id/add-mechanic', () => {
     it('should assign mechanic to job card successfully', async () => {
       const assignData = {
         mechanic_id: 1
@@ -375,7 +382,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .put('/api/jobcards/1/assign-mechanic')
+        .put('/api/jobcards/1/add-mechanic')
         .set('Authorization', 'Bearer admin_token')
         .send(assignData)
         .expect(200);
@@ -396,7 +403,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .put('/api/jobcards/999/assign-mechanic')
+        .put('/api/jobcards/999/add-mechanic')
         .set('Authorization', 'Bearer admin_token')
         .send(assignData)
         .expect(404);
@@ -405,7 +412,7 @@ describe('Job Card Controller', () => {
     });
   });
 
-  describe('POST /api/jobcards/:id/spare-parts', () => {
+  describe('PUT /api/jobcards/:id/add-sparepart', () => {
     it('should add spare part to job card successfully', async () => {
       const partData = {
         part_id: 1,
@@ -423,6 +430,7 @@ describe('Job Card Controller', () => {
         query: jest.fn()
           .mockResolvedValueOnce({}) // BEGIN
           .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check job card exists
+          .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check mechanic ownership
           .mockResolvedValueOnce({ rows: [mockPart] }) // Get part details
           .mockResolvedValueOnce({ rows: [{ 
             id: 1,
@@ -446,7 +454,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
-        .post('/api/jobcards/1/spare-parts')
+        .put('/api/jobcards/1/add-sparepart')
         .set('Authorization', 'Bearer mechanic_token')
         .send(partData)
         .expect(201);
@@ -473,7 +481,9 @@ describe('Job Card Controller', () => {
         query: jest.fn()
           .mockResolvedValueOnce({}) // BEGIN
           .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check job card exists
-          .mockResolvedValueOnce({ rows: [] }), // Get part details (not found)
+          .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check mechanic ownership
+          .mockResolvedValueOnce({ rows: [] }) // Get part details (not found)
+          .mockResolvedValueOnce({}), // ROLLBACK
         release: jest.fn()
       };
 
@@ -484,7 +494,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
-        .post('/api/jobcards/1/spare-parts')
+        .put('/api/jobcards/1/add-sparepart')
         .set('Authorization', 'Bearer mechanic_token')
         .send(partData)
         .expect(404);
@@ -509,7 +519,9 @@ describe('Job Card Controller', () => {
         query: jest.fn()
           .mockResolvedValueOnce({}) // BEGIN
           .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check job card exists
-          .mockResolvedValueOnce({ rows: [mockPart] }), // Get part details
+          .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check mechanic ownership
+          .mockResolvedValueOnce({ rows: [mockPart] }) // Get part details
+          .mockResolvedValueOnce({}), // ROLLBACK
         release: jest.fn()
       };
 
@@ -520,7 +532,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
-        .post('/api/jobcards/1/spare-parts')
+        .put('/api/jobcards/1/add-sparepart')
         .set('Authorization', 'Bearer mechanic_token')
         .send(partData)
         .expect(400);
@@ -529,7 +541,7 @@ describe('Job Card Controller', () => {
     });
   });
 
-  describe('PUT /api/jobcards/:id/status', () => {
+  describe('PUT /api/jobcards/:id/update-status', () => {
     it('should update job card status successfully', async () => {
       const statusData = {
         status: 'completed'
@@ -539,6 +551,7 @@ describe('Job Card Controller', () => {
         query: jest.fn()
           .mockResolvedValueOnce({}) // BEGIN
           .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check job card exists
+          .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check mechanic ownership
           .mockResolvedValueOnce({ rows: [{ 
             id: 1,
             customer_id: 1,
@@ -571,7 +584,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
-        .put('/api/jobcards/1/status')
+        .put('/api/jobcards/1/update-status')
         .set('Authorization', 'Bearer mechanic_token')
         .send(statusData)
         .expect(200);
@@ -587,7 +600,8 @@ describe('Job Card Controller', () => {
       const mockClient = {
         query: jest.fn()
           .mockResolvedValueOnce({}) // BEGIN
-          .mockResolvedValueOnce({ rows: [{ id: 1 }] }), // Check job card exists
+          .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check job card exists
+          .mockResolvedValueOnce({ rows: [{ id: 1 }] }), // Check mechanic ownership
         release: jest.fn()
       };
 
@@ -598,7 +612,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
-        .put('/api/jobcards/1/status')
+        .put('/api/jobcards/1/update-status')
         .set('Authorization', 'Bearer mechanic_token')
         .send(statusData)
         .expect(400);
@@ -647,27 +661,29 @@ describe('Job Card Controller', () => {
     });
   });
 
-  describe('PUT /api/jobcards/:id/progress', () => {
+  describe('PUT /api/jobcards/:id/update-progress', () => {
     it('should update job card progress successfully', async () => {
       const progressData = {
         percentComplete: 75,
         notes: 'Almost done with the engine inspection'
       };
 
+      const updatedJobCard = {
+        id: 1,
+        customer_id: 1,
+        vehicle_id: 1,
+        booking_id: 1,
+        percent_complete: 75,
+        notes: 'Almost done with the engine inspection',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
       const mockClient = {
         query: jest.fn()
-          .mockResolvedValueOnce({}) // BEGIN
           .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check job card exists
-          .mockResolvedValueOnce({ rows: [{ 
-            id: 1,
-            customer_id: 1,
-            vehicle_id: 1,
-            booking_id: 1,
-            percent_complete: 75,
-            notes: 'Almost done with the engine inspection',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }] }), // Update job card progress
+          .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check mechanic ownership
+          .mockResolvedValueOnce({ rows: [updatedJobCard] }), // Update job card progress
         release: jest.fn()
       };
 
@@ -678,7 +694,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
-        .put('/api/jobcards/1/progress')
+        .put('/api/jobcards/1/update-progress')
         .set('Authorization', 'Bearer mechanic_token')
         .send(progressData)
         .expect(200);
@@ -694,7 +710,6 @@ describe('Job Card Controller', () => {
 
       const mockClient = {
         query: jest.fn()
-          .mockResolvedValueOnce({}) // BEGIN
           .mockResolvedValueOnce({ rows: [] }), // Check job card exists
         release: jest.fn()
       };
@@ -706,7 +721,7 @@ describe('Job Card Controller', () => {
       jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
-        .put('/api/jobcards/999/progress')
+        .put('/api/jobcards/999/update-progress')
         .set('Authorization', 'Bearer mechanic_token')
         .send(progressData)
         .expect(404);
@@ -723,8 +738,14 @@ describe('Job Card Controller', () => {
         updated_at: new Date().toISOString()
       };
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: [mockNotes] });
+      // Mock database response - return the full job card row
+      mockDb.query.mockResolvedValueOnce({ 
+        rows: [{
+          progress_notes: 'Engine inspection in progress',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }] 
+      });
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -734,7 +755,7 @@ describe('Job Card Controller', () => {
         .set('Authorization', 'Bearer admin_token')
         .expect(200);
 
-      expect(response.body.notes).toEqual(mockNotes);
+      expect(response.body.notes.progress_notes).toBe('Engine inspection in progress');
     });
 
     it('should return 404 if job card not found', async () => {
