@@ -14,6 +14,7 @@ import analyticsRoutes from '../routes/analyticsRoutes.js';
 import seedRoutes from '../routes/seedRoutes.js';
 import paymentRoutes from '../routes/paymentRoutes.js';
 import cacheRoutes from '../routes/cacheRoutes.js';
+import clearRoutes from '../routes/clearRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -41,6 +42,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/cache', cacheRoutes);
+app.use('/api/clear', clearRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
