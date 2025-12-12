@@ -1,11 +1,18 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
+import app from '../testServer.js';
 
 // Mock the database module
 jest.mock('../../config/database.js', () => ({
   query: jest.fn()
+}));
+
+// Mock jwt.verify separately
+jest.mock('jsonwebtoken', () => ({
+  ...jest.requireActual('jsonwebtoken'),
+  verify: jest.fn(),
+  sign: jest.fn().mockReturnValue('jwt_token')
 }));
 
 describe('Invoice Controller', () => {
@@ -283,7 +290,7 @@ describe('Invoice Controller', () => {
     });
   });
 
-  describe('PUT /api/invoices/:id/payment-status', () => {
+  describe('PUT /api/invoices/:id/payment', () => {
     it('should update payment status successfully', async () => {
       const statusData = {
         status: 'paid',
@@ -311,7 +318,7 @@ describe('Invoice Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .put('/api/invoices/1/payment-status')
+        .put('/api/invoices/1/payment')
         .set('Authorization', 'Bearer admin_token')
         .send(statusData)
         .expect(200);
@@ -332,7 +339,7 @@ describe('Invoice Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .put('/api/invoices/999/payment-status')
+        .put('/api/invoices/999/payment')
         .set('Authorization', 'Bearer admin_token')
         .send(statusData)
         .expect(404);
@@ -341,7 +348,7 @@ describe('Invoice Controller', () => {
     });
   });
 
-  describe('POST /api/invoices/mock-payment', () => {
+  describe('POST /api/invoices/mock', () => {
     it('should process mock payment successfully', async () => {
       const paymentData = {
         invoiceId: 1,
@@ -382,7 +389,7 @@ describe('Invoice Controller', () => {
       jwt.verify.mockReturnValue(mockCustomerUser);
 
       const response = await request(app)
-        .post('/api/invoices/mock-payment')
+        .post('/api/invoices/mock')
         .set('Authorization', 'Bearer customer_token')
         .send(paymentData)
         .expect(200);
@@ -406,7 +413,7 @@ describe('Invoice Controller', () => {
       jwt.verify.mockReturnValue(mockCustomerUser);
 
       const response = await request(app)
-        .post('/api/invoices/mock-payment')
+        .post('/api/invoices/mock')
         .set('Authorization', 'Bearer customer_token')
         .send(paymentData)
         .expect(404);
