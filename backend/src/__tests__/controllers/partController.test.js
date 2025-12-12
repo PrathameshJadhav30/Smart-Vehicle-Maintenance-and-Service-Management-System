@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
+import app from '../testServer.js';
 
 // Mock the database module
 jest.mock('../../config/database.js', () => ({
@@ -14,6 +14,13 @@ jest.mock('../../utils/cache.js', () => ({
   get: jest.fn(),
   set: jest.fn(),
   delete: jest.fn()
+}));
+
+// Mock jwt.verify separately
+jest.mock('jsonwebtoken', () => ({
+  ...jest.requireActual('jsonwebtoken'),
+  verify: jest.fn(),
+  sign: jest.fn().mockReturnValue('jwt_token')
 }));
 
 describe('Part Controller', () => {
@@ -84,6 +91,26 @@ describe('Part Controller', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('message', 'Part number already exists');
+    });
+    
+    it('should return 400 if validation fails', async () => {
+      const invalidPartData = {
+        name: '', // Invalid: empty name
+        price: -5, // Invalid: negative price
+        quantity: -10 // Invalid: negative quantity
+      };
+
+      // Mock JWT token
+      jwt.verify.mockReturnValue(mockAdminUser);
+
+      const response = await request(app)
+        .post('/api/parts')
+        .set('Authorization', 'Bearer admin_token')
+        .send(invalidPartData)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('errors');
+      expect(response.body.errors).toHaveLength(3);
     });
   });
 
@@ -372,7 +399,7 @@ describe('Part Controller', () => {
     });
   });
 
-  describe('POST /api/suppliers', () => {
+  describe('POST /api/parts/supplier', () => {
     it('should create a new supplier successfully', async () => {
       const supplierData = {
         name: 'Auto Parts Supplier',
@@ -396,7 +423,7 @@ describe('Part Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .post('/api/suppliers')
+        .post('/api/parts/supplier')
         .set('Authorization', 'Bearer admin_token')
         .send(supplierData)
         .expect(201);
@@ -406,7 +433,7 @@ describe('Part Controller', () => {
     });
   });
 
-  describe('GET /api/suppliers', () => {
+  describe('GET /api/parts/suppliers', () => {
     it('should get all suppliers successfully', async () => {
       const mockSuppliers = [
         {
@@ -428,7 +455,7 @@ describe('Part Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .get('/api/suppliers')
+        .get('/api/parts/suppliers')
         .set('Authorization', 'Bearer admin_token')
         .expect(200);
 
@@ -437,7 +464,7 @@ describe('Part Controller', () => {
     });
   });
 
-  describe('PUT /api/suppliers/:id', () => {
+  describe('PUT /api/parts/supplier/:id', () => {
     it('should update supplier successfully', async () => {
       const updateData = {
         name: 'Updated Auto Parts Supplier',
@@ -462,7 +489,7 @@ describe('Part Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .put('/api/suppliers/1')
+        .put('/api/parts/supplier/1')
         .set('Authorization', 'Bearer admin_token')
         .send(updateData)
         .expect(200);
@@ -483,7 +510,7 @@ describe('Part Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .put('/api/suppliers/999')
+        .put('/api/parts/supplier/999')
         .set('Authorization', 'Bearer admin_token')
         .send(updateData)
         .expect(404);
@@ -492,7 +519,7 @@ describe('Part Controller', () => {
     });
   });
 
-  describe('DELETE /api/suppliers/:id', () => {
+  describe('DELETE /api/parts/supplier/:id', () => {
     it('should delete supplier successfully', async () => {
       // Mock database response
       mockDb.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
@@ -501,7 +528,7 @@ describe('Part Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .delete('/api/suppliers/1')
+        .delete('/api/parts/supplier/1')
         .set('Authorization', 'Bearer admin_token')
         .expect(200);
 
@@ -516,7 +543,7 @@ describe('Part Controller', () => {
       jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
-        .delete('/api/suppliers/999')
+        .delete('/api/parts/supplier/999')
         .set('Authorization', 'Bearer admin_token')
         .expect(404);
 
