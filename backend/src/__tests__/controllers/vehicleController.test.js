@@ -1,11 +1,18 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
+import app from '../testServer.js';
 
 // Mock the database module
 jest.mock('../../config/database.js', () => ({
   query: jest.fn()
+}));
+
+// Mock jwt.verify separately
+jest.mock('jsonwebtoken', () => ({
+  ...jest.requireActual('jsonwebtoken'),
+  verify: jest.fn(),
+  sign: jest.fn().mockReturnValue('jwt_token')
 }));
 
 describe('Vehicle Controller', () => {
@@ -49,7 +56,7 @@ describe('Vehicle Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [createdVehicle] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .post('/api/vehicles')
@@ -73,7 +80,7 @@ describe('Vehicle Controller', () => {
       mockDb.query.mockRejectedValue({ code: '23505' });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .post('/api/vehicles')
@@ -111,7 +118,7 @@ describe('Vehicle Controller', () => {
         .mockResolvedValueOnce({ rows: [{ total: '1' }] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .get('/api/vehicles?page=1&limit=10')
@@ -151,7 +158,7 @@ describe('Vehicle Controller', () => {
         .mockResolvedValueOnce({ rows: [{ total: '1' }] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .get('/api/vehicles')
@@ -189,7 +196,7 @@ describe('Vehicle Controller', () => {
         .mockResolvedValueOnce({ rows: mockVehicles }); // Get vehicles
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .get('/api/vehicles/user/1')
@@ -205,7 +212,7 @@ describe('Vehicle Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .get('/api/vehicles/user/999')
@@ -239,7 +246,7 @@ describe('Vehicle Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [mockVehicle] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .get('/api/vehicles/1')
@@ -254,7 +261,7 @@ describe('Vehicle Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .get('/api/vehicles/999')
@@ -290,7 +297,7 @@ describe('Vehicle Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [updatedVehicle] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .put('/api/vehicles/1')
@@ -311,7 +318,7 @@ describe('Vehicle Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .put('/api/vehicles/999')
@@ -331,7 +338,7 @@ describe('Vehicle Controller', () => {
         .mockResolvedValueOnce({ rows: [{ id: 1 }] }); // Delete vehicle
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .delete('/api/vehicles/1')
@@ -346,7 +353,7 @@ describe('Vehicle Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [] }); // No matching vehicle
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .delete('/api/vehicles/999')
@@ -363,7 +370,7 @@ describe('Vehicle Controller', () => {
         .mockResolvedValueOnce({ rows: [] }); // Delete vehicle (not found)
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .delete('/api/vehicles/999')
@@ -397,7 +404,7 @@ describe('Vehicle Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: mockHistory });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .get('/api/vehicles/1/history')
