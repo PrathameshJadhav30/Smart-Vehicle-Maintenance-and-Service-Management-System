@@ -11,7 +11,8 @@
     "seed": "node src/seeders/runSeeders.js",
     "reset-db": "node src/resetDatabase.js",
     "test-invoice": "node src/testInvoiceFix.js",
-    "test": "jest"
+    "test": "jest",
+    "test:controllers": "jest --config=jest.config.test.js"
   },
   "keywords": [],
   "author": "",
