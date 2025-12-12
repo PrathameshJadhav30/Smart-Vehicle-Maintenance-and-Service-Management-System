@@ -1,11 +1,18 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
+import app from '../testServer.js';
 
 // Mock the database module
 jest.mock('../../config/database.js', () => ({
   query: jest.fn()
+}));
+
+// Mock jwt.verify separately
+jest.mock('jsonwebtoken', () => ({
+  ...jest.requireActual('jsonwebtoken'),
+  verify: jest.fn(),
+  sign: jest.fn().mockReturnValue('jwt_token')
 }));
 
 describe('Payment Controller', () => {
@@ -24,10 +31,7 @@ describe('Payment Controller', () => {
       const paymentData = {
         invoiceId: 1,
         amount: 125.00,
-        method: 'credit_card',
-        cardNumber: '4111111111111111',
-        expiryDate: '12/25',
-        cvv: '123'
+        method: 'card' // Changed to valid method
       };
 
       const mockInvoice = {
@@ -48,7 +52,7 @@ describe('Payment Controller', () => {
         labor_total: 75.00,
         grand_total: 125.00,
         status: 'paid',
-        payment_method: 'credit_card',
+        payment_method: 'card',
         paid_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -60,7 +64,7 @@ describe('Payment Controller', () => {
         .mockResolvedValueOnce({ rows: [updatedInvoice] }); // Update invoice
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .post('/api/payments/process')
@@ -70,7 +74,7 @@ describe('Payment Controller', () => {
 
       expect(response.body).toHaveProperty('message', 'Payment processed successfully');
       expect(response.body.payment.amount).toBe(125.00);
-      expect(response.body.payment.method).toBe('credit_card');
+      expect(response.body.payment.method).toBe('card');
       expect(response.body.invoice).toEqual(updatedInvoice);
     });
 
@@ -80,7 +84,7 @@ describe('Payment Controller', () => {
       };
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .post('/api/payments/process')
@@ -88,18 +92,19 @@ describe('Payment Controller', () => {
         .send(paymentData)
         .expect(400);
 
-      expect(response.body).toHaveProperty('message', 'Invoice ID, amount, and payment method are required');
+      expect(response.body).toHaveProperty('errors');
+      expect(response.body.errors).toHaveLength(2); // invoiceId and method are missing
     });
 
     it('should return 400 for invalid amount', async () => {
       const paymentData = {
         invoiceId: 1,
         amount: -50.00,
-        method: 'credit_card'
+        method: 'card'
       };
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .post('/api/payments/process')
@@ -107,21 +112,23 @@ describe('Payment Controller', () => {
         .send(paymentData)
         .expect(400);
 
-      expect(response.body).toHaveProperty('message', 'Amount must be greater than zero');
+      expect(response.body).toHaveProperty('errors');
+      expect(response.body.errors[0]).toHaveProperty('message');
+      expect(response.body.errors[0].message).toBe('Valid amount is required');
     });
 
     it('should return 404 if invoice not found', async () => {
       const paymentData = {
         invoiceId: 999,
         amount: 125.00,
-        method: 'credit_card'
+        method: 'card'
       };
 
       // Mock database response for non-existent invoice
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .post('/api/payments/process')
@@ -136,7 +143,7 @@ describe('Payment Controller', () => {
       const paymentData = {
         invoiceId: 1,
         amount: 125.00,
-        method: 'credit_card'
+        method: 'card'
       };
 
       const mockInvoice = {
@@ -148,7 +155,7 @@ describe('Payment Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [mockInvoice] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .post('/api/payments/process')
@@ -165,25 +172,25 @@ describe('Payment Controller', () => {
       const mockInvoice = {
         id: 1,
         status: 'paid',
-        payment_method: 'credit_card',
+        payment_method: 'card',
         paid_at: new Date().toISOString(),
         grand_total: 125.00
       };
 
-      const expectedPaymentHistory = [{
+      const expectedPaymentHistory = {
         id: 'pay_1',
         invoice_id: 1,
         amount: 125.00,
-        method: 'credit_card',
+        method: 'card',
         status: 'completed',
         processed_at: mockInvoice.paid_at
-      }];
-
+      };
+      
       // Mock database response
       mockDb.query.mockResolvedValueOnce({ rows: [mockInvoice] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .get('/api/payments/history/1')
@@ -191,7 +198,7 @@ describe('Payment Controller', () => {
         .expect(200);
 
       expect(response.body.paymentHistory).toHaveLength(1);
-      expect(response.body.paymentHistory[0]).toEqual(expectedPaymentHistory[0]);
+      expect(response.body.paymentHistory[0]).toEqual(expectedPaymentHistory);
     });
 
     it('should return empty payment history for unpaid invoice', async () => {
@@ -205,7 +212,7 @@ describe('Payment Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [mockInvoice] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .get('/api/payments/history/1')
@@ -220,7 +227,7 @@ describe('Payment Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockImplementation(() => mockCustomerUser);
 
       const response = await request(app)
         .get('/api/payments/history/999')
@@ -237,7 +244,7 @@ describe('Payment Controller', () => {
         reason: 'Customer request'
       };
 
-      const updatedInvoice = {
+      const mockInvoice = {
         id: 1,
         jobcard_id: 1,
         customer_id: 1,
@@ -250,10 +257,10 @@ describe('Payment Controller', () => {
       };
 
       // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: [updatedInvoice] });
+      mockDb.query.mockResolvedValueOnce({ rows: [mockInvoice] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .post('/api/payments/refund/pay_1')
@@ -275,7 +282,7 @@ describe('Payment Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .post('/api/payments/refund/pay_999')
