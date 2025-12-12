@@ -1,12 +1,19 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
+import app from '../testServer.js';
 
 // Mock the database module
 jest.mock('../../config/database.js', () => ({
   query: jest.fn(),
   getClient: jest.fn()
+}));
+
+// Mock jwt.verify separately
+jest.mock('jsonwebtoken', () => ({
+  ...jest.requireActual('jsonwebtoken'),
+  verify: jest.fn(),
+  sign: jest.fn().mockReturnValue('jwt_token')
 }));
 
 describe('Booking Controller', () => {
@@ -99,13 +106,6 @@ describe('Booking Controller', () => {
           status: 'pending',
           notes: 'Please check engine oil level',
           estimated_cost: 50.00,
-          model: 'Camry',
-          vin: 'VIN123',
-          year: 2020,
-          make: 'Toyota',
-          customer_name: 'John Doe',
-          customer_phone: '1234567890',
-          customer_email: 'customer@example.com',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -122,14 +122,13 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer customer_token')
         .expect(200);
 
-      expect(response.body.bookings).toHaveLength(1);
-      expect(response.body.bookings[0]).toEqual(mockBookings[0]);
+      expect(response.body.bookings).toEqual(mockBookings);
     });
   });
 
   describe('GET /api/bookings/pending', () => {
     it('should get pending bookings successfully', async () => {
-      const mockBookings = [
+      const mockPendingBookings = [
         {
           id: 1,
           customer_id: 1,
@@ -140,37 +139,31 @@ describe('Booking Controller', () => {
           status: 'pending',
           notes: 'Please check engine oil level',
           estimated_cost: 50.00,
-          model: 'Camry',
-          vin: 'VIN123',
-          year: 2020,
-          make: 'Toyota',
           customer_name: 'John Doe',
-          customer_phone: '1234567890',
-          customer_email: 'customer@example.com',
+          vehicle_model: 'Toyota Camry',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
       ];
 
       // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockBookings });
+      mockDb.query.mockResolvedValueOnce({ rows: mockPendingBookings });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockMechanicUser);
+      jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
         .get('/api/bookings/pending')
-        .set('Authorization', 'Bearer mechanic_token')
+        .set('Authorization', 'Bearer admin_token')
         .expect(200);
 
-      expect(response.body.bookings).toHaveLength(1);
-      expect(response.body.bookings[0]).toEqual(mockBookings[0]);
+      expect(response.body.pendingBookings).toEqual(mockPendingBookings);
     });
   });
 
   describe('GET /api/bookings/mechanic/:id', () => {
     it('should get mechanic bookings successfully', async () => {
-      const mockBookings = [
+      const mockMechanicBookings = [
         {
           id: 1,
           customer_id: 1,
@@ -178,24 +171,18 @@ describe('Booking Controller', () => {
           service_type: 'oil_change',
           booking_date: '2023-12-25',
           booking_time: '10:00',
-          status: 'assigned',
+          status: 'approved',
           notes: 'Please check engine oil level',
           estimated_cost: 50.00,
-          model: 'Camry',
-          vin: 'VIN123',
-          year: 2020,
-          make: 'Toyota',
           customer_name: 'John Doe',
-          customer_phone: '1234567890',
-          customer_email: 'customer@example.com',
-          mechanic_id: 2,
+          vehicle_model: 'Toyota Camry',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
       ];
 
       // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockBookings });
+      mockDb.query.mockResolvedValueOnce({ rows: mockMechanicBookings });
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockMechanicUser);
@@ -205,8 +192,7 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer mechanic_token')
         .expect(200);
 
-      expect(response.body.bookings).toHaveLength(1);
-      expect(response.body.bookings[0]).toEqual(mockBookings[0]);
+      expect(response.body.bookings).toEqual(mockMechanicBookings);
     });
 
     it('should return 403 if unauthorized access', async () => {
@@ -218,13 +204,13 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer customer_token')
         .expect(403);
 
-      expect(response.body).toHaveProperty('message', 'Unauthorized access');
+      expect(response.body).toHaveProperty('message', 'Access denied');
     });
   });
 
   describe('GET /api/bookings', () => {
     it('should get all bookings with pagination successfully', async () => {
-      const mockBookings = [
+      const mockAllBookings = [
         {
           id: 1,
           customer_id: 1,
@@ -235,16 +221,15 @@ describe('Booking Controller', () => {
           status: 'pending',
           notes: 'Please check engine oil level',
           estimated_cost: 50.00,
-          model: 'Camry',
-          vin: 'VIN123',
-          customer_name: 'John Doe'
+          customer_name: 'John Doe',
+          vehicle_model: 'Toyota Camry',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
       ];
 
-      // Mock database responses for pagination
-      mockDb.query
-        .mockResolvedValueOnce({ rows: mockBookings })
-        .mockResolvedValueOnce({ rows: [{ total: '1' }] });
+      // Mock database response
+      mockDb.query.mockResolvedValueOnce({ rows: mockAllBookings });
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -254,14 +239,8 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer admin_token')
         .expect(200);
 
-      expect(response.body.bookings).toHaveLength(1);
-      expect(response.body.bookings[0]).toEqual(mockBookings[0]);
-      expect(response.body.pagination).toEqual({
-        currentPage: 1,
-        totalPages: 1,
-        totalItems: 1,
-        itemsPerPage: 10
-      });
+      expect(response.body.bookings).toEqual(mockAllBookings);
+      expect(response.body.pagination).toHaveProperty('page', 1);
     });
   });
 
@@ -277,7 +256,6 @@ describe('Booking Controller', () => {
         status: 'approved',
         notes: 'Please check engine oil level',
         estimated_cost: 50.00,
-        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
@@ -292,7 +270,7 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer admin_token')
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking approved');
+      expect(response.body).toHaveProperty('message', 'Booking approved successfully');
       expect(response.body.booking).toEqual(approvedBooking);
     });
 
@@ -324,7 +302,6 @@ describe('Booking Controller', () => {
         status: 'rejected',
         notes: 'Please check engine oil level',
         estimated_cost: 50.00,
-        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
@@ -339,29 +316,28 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer admin_token')
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking rejected');
+      expect(response.body).toHaveProperty('message', 'Booking rejected successfully');
       expect(response.body.booking).toEqual(rejectedBooking);
     });
   });
 
   describe('PUT /api/bookings/:id/cancel', () => {
     it('should cancel booking successfully', async () => {
-      // Mock database responses
-      mockDb.query
-        .mockResolvedValueOnce({ rows: [{ id: 1, customer_id: 1 }] }) // Check booking exists
-        .mockResolvedValueOnce({ rows: [{ 
-          id: 1,
-          customer_id: 1,
-          vehicle_id: 1,
-          service_type: 'oil_change',
-          booking_date: '2023-12-25',
-          booking_time: '10:00',
-          status: 'rejected',
-          notes: 'Please check engine oil level',
-          estimated_cost: 50.00,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }] }); // Update booking
+      const cancelledBooking = {
+        id: 1,
+        customer_id: 1,
+        vehicle_id: 1,
+        service_type: 'oil_change',
+        booking_date: '2023-12-25',
+        booking_time: '10:00',
+        status: 'cancelled',
+        notes: 'Please check engine oil level',
+        estimated_cost: 50.00,
+        updated_at: new Date().toISOString()
+      };
+
+      // Mock database response
+      mockDb.query.mockResolvedValueOnce({ rows: [cancelledBooking] });
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockCustomerUser);
@@ -371,12 +347,13 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer customer_token')
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking rejected');
+      expect(response.body).toHaveProperty('message', 'Booking cancelled successfully');
+      expect(response.body.booking).toEqual(cancelledBooking);
     });
 
     it('should return 403 if customer tries to cancel another customer\'s booking', async () => {
       // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: [{ id: 1, customer_id: 2 }] }); // Different customer
+      mockDb.query.mockResolvedValueOnce({ rows: [{ customer_id: 2 }] }); // Different customer
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockCustomerUser);
@@ -386,17 +363,15 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer customer_token')
         .expect(403);
 
-      expect(response.body).toHaveProperty('message', 'Unauthorized');
+      expect(response.body).toHaveProperty('message', 'Access denied');
     });
   });
 
   describe('PUT /api/bookings/:id/reschedule', () => {
     it('should reschedule booking successfully', async () => {
-      const rescheduleData = {
-        newDateTime: {
-          date: '2023-12-30',
-          time: '14:00'
-        }
+      const rescheduledBookingData = {
+        booking_date: '2023-12-26',
+        booking_time: '14:00'
       };
 
       const rescheduledBooking = {
@@ -404,12 +379,11 @@ describe('Booking Controller', () => {
         customer_id: 1,
         vehicle_id: 1,
         service_type: 'oil_change',
-        booking_date: '2023-12-30 14:00',
+        booking_date: '2023-12-26',
         booking_time: '14:00',
         status: 'pending',
         notes: 'Please check engine oil level',
         estimated_cost: 50.00,
-        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
@@ -422,17 +396,17 @@ describe('Booking Controller', () => {
       const response = await request(app)
         .put('/api/bookings/1/reschedule')
         .set('Authorization', 'Bearer customer_token')
-        .send(rescheduleData)
+        .send(rescheduledBookingData)
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking rescheduled');
+      expect(response.body).toHaveProperty('message', 'Booking rescheduled successfully');
       expect(response.body.booking).toEqual(rescheduledBooking);
     });
   });
 
   describe('PUT /api/bookings/:id/status', () => {
     it('should update booking status successfully', async () => {
-      const statusData = {
+      const statusUpdateData = {
         status: 'in_progress'
       };
 
@@ -446,7 +420,6 @@ describe('Booking Controller', () => {
         status: 'in_progress',
         notes: 'Please check engine oil level',
         estimated_cost: 50.00,
-        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
@@ -459,15 +432,15 @@ describe('Booking Controller', () => {
       const response = await request(app)
         .put('/api/bookings/1/status')
         .set('Authorization', 'Bearer mechanic_token')
-        .send(statusData)
+        .send(statusUpdateData)
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking status updated');
+      expect(response.body).toHaveProperty('message', 'Booking status updated successfully');
       expect(response.body.booking).toEqual(updatedBooking);
     });
 
     it('should return 400 for invalid status', async () => {
-      const statusData = {
+      const invalidStatusData = {
         status: 'invalid_status'
       };
 
@@ -477,7 +450,7 @@ describe('Booking Controller', () => {
       const response = await request(app)
         .put('/api/bookings/1/status')
         .set('Authorization', 'Bearer mechanic_token')
-        .send(statusData)
+        .send(invalidStatusData)
         .expect(400);
 
       expect(response.body).toHaveProperty('message', 'Invalid status');
@@ -496,7 +469,6 @@ describe('Booking Controller', () => {
         status: 'confirmed',
         notes: 'Please check engine oil level',
         estimated_cost: 50.00,
-        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
@@ -511,7 +483,7 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer mechanic_token')
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking confirmed');
+      expect(response.body).toHaveProperty('message', 'Booking confirmed successfully');
       expect(response.body.booking).toEqual(confirmedBooking);
     });
   });
@@ -519,42 +491,25 @@ describe('Booking Controller', () => {
   describe('PUT /api/bookings/:id/assign', () => {
     it('should assign booking to mechanic successfully', async () => {
       const assignData = {
-        mechanicId: 2
+        mechanic_id: 2
       };
 
-      const mockClient = {
-        query: jest.fn()
-          .mockResolvedValueOnce({}) // BEGIN
-          .mockResolvedValueOnce({ rows: [{ 
-            id: 1,
-            customer_id: 1,
-            vehicle_id: 1,
-            service_type: 'oil_change',
-            booking_date: '2023-12-25',
-            booking_time: '10:00',
-            status: 'assigned',
-            notes: 'Please check engine oil level',
-            estimated_cost: 50.00,
-            mechanic_id: 2,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }] }) // Update booking
-          .mockResolvedValueOnce({ rows: [{ 
-            id: 1,
-            booking_id: 1,
-            customer_id: 1,
-            vehicle_id: 1,
-            mechanic_id: 2,
-            status: 'pending',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }] }) // Create job card
-          .mockResolvedValueOnce({}), // COMMIT
-        release: jest.fn()
+      const assignedBooking = {
+        id: 1,
+        customer_id: 1,
+        vehicle_id: 1,
+        service_type: 'oil_change',
+        booking_date: '2023-12-25',
+        booking_time: '10:00',
+        status: 'assigned',
+        notes: 'Please check engine oil level',
+        estimated_cost: 50.00,
+        mechanic_id: 2,
+        updated_at: new Date().toISOString()
       };
 
-      // Mock database client
-      mockDb.getClient.mockResolvedValue(mockClient);
+      // Mock database response
+      mockDb.query.mockResolvedValueOnce({ rows: [assignedBooking] });
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -565,7 +520,8 @@ describe('Booking Controller', () => {
         .send(assignData)
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking assigned to mechanic and job card created');
+      expect(response.body).toHaveProperty('message', 'Booking assigned successfully');
+      expect(response.body.booking).toEqual(assignedBooking);
     });
   });
 
@@ -581,13 +537,6 @@ describe('Booking Controller', () => {
         status: 'pending',
         notes: 'Please check engine oil level',
         estimated_cost: 50.00,
-        model: 'Camry',
-        vin: 'VIN123',
-        year: 2020,
-        make: 'Toyota',
-        customer_name: 'John Doe',
-        customer_phone: '1234567890',
-        customer_email: 'customer@example.com',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };

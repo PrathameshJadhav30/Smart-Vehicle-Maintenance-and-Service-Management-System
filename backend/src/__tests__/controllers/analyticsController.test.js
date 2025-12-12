@@ -1,11 +1,18 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
+import app from '../testServer.js';
 
 // Mock the database module
 jest.mock('../../config/database.js', () => ({
   query: jest.fn()
+}));
+
+// Mock jwt.verify separately
+jest.mock('jsonwebtoken', () => ({
+  ...jest.requireActual('jsonwebtoken'),
+  verify: jest.fn(),
+  sign: jest.fn().mockReturnValue('jwt_token')
 }));
 
 describe('Analytics Controller', () => {
@@ -133,8 +140,16 @@ describe('Analytics Controller', () => {
         invoice_count: 12
       };
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: [mockTotalRevenue] });
+      const mockMonthlyRevenue = [];
+      const mockDailyRevenue = [];
+
+      const mockParams = ['2023-01-01', '2023-01-31'];
+
+      // Mock database responses
+      mockDb.query
+        .mockResolvedValueOnce({ rows: [mockTotalRevenue] }) // Total revenue
+        .mockResolvedValueOnce({ rows: mockMonthlyRevenue }) // Monthly revenue
+        .mockResolvedValueOnce({ rows: mockDailyRevenue }); // Daily revenue
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -145,6 +160,8 @@ describe('Analytics Controller', () => {
         .expect(200);
 
       expect(response.body.totalRevenue).toEqual(mockTotalRevenue);
+      // Check that the query was called with the correct parameters
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('WHERE'), mockParams);
     });
   });
 
