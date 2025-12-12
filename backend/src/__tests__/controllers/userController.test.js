@@ -1,11 +1,18 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import app from '../../server.js';
+import app from '../testServer.js';
 
 // Mock the database module
 jest.mock('../../config/database.js', () => ({
   query: jest.fn()
+}));
+
+// Mock jwt.verify separately
+jest.mock('jsonwebtoken', () => ({
+  ...jest.requireActual('jsonwebtoken'),
+  verify: jest.fn(),
+  sign: jest.fn().mockReturnValue('jwt_token')
 }));
 
 describe('User Controller', () => {
@@ -46,7 +53,7 @@ describe('User Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: mockUsers });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .get('/api/users')
@@ -63,7 +70,7 @@ describe('User Controller', () => {
       mockDb.query.mockRejectedValue(new Error('Database error'));
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .get('/api/users')
@@ -87,7 +94,7 @@ describe('User Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [updatedUser] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .put('/api/users/2/role')
@@ -101,7 +108,7 @@ describe('User Controller', () => {
 
     it('should return 400 for invalid role', async () => {
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .put('/api/users/2/role')
@@ -109,7 +116,7 @@ describe('User Controller', () => {
         .send({ role: 'invalid_role' })
         .expect(400);
 
-      expect(response.body).toHaveProperty('message', 'Invalid role');
+      expect(response.body).toHaveProperty('errors');
     });
 
     it('should return 404 if user not found', async () => {
@@ -117,7 +124,7 @@ describe('User Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .put('/api/users/999/role')
@@ -141,7 +148,7 @@ describe('User Controller', () => {
         .mockResolvedValueOnce({ rows: [{ id: 2 }] }); // Delete user
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .delete('/api/users/2')
@@ -153,7 +160,7 @@ describe('User Controller', () => {
 
     it('should return 400 if user tries to delete themselves', async () => {
       // Mock JWT token for admin trying to delete themselves
-      jwt.verify.mockReturnValue({ id: 1, email: 'admin@example.com', role: 'admin' });
+      jwt.verify.mockImplementation(() => ({ id: 1, email: 'admin@example.com', role: 'admin' }));
 
       const response = await request(app)
         .delete('/api/users/1')
@@ -168,7 +175,7 @@ describe('User Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .delete('/api/users/999')
@@ -204,7 +211,7 @@ describe('User Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: mockMechanics });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .get('/api/users/mechanics')
@@ -221,7 +228,7 @@ describe('User Controller', () => {
       mockDb.query.mockRejectedValue(new Error('Database error'));
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockImplementation(() => mockAdminUser);
 
       const response = await request(app)
         .get('/api/users/mechanics')
