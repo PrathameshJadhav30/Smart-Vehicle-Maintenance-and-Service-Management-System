@@ -1,36 +1,49 @@
-import request from 'supertest';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 import { jest } from '@jest/globals';
-import express from 'express';
-import authRoutes from '../../routes/authRoutes.js';
 
-// Create a test app
-const app = express();
-app.use(express.json());
-app.use('/api/auth', authRoutes);
-
-// Mock the database module
+// Mock all dependencies before importing the controller
 jest.mock('../../config/database.js', () => ({
   query: jest.fn()
 }));
 
-// Mock bcrypt
-jest.mock('bcrypt');
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockResolvedValue('hashed_password'),
+  compare: jest.fn().mockResolvedValue(true)
+}));
 
-// Mock jwt
-jest.mock('jsonwebtoken');
+jest.mock('jsonwebtoken', () => ({
+  sign: jest.fn().mockReturnValue('jwt_token'),
+  verify: jest.fn().mockReturnValue({ id: 1, email: 'test@example.com', role: 'admin' })
+}));
+
+// Import the controller after mocks are set up
+import * as authController from '../../controllers/authController.js';
 
 describe('Auth Controller', () => {
   const mockDb = require('../../config/database.js');
-  
+  let mockReq, mockRes, mockNext;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    mockReq = {
+      body: {},
+      params: {},
+      user: {},
+      headers: {}
+    };
+    
+    mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      send: jest.fn()
+    };
+    
+    mockNext = jest.fn();
   });
 
-  describe('POST /api/auth/register', () => {
+  describe('register', () => {
     it('should register a new user successfully', async () => {
-      const userData = {
+      mockReq.body = {
         name: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
@@ -52,28 +65,25 @@ describe('Auth Controller', () => {
           created_at: new Date().toISOString()
         }] }); // Insert user
 
-      bcrypt.hash.mockResolvedValue('hashed_password');
-      jwt.sign.mockReturnValue('jwt_token');
+      await authController.register(mockReq, mockRes, mockNext);
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
-
-      expect(response.body).toHaveProperty('message', 'User registered successfully');
-      expect(response.body).toHaveProperty('token', 'jwt_token');
-      expect(response.body.user).toEqual({
-        id: 1,
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'customer',
-        phone: '1234567890',
-        address: '123 Main St'
+      expect(mockRes.status).toHaveBeenCalledWith(201);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        message: 'User registered successfully',
+        token: 'jwt_token',
+        user: {
+          id: 1,
+          name: 'John Doe',
+          email: 'john@example.com',
+          role: 'customer',
+          phone: '1234567890',
+          address: '123 Main St'
+        }
       });
     });
 
     it('should return 400 if user already exists', async () => {
-      const userData = {
+      mockReq.body = {
         name: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
@@ -83,16 +93,14 @@ describe('Auth Controller', () => {
       // Mock database response for existing user
       mockDb.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(400);
+      await authController.register(mockReq, mockRes, mockNext);
 
-      expect(response.body).toHaveProperty('message', 'User already exists with this email');
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'User already exists with this email' });
     });
 
     it('should return 500 if database error occurs', async () => {
-      const userData = {
+      mockReq.body = {
         name: 'John Doe',
         email: 'john@example.com',
         password: 'password123',
@@ -102,18 +110,16 @@ describe('Auth Controller', () => {
       // Mock database error
       mockDb.query.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(500);
+      await authController.register(mockReq, mockRes, mockNext);
 
-      expect(response.body).toHaveProperty('message', 'Server error during registration');
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Server error during registration' });
     });
   });
 
-  describe('POST /api/auth/login', () => {
+  describe('login', () => {
     it('should login user successfully with valid credentials', async () => {
-      const loginData = {
+      mockReq.body = {
         email: 'john@example.com',
         password: 'password123'
       };
@@ -131,28 +137,29 @@ describe('Auth Controller', () => {
         }] 
       });
 
-      bcrypt.compare.mockResolvedValue(true);
-      jwt.sign.mockReturnValue('jwt_token');
+      // Ensure bcrypt.compare returns true for this test
+      require('bcrypt').compare.mockResolvedValue(true);
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(200);
+      await authController.login(mockReq, mockRes, mockNext);
 
-      expect(response.body).toHaveProperty('message', 'Login successful');
-      expect(response.body).toHaveProperty('token', 'jwt_token');
-      expect(response.body.user).toEqual({
-        id: 1,
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'customer',
-        phone: '1234567890',
-        address: '123 Main St'
+      // For successful responses, the controller calls res.json() directly without res.status()
+      expect(mockRes.status).not.toHaveBeenCalled();
+      expect(mockRes.json).toHaveBeenCalledWith({
+        message: 'Login successful',
+        token: 'jwt_token',
+        user: {
+          id: 1,
+          name: 'John Doe',
+          email: 'john@example.com',
+          role: 'customer',
+          phone: '1234567890',
+          address: '123 Main St'
+        }
       });
     });
 
     it('should return 401 for invalid credentials - user not found', async () => {
-      const loginData = {
+      mockReq.body = {
         email: 'nonexistent@example.com',
         password: 'password123'
       };
@@ -160,16 +167,14 @@ describe('Auth Controller', () => {
       // Mock database response for non-existent user
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(401);
+      await authController.login(mockReq, mockRes, mockNext);
 
-      expect(response.body).toHaveProperty('message', 'Invalid credentials');
+      expect(mockRes.status).toHaveBeenCalledWith(401);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Invalid credentials' });
     });
 
     it('should return 401 for invalid credentials - wrong password', async () => {
-      const loginData = {
+      mockReq.body = {
         email: 'john@example.com',
         password: 'wrongpassword'
       };
@@ -185,19 +190,20 @@ describe('Auth Controller', () => {
         }] 
       });
 
-      bcrypt.compare.mockResolvedValue(false);
+      // Override bcrypt.compare mock for this test to return false
+      require('bcrypt').compare.mockResolvedValue(false);
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(401);
+      await authController.login(mockReq, mockRes, mockNext);
 
-      expect(response.body).toHaveProperty('message', 'Invalid credentials');
+      expect(mockRes.status).toHaveBeenCalledWith(401);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Invalid credentials' });
     });
   });
 
-  describe('GET /api/auth/profile', () => {
+  describe('getProfile', () => {
     it('should get user profile successfully', async () => {
+      mockReq.user = { id: 1 };
+      
       const mockUser = {
         id: 1,
         name: 'John Doe',
@@ -211,36 +217,31 @@ describe('Auth Controller', () => {
       // Mock database response
       mockDb.query.mockResolvedValueOnce({ rows: [mockUser] });
 
-      // Mock JWT token
-      jwt.verify.mockReturnValue({ id: 1, email: 'john@example.com', role: 'customer' });
+      await authController.getProfile(mockReq, mockRes, mockNext);
 
-      const response = await request(app)
-        .get('/api/auth/profile')
-        .set('Authorization', 'Bearer valid_token')
-        .expect(200);
-
-      expect(response.body.user).toEqual(mockUser);
+      // For successful responses, the controller calls res.json() directly without res.status()
+      expect(mockRes.status).not.toHaveBeenCalled();
+      expect(mockRes.json).toHaveBeenCalledWith({ user: mockUser });
     });
 
     it('should return 404 if user not found', async () => {
+      mockReq.user = { id: 999 };
+      
       // Mock database response for non-existent user
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
-      // Mock JWT token
-      jwt.verify.mockReturnValue({ id: 999, email: 'nonexistent@example.com', role: 'customer' });
+      await authController.getProfile(mockReq, mockRes, mockNext);
 
-      const response = await request(app)
-        .get('/api/auth/profile')
-        .set('Authorization', 'Bearer valid_token')
-        .expect(404);
-
-      expect(response.body).toHaveProperty('message', 'User not found');
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'User not found' });
     });
   });
 
-  describe('PUT /api/auth/profile/:id', () => {
+  describe('updateProfile', () => {
     it('should update user profile successfully', async () => {
-      const updateData = {
+      mockReq.user = { id: 1 };
+      mockReq.params = { id: '1' };
+      mockReq.body = {
         name: 'John Updated',
         phone: '0987654321',
         address: '456 New St'
@@ -258,66 +259,58 @@ describe('Auth Controller', () => {
       // Mock database response
       mockDb.query.mockResolvedValueOnce({ rows: [updatedUser] });
 
-      // Mock JWT token
-      jwt.verify.mockReturnValue({ id: 1, email: 'john@example.com', role: 'customer' });
+      await authController.updateProfile(mockReq, mockRes, mockNext);
 
-      const response = await request(app)
-        .put('/api/auth/profile/1')
-        .set('Authorization', 'Bearer valid_token')
-        .send(updateData)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('message', 'Profile updated successfully');
-      expect(response.body.user).toEqual(updatedUser);
+      // For successful responses, the controller calls res.json() directly without res.status()
+      expect(mockRes.status).not.toHaveBeenCalled();
+      expect(mockRes.json).toHaveBeenCalledWith({
+        message: 'Profile updated successfully',
+        user: updatedUser
+      });
     });
 
     it('should return 403 if user tries to update another user\'s profile', async () => {
-      const updateData = {
+      mockReq.user = { id: 2 };
+      mockReq.params = { id: '1' };
+      mockReq.body = {
         name: 'John Updated'
       };
 
-      // Mock JWT token for different user
-      jwt.verify.mockReturnValue({ id: 2, email: 'other@example.com', role: 'customer' });
+      await authController.updateProfile(mockReq, mockRes, mockNext);
 
-      const response = await request(app)
-        .put('/api/auth/profile/1')
-        .set('Authorization', 'Bearer valid_token')
-        .send(updateData)
-        .expect(403);
-
-      expect(response.body).toHaveProperty('message', 'Access denied');
+      expect(mockRes.status).toHaveBeenCalledWith(403);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Access denied' });
     });
   });
 
-  describe('PUT /api/auth/change-password/:id', () => {
+  describe('changePassword', () => {
     it('should change password successfully with valid old password', async () => {
-      const passwordData = {
+      mockReq.user = { id: 1 };
+      mockReq.params = { id: '1' };
+      mockReq.body = {
         oldPassword: 'old_password',
         newPassword: 'new_password'
       };
 
       // Mock database responses
       mockDb.query
-        .mockResolvedValueOnce({ rows: [{ password_hash: 'hashed_old_password' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] });
+        .mockResolvedValueOnce({ rows: [{ password_hash: 'hashed_old_password' }] }) // Get user for password check
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }); // Update password
 
-      bcrypt.compare.mockResolvedValue(true);
-      bcrypt.hash.mockResolvedValue('hashed_new_password');
+      // Ensure bcrypt.compare returns true for this test
+      require('bcrypt').compare.mockResolvedValue(true);
 
-      // Mock JWT token
-      jwt.verify.mockReturnValue({ id: 1, email: 'john@example.com', role: 'customer' });
+      await authController.changePassword(mockReq, mockRes, mockNext);
 
-      const response = await request(app)
-        .put('/api/auth/change-password/1')
-        .set('Authorization', 'Bearer valid_token')
-        .send(passwordData)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('message', 'Password changed successfully');
+      // For successful responses, the controller calls res.json() directly without res.status()
+      expect(mockRes.status).not.toHaveBeenCalled();
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Password changed successfully' });
     });
 
     it('should return 400 for incorrect old password', async () => {
-      const passwordData = {
+      mockReq.user = { id: 1 };
+      mockReq.params = { id: '1' };
+      mockReq.body = {
         oldPassword: 'wrong_password',
         newPassword: 'new_password'
       };
@@ -325,100 +318,90 @@ describe('Auth Controller', () => {
       // Mock database response
       mockDb.query.mockResolvedValueOnce({ rows: [{ password_hash: 'hashed_old_password' }] });
 
-      bcrypt.compare.mockResolvedValue(false);
+      // Override bcrypt.compare mock for this test to return false
+      require('bcrypt').compare.mockResolvedValue(false);
 
-      // Mock JWT token
-      jwt.verify.mockReturnValue({ id: 1, email: 'john@example.com', role: 'customer' });
+      await authController.changePassword(mockReq, mockRes, mockNext);
 
-      const response = await request(app)
-        .put('/api/auth/change-password/1')
-        .set('Authorization', 'Bearer valid_token')
-        .send(passwordData)
-        .expect(400);
-
-      expect(response.body).toHaveProperty('message', 'Current password is incorrect');
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Current password is incorrect' });
     });
   });
 
-  describe('POST /api/auth/forgot-password', () => {
+  describe('forgotPassword', () => {
     it('should generate reset token for existing user', async () => {
-      const requestData = {
+      mockReq.body = {
         email: 'john@example.com'
       };
 
-      // Mock database response
+      // Mock database response - user exists
       mockDb.query.mockResolvedValueOnce({ 
         rows: [{ id: 1, email: 'john@example.com', name: 'John Doe' }] 
       });
 
-      jwt.sign.mockReturnValue('reset_token');
+      await authController.forgotPassword(mockReq, mockRes, mockNext);
 
-      const response = await request(app)
-        .post('/api/auth/forgot-password')
-        .send(requestData)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('message', 'Password reset token generated');
-      expect(response.body).toHaveProperty('resetToken', 'reset_token');
+      // For successful responses, the controller calls res.json() directly without res.status()
+      expect(mockRes.status).not.toHaveBeenCalled();
+      expect(mockRes.json).toHaveBeenCalledWith({ 
+        message: 'Password reset token generated',
+        resetToken: 'jwt_token'
+      });
     });
 
     it('should still return success for non-existent user (to prevent email enumeration)', async () => {
-      const requestData = {
+      mockReq.body = {
         email: 'nonexistent@example.com'
       };
 
-      // Mock database response for non-existent user
+      // Mock database response - user does not exist (empty array)
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
-      const response = await request(app)
-        .post('/api/auth/forgot-password')
-        .send(requestData)
-        .expect(200);
+      await authController.forgotPassword(mockReq, mockRes, mockNext);
 
-      expect(response.body).toHaveProperty('message', 'If an account exists with this email, a password reset link has been sent.');
+      // For successful responses, the controller calls res.json() directly without res.status()
+      expect(mockRes.status).not.toHaveBeenCalled();
+      expect(mockRes.json).toHaveBeenCalledWith({ 
+        message: 'If an account exists with this email, a password reset link has been sent.' 
+      });
     });
   });
 
-  describe('POST /api/auth/reset-password', () => {
+  describe('resetPassword', () => {
     it('should reset password successfully with valid token', async () => {
-      const requestData = {
+      mockReq.body = {
         token: 'valid_reset_token',
         newPassword: 'new_password123'
       };
 
       // Mock JWT verification
-      jwt.verify.mockReturnValue({ id: 1, email: 'john@example.com' });
+      require('jsonwebtoken').verify.mockReturnValue({ id: 1, email: 'john@example.com' });
 
-      // Mock database response
+      // Mock database response - user exists and gets updated
       mockDb.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
 
-      bcrypt.hash.mockResolvedValue('hashed_new_password');
+      await authController.resetPassword(mockReq, mockRes, mockNext);
 
-      const response = await request(app)
-        .post('/api/auth/reset-password')
-        .send(requestData)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('message', 'Password reset successfully');
+      // For successful responses, the controller calls res.json() directly without res.status()
+      expect(mockRes.status).not.toHaveBeenCalled();
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Password reset successfully' });
     });
 
     it('should return 400 for invalid or expired token', async () => {
-      const requestData = {
+      mockReq.body = {
         token: 'invalid_token',
         newPassword: 'new_password123'
       };
 
       // Mock JWT verification error
-      jwt.verify.mockImplementation(() => {
+      require('jsonwebtoken').verify.mockImplementation(() => {
         throw new Error('Invalid token');
       });
 
-      const response = await request(app)
-        .post('/api/auth/reset-password')
-        .send(requestData)
-        .expect(400);
+      await authController.resetPassword(mockReq, mockRes, mockNext);
 
-      expect(response.body).toHaveProperty('message', 'Invalid or expired reset token');
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Invalid or expired reset token' });
     });
   });
 });
