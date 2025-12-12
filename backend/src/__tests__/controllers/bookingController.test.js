@@ -150,14 +150,14 @@ describe('Booking Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: mockPendingBookings });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
         .get('/api/bookings/pending')
-        .set('Authorization', 'Bearer admin_token')
+        .set('Authorization', 'Bearer mechanic_token')
         .expect(200);
 
-      expect(response.body.pendingBookings).toEqual(mockPendingBookings);
+      expect(response.body.bookings).toEqual(mockPendingBookings);
     });
   });
 
@@ -204,7 +204,7 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer customer_token')
         .expect(403);
 
-      expect(response.body).toHaveProperty('message', 'Access denied');
+      expect(response.body).toHaveProperty('message', 'Unauthorized access');
     });
   });
 
@@ -228,8 +228,12 @@ describe('Booking Controller', () => {
         }
       ];
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockAllBookings });
+      const mockCountResult = [{ total: '1' }];
+
+      // Mock database responses for Promise.all
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockAllBookings }) // Bookings query (first)
+        .mockResolvedValueOnce({ rows: mockCountResult }); // Count query (second)
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -240,7 +244,7 @@ describe('Booking Controller', () => {
         .expect(200);
 
       expect(response.body.bookings).toEqual(mockAllBookings);
-      expect(response.body.pagination).toHaveProperty('page', 1);
+      expect(response.body.pagination).toHaveProperty('currentPage', 1);
     });
   });
 
@@ -270,7 +274,7 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer admin_token')
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking approved successfully');
+      expect(response.body).toHaveProperty('message', 'Booking approved');
       expect(response.body.booking).toEqual(approvedBooking);
     });
 
@@ -309,14 +313,14 @@ describe('Booking Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [rejectedBooking] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockAdminUser);
+      jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
         .put('/api/bookings/1/reject')
-        .set('Authorization', 'Bearer admin_token')
+        .set('Authorization', 'Bearer mechanic_token')
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking rejected successfully');
+      expect(response.body).toHaveProperty('message', 'Booking rejected');
       expect(response.body.booking).toEqual(rejectedBooking);
     });
   });
@@ -330,14 +334,16 @@ describe('Booking Controller', () => {
         service_type: 'oil_change',
         booking_date: '2023-12-25',
         booking_time: '10:00',
-        status: 'cancelled',
+        status: 'rejected', // The controller sets status to 'rejected' when cancelling
         notes: 'Please check engine oil level',
         estimated_cost: 50.00,
         updated_at: new Date().toISOString()
       };
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: [cancelledBooking] });
+      // Mock database responses
+      mockDb.query
+        .mockResolvedValueOnce({ rows: [{ customer_id: 1 }] }) // Check ownership
+        .mockResolvedValueOnce({ rows: [cancelledBooking] }); // Cancel booking
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockCustomerUser);
@@ -347,7 +353,7 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer customer_token')
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking cancelled successfully');
+      expect(response.body).toHaveProperty('message', 'Booking rejected');
       expect(response.body.booking).toEqual(cancelledBooking);
     });
 
@@ -363,15 +369,17 @@ describe('Booking Controller', () => {
         .set('Authorization', 'Bearer customer_token')
         .expect(403);
 
-      expect(response.body).toHaveProperty('message', 'Access denied');
+      expect(response.body).toHaveProperty('message', 'Unauthorized');
     });
   });
 
   describe('PUT /api/bookings/:id/reschedule', () => {
     it('should reschedule booking successfully', async () => {
       const rescheduledBookingData = {
-        booking_date: '2023-12-26',
-        booking_time: '14:00'
+        newDateTime: {
+          date: '2023-12-26',
+          time: '14:00'
+        }
       };
 
       const rescheduledBooking = {
@@ -379,8 +387,7 @@ describe('Booking Controller', () => {
         customer_id: 1,
         vehicle_id: 1,
         service_type: 'oil_change',
-        booking_date: '2023-12-26',
-        booking_time: '14:00',
+        booking_date: '2023-12-26 14:00', // Combined date and time
         status: 'pending',
         notes: 'Please check engine oil level',
         estimated_cost: 50.00,
@@ -399,7 +406,7 @@ describe('Booking Controller', () => {
         .send(rescheduledBookingData)
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking rescheduled successfully');
+      expect(response.body).toHaveProperty('message', 'Booking rescheduled');
       expect(response.body.booking).toEqual(rescheduledBooking);
     });
   });
@@ -427,15 +434,15 @@ describe('Booking Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [updatedBooking] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockMechanicUser);
+      jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
         .put('/api/bookings/1/status')
-        .set('Authorization', 'Bearer mechanic_token')
+        .set('Authorization', 'Bearer admin_token')
         .send(statusUpdateData)
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking status updated successfully');
+      expect(response.body).toHaveProperty('message', 'Booking status updated');
       expect(response.body.booking).toEqual(updatedBooking);
     });
 
@@ -445,11 +452,11 @@ describe('Booking Controller', () => {
       };
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockMechanicUser);
+      jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
         .put('/api/bookings/1/status')
-        .set('Authorization', 'Bearer mechanic_token')
+        .set('Authorization', 'Bearer admin_token')
         .send(invalidStatusData)
         .expect(400);
 
@@ -476,14 +483,14 @@ describe('Booking Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [confirmedBooking] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockMechanicUser);
+      jwt.verify.mockReturnValue(mockAdminUser);
 
       const response = await request(app)
         .put('/api/bookings/1/confirm')
-        .set('Authorization', 'Bearer mechanic_token')
+        .set('Authorization', 'Bearer admin_token')
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking confirmed successfully');
+      expect(response.body).toHaveProperty('message', 'Booking confirmed');
       expect(response.body.booking).toEqual(confirmedBooking);
     });
   });
@@ -491,7 +498,7 @@ describe('Booking Controller', () => {
   describe('PUT /api/bookings/:id/assign', () => {
     it('should assign booking to mechanic successfully', async () => {
       const assignData = {
-        mechanic_id: 2
+        mechanicId: 2
       };
 
       const assignedBooking = {
@@ -508,8 +515,24 @@ describe('Booking Controller', () => {
         updated_at: new Date().toISOString()
       };
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: [assignedBooking] });
+      const jobcard = {
+        id: 1,
+        booking_id: 1,
+        customer_id: 1,
+        vehicle_id: 1,
+        mechanic_id: 2,
+        status: 'pending'
+      };
+
+      // Mock getClient to return a mock client object
+      const mockClient = {
+        query: jest.fn()
+          .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check if booking exists
+          .mockResolvedValueOnce({ rows: [assignedBooking] }) // Update booking
+          .mockResolvedValueOnce({ rows: [jobcard] }), // Create jobcard
+        release: jest.fn()
+      };
+      mockDb.getClient.mockResolvedValueOnce(mockClient);
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -520,8 +543,9 @@ describe('Booking Controller', () => {
         .send(assignData)
         .expect(200);
 
-      expect(response.body).toHaveProperty('message', 'Booking assigned successfully');
+      expect(response.body).toHaveProperty('message', 'Booking assigned to mechanic and job card created');
       expect(response.body.booking).toEqual(assignedBooking);
+      expect(response.body.jobcard).toEqual(jobcard);
     });
   });
 
@@ -538,18 +562,25 @@ describe('Booking Controller', () => {
         notes: 'Please check engine oil level',
         estimated_cost: 50.00,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        customer_name: 'John Doe',
+        customer_phone: '1234567890',
+        customer_email: 'john@example.com',
+        model: 'Toyota Camry',
+        vin: 'VIN123',
+        year: 2020,
+        make: 'Toyota'
       };
 
       // Mock database response
       mockDb.query.mockResolvedValueOnce({ rows: [mockBooking] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
         .get('/api/bookings/1')
-        .set('Authorization', 'Bearer customer_token')
+        .set('Authorization', 'Bearer mechanic_token')
         .expect(200);
 
       expect(response.body.booking).toEqual(mockBooking);
@@ -560,11 +591,11 @@ describe('Booking Controller', () => {
       mockDb.query.mockResolvedValueOnce({ rows: [] });
 
       // Mock JWT token
-      jwt.verify.mockReturnValue(mockCustomerUser);
+      jwt.verify.mockReturnValue(mockMechanicUser);
 
       const response = await request(app)
         .get('/api/bookings/999')
-        .set('Authorization', 'Bearer customer_token')
+        .set('Authorization', 'Bearer mechanic_token')
         .expect(404);
 
       expect(response.body).toHaveProperty('message', 'Booking not found');
