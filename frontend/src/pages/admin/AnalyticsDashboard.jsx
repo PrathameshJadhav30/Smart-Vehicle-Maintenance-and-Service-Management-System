@@ -19,6 +19,14 @@ const AnalyticsDashboardPage = () => {
   const [mechanicPerformance, setMechanicPerformance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Add state for filters
+  const [filters, setFilters] = useState({
+    revenueStartDate: '',
+    revenueEndDate: '',
+    mechanicStartDate: '',
+    mechanicEndDate: ''
+  });
 
   useEffect(() => {
     loadAllData();
@@ -52,7 +60,7 @@ const AnalyticsDashboardPage = () => {
       window.removeEventListener('invoiceCreated', handleInvoiceCreated);
       clearInterval(pollingInterval);
     };
-  }, []);
+  }, [filters]); // Add filters as dependency so data reloads when filters change
 
   const loadAllData = async () => {
     try {
@@ -66,8 +74,18 @@ const AnalyticsDashboardPage = () => {
       const statsPromise = analyticsService.getDashboardStats();
       const vehicleDataPromise = analyticsService.getVehicleAnalytics();
       const partsDataPromise = analyticsService.getPartsUsageAnalytics();
-      const revenueDataPromise = analyticsService.getRevenueAnalytics();
-      const mechanicDataPromise = analyticsService.getMechanicPerformance();
+      
+      // Load revenue data with filters
+      const revenueParams = {};
+      if (filters.revenueStartDate) revenueParams.startDate = filters.revenueStartDate;
+      if (filters.revenueEndDate) revenueParams.endDate = filters.revenueEndDate;
+      const revenueDataPromise = analyticsService.getRevenueAnalytics(revenueParams);
+      
+      // Load mechanic performance data with filters
+      const mechanicParams = {};
+      if (filters.mechanicStartDate) mechanicParams.from = filters.mechanicStartDate;
+      if (filters.mechanicEndDate) mechanicParams.to = filters.mechanicEndDate;
+      const mechanicDataPromise = analyticsService.getMechanicPerformance(mechanicParams);
       
       // Load all data with timeout
       const [stats, vehicleData, partsData, revenueData, mechanicData] = await Promise.race([
@@ -158,6 +176,29 @@ const AnalyticsDashboardPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (filterName, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: value
+    }));
+  };
+
+  // Apply filters
+  const applyFilters = () => {
+    loadAllData();
+  };
+
+  // Reset filters
+  const resetFilters = () => {
+    setFilters({
+      revenueStartDate: '',
+      revenueEndDate: '',
+      mechanicStartDate: '',
+      mechanicEndDate: ''
+    });
   };
 
   if (loading) {
@@ -456,10 +497,47 @@ const AnalyticsDashboardPage = () => {
             </div>
           </div>
           
-          {/* Revenue Analytics Chart */}
+          {/* Revenue Analytics Chart with Filters */}
           <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
             <div className="px-6 py-5 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Revenue Analytics</h3>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Revenue Analytics</h3>
+                {/* Revenue Filters */}
+                <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col">
+                    <label className="text-xs font-medium text-gray-500 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={filters.revenueStartDate}
+                      onChange={(e) => handleFilterChange('revenueStartDate', e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-xs font-medium text-gray-500 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={filters.revenueEndDate}
+                      onChange={(e) => handleFilterChange('revenueEndDate', e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      onClick={applyFilters}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm"
+                    >
+                      Apply
+                    </button>
+                    <button
+                      onClick={resetFilters}
+                      className="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="p-6">
               {revenueStats.length > 0 ? (
@@ -509,10 +587,47 @@ const AnalyticsDashboardPage = () => {
             </div>
           </div>
           
-          {/* Mechanic Performance */}
+          {/* Mechanic Performance with Filters */}
           <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
             <div className="px-6 py-5 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Mechanic Performance</h3>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Mechanic Performance</h3>
+                {/* Mechanic Performance Filters */}
+                <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col">
+                    <label className="text-xs font-medium text-gray-500 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={filters.mechanicStartDate}
+                      onChange={(e) => handleFilterChange('mechanicStartDate', e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-xs font-medium text-gray-500 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={filters.mechanicEndDate}
+                      onChange={(e) => handleFilterChange('mechanicEndDate', e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      onClick={applyFilters}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm"
+                    >
+                      Apply
+                    </button>
+                    <button
+                      onClick={resetFilters}
+                      className="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="p-6">
               {mechanicPerformance.length > 0 ? (

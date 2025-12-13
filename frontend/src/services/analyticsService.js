@@ -25,10 +25,11 @@ export const getPartsUsageAnalytics = async () => {
 
 /**
  * Get revenue analytics (Admin only)
+ * @param {Object} params - Query parameters for filtering
  * @returns {Promise<Object>} Revenue analytics data
  */
-export const getRevenueAnalytics = async () => {
-  const response = await api.get('/analytics/revenue');
+export const getRevenueAnalytics = async (params = {}) => {
+  const response = await api.get('/analytics/revenue', { params });
   return response.data;
 };
 
@@ -43,10 +44,11 @@ export const getDashboardStats = async () => {
 
 /**
  * Get mechanic performance metrics (Admin/Mechanic)
+ * @param {Object} params - Query parameters for filtering
  * @returns {Promise<Object>} Mechanic performance data
  */
-export const getMechanicPerformance = async () => {
-  const response = await api.get('/analytics/mechanic-performance');
+export const getMechanicPerformance = async (params = {}) => {
+  const response = await api.get('/analytics/mechanic-performance', { params });
   return response.data;
 };
 

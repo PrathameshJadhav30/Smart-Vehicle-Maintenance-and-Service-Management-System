@@ -15,6 +15,7 @@ const JobCardsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [jobCards, setJobCards] = useState([]);
+  const [filteredJobCards, setFilteredJobCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -23,6 +24,7 @@ const JobCardsPage = () => {
   const [users, setUsers] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [parts, setParts] = useState([]);
+  const [filterStatus, setFilterStatus] = useState('all'); // Add status filter state
   
   const [updateData, setUpdateData] = useState({
     status: '',
@@ -154,6 +156,15 @@ const JobCardsPage = () => {
       setLoading(false);
     }
   };
+
+  // Add useEffect to filter job cards when filterStatus or jobCards change
+  useEffect(() => {
+    if (filterStatus === 'all') {
+      setFilteredJobCards(jobCards);
+    } else {
+      setFilteredJobCards(jobCards.filter(card => card.status === filterStatus));
+    }
+  }, [jobCards, filterStatus]);
 
   const loadDropdownData = async () => {
     try {
@@ -535,10 +546,28 @@ const JobCardsPage = () => {
                 <h2 className="text-xl font-semibold text-gray-900">Job Card Management</h2>
                 <p className="mt-1 text-gray-600">View and update job cards assigned to you</p>
               </div>
+              {/* Add filter dropdown */}
+              <div className="mt-4 md:mt-0">
+                <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Filter by Status
+                </label>
+                <select
+                  id="status-filter"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
             </div>
           </div>
           
-          {jobCards.length === 0 ? (
+          {filteredJobCards.length === 0 ? (
             <div className="text-center py-16">
               <div className="flex justify-center mb-6">
                 <div className="bg-gray-100 rounded-full p-4 inline-flex">
@@ -549,7 +578,9 @@ const JobCardsPage = () => {
               </div>
               <h3 className="text-xl font-medium text-gray-900 mb-2">No job cards found</h3>
               <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                You don't have any assigned job cards right now. New job cards will appear here once they are assigned to you by the admin.
+                {filterStatus === 'all' 
+                  ? "You don't have any assigned job cards right now. New job cards will appear here once they are assigned to you by the admin."
+                  : `You don't have any job cards with status "${filterStatus.replace('_', ' ')}". Try changing the filter.`}
               </p>
               <div className="flex justify-center">
                 <Button
@@ -596,7 +627,7 @@ const JobCardsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {jobCards.map((jobCard) => (
+                  {filteredJobCards.map((jobCard) => (
                     <tr key={jobCard.id} className="hover:bg-gray-50 transition-colors duration-150">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
