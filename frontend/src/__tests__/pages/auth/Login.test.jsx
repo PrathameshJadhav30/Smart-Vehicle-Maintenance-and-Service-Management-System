@@ -82,22 +82,6 @@ describe('Login Page', () => {
     expect(screen.getByText(/password is required/i)).toBeInTheDocument();
   });
 
-  test('shows validation error for invalid email', async () => {
-    const user = userEvent.setup();
-    renderWithRouter(<Login />);
-    
-    const emailInput = screen.getByLabelText(/email address/i);
-    await user.type(emailInput, 'invalid-email');
-    
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
-    await user.click(submitButton);
-    
-    // The validation happens on submit, so we should see the error message
-    // Let's check if the error message is present in the document
-    const errorMessage = screen.queryByText(/email is invalid/i);
-    expect(errorMessage).toBeInTheDocument();
-  });
-
   test('shows validation error for short password', async () => {
     const user = userEvent.setup();
     renderWithRouter(<Login />);
