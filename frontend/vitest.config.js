@@ -8,7 +8,16 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.js'],
     globals: true,
     alias: {
-      'jsdom': 'jsdom/dist/jsdom.cjs'
+      '@': './src'
+    },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html']
     }
   },
+  resolve: {
+    alias: {
+      '@': './src'
+    }
+  }
 })
