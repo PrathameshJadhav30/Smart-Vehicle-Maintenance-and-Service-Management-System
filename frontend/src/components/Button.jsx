@@ -11,23 +11,23 @@ const Button = ({
   className = '',
   ...props
 }) => {
-  // Variant styles
+  // Variant styles with enhanced colors and transitions
   const variantStyles = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white border-transparent',
-    secondary: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50',
-    outline: 'bg-transparent border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white',
-    ghost: 'bg-transparent text-blue-600 hover:bg-gray-100',
-    danger: 'bg-red-500 hover:bg-red-600 text-white border-transparent',
-    success: 'bg-green-600 hover:bg-green-700 text-white border-transparent',
-    warning: 'bg-amber-500 hover:bg-amber-600 text-white border-transparent',
-    info: 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent',
+    primary: 'bg-primary hover:bg-blue-700 text-white border-transparent shadow-md hover:shadow-lg',
+    secondary: 'bg-secondary hover:bg-teal-700 text-white border-transparent shadow-md hover:shadow-lg',
+    outline: 'bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-md hover:shadow-lg',
+    ghost: 'bg-transparent text-primary hover:bg-blue-50',
+    danger: 'bg-red-500 hover:bg-red-600 text-white border-transparent shadow-md hover:shadow-lg',
+    success: 'bg-green-500 hover:bg-green-600 text-white border-transparent shadow-md hover:shadow-lg',
+    warning: 'bg-amber-500 hover:bg-amber-600 text-white border-transparent shadow-md hover:shadow-lg',
+    info: 'bg-indigo-500 hover:bg-indigo-600 text-white border-transparent shadow-md hover:shadow-lg',
   };
 
-  // Size styles
+  // Enhanced size styles with better padding and responsive adjustments
   const sizeStyles = {
-    sm: 'px-2.5 py-1.5 text-xs',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
+    sm: 'px-3 py-1.5 text-xs md:px-3.5 md:py-1.5',
+    md: 'px-4.5 py-2.5 text-sm md:px-5 md:py-3',
+    lg: 'px-6 py-3.5 text-base md:px-7 md:py-4',
   };
 
   // Disabled styles
@@ -46,9 +46,10 @@ const Button = ({
       type={type}
       className={`
         inline-flex items-center justify-center
-        font-medium rounded-md
-        transition-all duration-200 ease-in-out
-        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+        font-medium rounded-lg
+        transition-all duration-300 ease-in-out transform
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary
+        active:scale-95
         ${variantStyles[variant]}
         ${sizeStyles[size]}
         ${disabledStyles}
