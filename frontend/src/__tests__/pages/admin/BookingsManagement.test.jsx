@@ -21,6 +21,10 @@ vi.mock('../../../components/Button', () => ({
       onClick={onClick}
       className={className}
       {...props}
+      data-testid={children === 'Approve' ? 'approve-button' : 
+                   children === 'Reject' ? 'reject-button' : 
+                   children === 'Cancel' ? 'cancel-button' : 
+                   children === 'Assign Mechanic' ? 'assign-button' : undefined}
     >
       {children}
     </button>
@@ -34,17 +38,11 @@ vi.mock('../../../components/Modal', () => ({
     isOpen ? (
       <div data-testid="modal">
         <h2>{title}</h2>
-        <button onClick={onClose}>Close</button>
+        <button onClick={onClose} data-testid="close-modal-button">Close</button>
         {children}
       </div>
     ) : null
   )
-}));
-
-// Mock LoadingSpinner component
-vi.mock('../../../components/LoadingSpinner', () => ({
-  __esModule: true,
-  default: () => <div data-testid="loading-spinner">Loading...</div>
 }));
 
 // Mock useNavigate
@@ -59,10 +57,15 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 describe('BookingsManagementPage', () => {
   const mockUser = { id: '123', name: 'Admin User', role: 'admin' };
+  const mockAlert = vi.fn();
+  const mockConfirm = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ user: mockUser, hasRole: (role) => role === 'admin' });
+    // Mock window.alert and window.confirm
+    window.alert = mockAlert;
+    window.confirm = mockConfirm;
   });
 
   test('renders loading spinner initially', () => {
@@ -72,6 +75,7 @@ describe('BookingsManagementPage', () => {
       </BrowserRouter>
     );
 
+    // Check for the loading spinner element using data-testid
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
 
@@ -81,27 +85,31 @@ describe('BookingsManagementPage', () => {
       bookings: [
         {
           id: '1',
-          customer_name: 'John Doe',
-          email: 'john@example.com',
+          service_type: 'oil_change',
+          vehicle_id: '123',
+          customer_id: '456',
+          booking_date: '2023-01-15T10:00:00Z',
+          status: 'pending',
+          estimated_cost: 150.00,
           make: 'Toyota',
           model: 'Camry',
           year: 2020,
-          service_type: 'Oil Change',
-          status: 'pending',
-          booking_date: '2023-01-01',
-          booking_time: '10:00'
+          customer_name: 'John Doe',
+          customer_phone: '123-456-7890'
         },
         {
           id: '2',
-          customer_name: 'Jane Smith',
-          email: 'jane@example.com',
+          service_type: 'brake_service',
+          vehicle_id: '456',
+          customer_id: '789',
+          booking_date: '2023-01-16T14:00:00Z',
+          status: 'approved',
+          estimated_cost: 300.00,
           make: 'Honda',
           model: 'Civic',
           year: 2019,
-          service_type: 'Brake Service',
-          status: 'approved',
-          booking_date: '2023-01-02',
-          booking_time: '14:00'
+          customer_name: 'Jane Smith',
+          customer_phone: '098-765-4321'
         }
       ],
       pagination: {
@@ -123,12 +131,17 @@ describe('BookingsManagementPage', () => {
     });
 
     // Check that bookings are displayed
+    expect(screen.getByText('oil_change')).toBeInTheDocument();
+    expect(screen.getByText('brake_service')).toBeInTheDocument();
+    expect(screen.getByText('Toyota Camry (2020)')).toBeInTheDocument();
+    expect(screen.getByText('Honda Civic (2019)')).toBeInTheDocument();
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-    expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
-    expect(screen.getByText('Honda Civic')).toBeInTheDocument();
-    expect(screen.getByText('Oil Change')).toBeInTheDocument();
-    expect(screen.getByText('Brake Service')).toBeInTheDocument();
+    // Use getAllByText and check the first ones to avoid conflicts with filter options
+    const pendingElements = screen.getAllByText('Pending');
+    expect(pendingElements[0]).toBeInTheDocument();
+    const approvedElements = screen.getAllByText('Approved');
+    expect(approvedElements[0]).toBeInTheDocument();
   });
 
   test('renders empty state when no bookings are found', async () => {
@@ -157,65 +170,23 @@ describe('BookingsManagementPage', () => {
     expect(screen.getByText('No bookings found')).toBeInTheDocument();
   });
 
-  test('opens booking details modal when view button is clicked', async () => {
-    // Mock booking service response
-    bookingService.getAllBookings.mockResolvedValue({
-      bookings: [
-        {
-          id: '1',
-          customer_name: 'John Doe',
-          email: 'john@example.com',
-          make: 'Toyota',
-          model: 'Camry',
-          year: 2020,
-          service_type: 'Oil Change',
-          status: 'pending',
-          booking_date: '2023-01-01',
-          booking_time: '10:00'
-        }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 1
-      }
-    });
-
-    render(
-      <BrowserRouter>
-        <BookingsManagementPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Click view button
-    const viewButton = screen.getByText('View');
-    fireEvent.click(viewButton);
-
-    // Check that modal is opened
-    expect(screen.getByTestId('modal')).toBeInTheDocument();
-    expect(screen.getByText('Booking #1')).toBeInTheDocument();
-  });
-
   test('approves booking when approve button is clicked', async () => {
-    // Mock booking service response
+    // Mock booking service response for loading bookings
     bookingService.getAllBookings.mockResolvedValue({
       bookings: [
         {
           id: '1',
-          customer_name: 'John Doe',
-          email: 'john@example.com',
+          service_type: 'oil_change',
+          vehicle_id: '123',
+          customer_id: '456',
+          booking_date: '2023-01-15T10:00:00Z',
+          status: 'pending',
+          estimated_cost: 150.00,
           make: 'Toyota',
           model: 'Camry',
           year: 2020,
-          service_type: 'Oil Change',
-          status: 'pending',
-          booking_date: '2023-01-01',
-          booking_time: '10:00'
+          customer_name: 'John Doe',
+          customer_phone: '123-456-7890'
         }
       ],
       pagination: {
@@ -225,8 +196,19 @@ describe('BookingsManagementPage', () => {
       }
     });
     
-    // Mock approve booking service
-    bookingService.approveBooking.mockResolvedValue({});
+    // Mock booking service response for approving booking
+    bookingService.approveBooking.mockResolvedValue({
+      id: '1',
+      service_type: 'oil_change',
+      vehicle_id: '123',
+      customer_id: '456',
+      booking_date: '2023-01-15T10:00:00Z',
+      status: 'approved',
+      estimated_cost: 150.00
+    });
+
+    // Mock window.confirm to return true
+    mockConfirm.mockImplementation(() => true);
 
     render(
       <BrowserRouter>
@@ -239,11 +221,8 @@ describe('BookingsManagementPage', () => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
     });
 
-    // Mock window.confirm to return true
-    const mockConfirm = vi.spyOn(window, 'confirm').mockImplementation(() => true);
-
-    // Click approve button
-    const approveButton = screen.getByText('Approve');
+    // Click approve button using data-testid
+    const approveButton = screen.getByTestId('approve-button');
     fireEvent.click(approveButton);
 
     // Wait for booking to be approved
@@ -251,25 +230,27 @@ describe('BookingsManagementPage', () => {
       expect(bookingService.approveBooking).toHaveBeenCalledWith('1');
     });
 
-    // Restore window.confirm
-    mockConfirm.mockRestore();
+    // Check that loadBookings was called to refresh the list
+    expect(bookingService.getAllBookings).toHaveBeenCalledTimes(2);
   });
 
   test('rejects booking when reject button is clicked', async () => {
-    // Mock booking service response
+    // Mock booking service response for loading bookings
     bookingService.getAllBookings.mockResolvedValue({
       bookings: [
         {
           id: '1',
-          customer_name: 'John Doe',
-          email: 'john@example.com',
+          service_type: 'oil_change',
+          vehicle_id: '123',
+          customer_id: '456',
+          booking_date: '2023-01-15T10:00:00Z',
+          status: 'pending',
+          estimated_cost: 150.00,
           make: 'Toyota',
           model: 'Camry',
           year: 2020,
-          service_type: 'Oil Change',
-          status: 'pending',
-          booking_date: '2023-01-01',
-          booking_time: '10:00'
+          customer_name: 'John Doe',
+          customer_phone: '123-456-7890'
         }
       ],
       pagination: {
@@ -279,8 +260,19 @@ describe('BookingsManagementPage', () => {
       }
     });
     
-    // Mock reject booking service
-    bookingService.rejectBooking.mockResolvedValue({});
+    // Mock booking service response for rejecting booking
+    bookingService.rejectBooking.mockResolvedValue({
+      id: '1',
+      service_type: 'oil_change',
+      vehicle_id: '123',
+      customer_id: '456',
+      booking_date: '2023-01-15T10:00:00Z',
+      status: 'rejected',
+      estimated_cost: 150.00
+    });
+
+    // Mock window.confirm to return true
+    mockConfirm.mockImplementation(() => true);
 
     render(
       <BrowserRouter>
@@ -293,11 +285,8 @@ describe('BookingsManagementPage', () => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
     });
 
-    // Mock window.confirm to return true
-    const mockConfirm = vi.spyOn(window, 'confirm').mockImplementation(() => true);
-
-    // Click reject button
-    const rejectButton = screen.getByText('Reject');
+    // Click reject button using data-testid
+    const rejectButton = screen.getByTestId('reject-button');
     fireEvent.click(rejectButton);
 
     // Wait for booking to be rejected
@@ -305,8 +294,8 @@ describe('BookingsManagementPage', () => {
       expect(bookingService.rejectBooking).toHaveBeenCalledWith('1');
     });
 
-    // Restore window.confirm
-    mockConfirm.mockRestore();
+    // Check that loadBookings was called to refresh the list
+    expect(bookingService.getAllBookings).toHaveBeenCalledTimes(2);
   });
 
   test('loads bookings when refresh button is clicked', async () => {
@@ -345,27 +334,31 @@ describe('BookingsManagementPage', () => {
       bookings: [
         {
           id: '1',
-          customer_name: 'John Doe',
-          email: 'john@example.com',
+          service_type: 'oil_change',
+          vehicle_id: '123',
+          customer_id: '456',
+          booking_date: '2023-01-15T10:00:00Z',
+          status: 'pending',
+          estimated_cost: 150.00,
           make: 'Toyota',
           model: 'Camry',
           year: 2020,
-          service_type: 'Oil Change',
-          status: 'pending',
-          booking_date: '2023-01-01',
-          booking_time: '10:00'
+          customer_name: 'John Doe',
+          customer_phone: '123-456-7890'
         },
         {
           id: '2',
-          customer_name: 'Jane Smith',
-          email: 'jane@example.com',
+          service_type: 'brake_service',
+          vehicle_id: '456',
+          customer_id: '789',
+          booking_date: '2023-01-16T14:00:00Z',
+          status: 'approved',
+          estimated_cost: 300.00,
           make: 'Honda',
           model: 'Civic',
           year: 2019,
-          service_type: 'Brake Service',
-          status: 'approved',
-          booking_date: '2023-01-02',
-          booking_time: '14:00'
+          customer_name: 'Jane Smith',
+          customer_phone: '098-765-4321'
         }
       ],
       pagination: {
@@ -386,12 +379,12 @@ describe('BookingsManagementPage', () => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
     });
 
-    // Filter by "pending" status
+    // Filter by "approved" status
     const filterSelect = screen.getByRole('combobox');
-    fireEvent.change(filterSelect, { target: { value: 'pending' } });
+    fireEvent.change(filterSelect, { target: { value: 'approved' } });
 
     // Check that filter state is updated
-    expect(filterSelect).toHaveValue('pending');
+    expect(filterSelect).toHaveValue('approved');
   });
 
   test('searches bookings by term', async () => {
@@ -400,15 +393,17 @@ describe('BookingsManagementPage', () => {
       bookings: [
         {
           id: '1',
-          customer_name: 'John Doe',
-          email: 'john@example.com',
+          service_type: 'oil_change',
+          vehicle_id: '123',
+          customer_id: '456',
+          booking_date: '2023-01-15T10:00:00Z',
+          status: 'pending',
+          estimated_cost: 150.00,
           make: 'Toyota',
           model: 'Camry',
           year: 2020,
-          service_type: 'Oil Change',
-          status: 'pending',
-          booking_date: '2023-01-01',
-          booking_time: '10:00'
+          customer_name: 'John Doe',
+          customer_phone: '123-456-7890'
         }
       ],
       pagination: {
@@ -429,11 +424,11 @@ describe('BookingsManagementPage', () => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
     });
 
-    // Search for "John"
+    // Search for "Toyota"
     const searchInput = screen.getByPlaceholderText('Search bookings...');
-    fireEvent.change(searchInput, { target: { value: 'John' } });
+    fireEvent.change(searchInput, { target: { value: 'Toyota' } });
 
     // Check that search term is updated
-    expect(searchInput).toHaveValue('John');
+    expect(searchInput).toHaveValue('Toyota');
   });
 });

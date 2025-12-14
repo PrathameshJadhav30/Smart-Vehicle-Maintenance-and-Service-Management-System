@@ -35,13 +35,16 @@ vi.mock('../../../components/LoadingSpinner', () => ({
 
 describe('UtilitiesPage', () => {
   const mockUser = { id: '123', name: 'Admin User', role: 'admin' };
+  const mockAlert = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ user: mockUser, hasRole: (role) => role === 'admin' });
+    // Mock window.alert
+    window.alert = mockAlert;
   });
 
-  test('renders utilities page with backup and restore options', () => {
+  test('renders utilities page with health check and seeding options', () => {
     render(
       <BrowserRouter>
         <UtilitiesPage />
@@ -51,20 +54,21 @@ describe('UtilitiesPage', () => {
     // Check that the page title is displayed
     expect(screen.getByText('System Utilities')).toBeInTheDocument();
     
-    // Check that backup section is displayed
-    expect(screen.getByText('Database Backup')).toBeInTheDocument();
-    expect(screen.getByText('Create a backup of the entire database')).toBeInTheDocument();
+    // Check that health check section is displayed
+    expect(screen.getByText('Health Check')).toBeInTheDocument();
+    expect(screen.getByText('Check the current status of the API and database connectivity.')).toBeInTheDocument();
     
-    // Check that restore section is displayed
-    expect(screen.getByText('Database Restore')).toBeInTheDocument();
-    expect(screen.getByText('Restore database from a backup file')).toBeInTheDocument();
+    // Check that database seeding section is displayed
+    expect(screen.getByText('Database Seeding')).toBeInTheDocument();
+    expect(screen.getByText('Populate the database with sample data for testing and demonstration purposes.')).toBeInTheDocument();
   });
 
-  test('initiates database backup when backup button is clicked', async () => {
+  test('checks health status when health check button is clicked', async () => {
     // Mock utility service response
-    utilityService.backupDatabase.mockResolvedValue({
-      message: 'Backup created successfully',
-      filename: 'backup_20230101.sql'
+    utilityService.getHealthStatus.mockResolvedValue({
+      status: 'ok',
+      message: 'All systems operational',
+      timestamp: '2023-01-01T10:00:00Z'
     });
 
     render(
@@ -73,22 +77,23 @@ describe('UtilitiesPage', () => {
       </BrowserRouter>
     );
 
-    // Click backup button
-    const backupButton = screen.getByText('Backup Database');
-    fireEvent.click(backupButton);
+    // Click health check button
+    const healthCheckButton = screen.getByText('Check Health');
+    fireEvent.click(healthCheckButton);
 
-    // Wait for the backup to complete
+    // Wait for the health check to complete
     await waitFor(() => {
-      expect(utilityService.backupDatabase).toHaveBeenCalled();
+      expect(utilityService.getHealthStatus).toHaveBeenCalled();
     });
 
-    // Check that success message is displayed
-    expect(screen.getByText('Backup created successfully')).toBeInTheDocument();
+    // Check that health status is displayed
+    expect(screen.getByText('Status: ok')).toBeInTheDocument();
+    expect(screen.getByText('All systems operational')).toBeInTheDocument();
   });
 
-  test('shows error message when backup fails', async () => {
+  test('shows error message when health check fails', async () => {
     // Mock utility service failure
-    utilityService.backupDatabase.mockRejectedValue(new Error('Backup failed'));
+    utilityService.getHealthStatus.mockRejectedValue(new Error('Health check failed'));
 
     render(
       <BrowserRouter>
@@ -96,44 +101,28 @@ describe('UtilitiesPage', () => {
       </BrowserRouter>
     );
 
-    // Click backup button
-    const backupButton = screen.getByText('Backup Database');
-    fireEvent.click(backupButton);
+    // Click health check button
+    const healthCheckButton = screen.getByText('Check Health');
+    fireEvent.click(healthCheckButton);
 
     // Wait for the error to be handled
     await waitFor(() => {
-      expect(utilityService.backupDatabase).toHaveBeenCalled();
+      expect(utilityService.getHealthStatus).toHaveBeenCalled();
     });
 
     // Check that error message is displayed
-    expect(screen.getByText('Backup failed')).toBeInTheDocument();
+    expect(screen.getByText('Status: error')).toBeInTheDocument();
+    expect(screen.getByText('Failed to check health status')).toBeInTheDocument();
   });
 
-  test('handles file selection for database restore', () => {
-    render(
-      <BrowserRouter>
-        <UtilitiesPage />
-      </BrowserRouter>
-    );
+  test('seeds database when seed button is clicked and confirmed', async () => {
+    // Mock window.confirm to return true
+    const mockConfirm = vi.fn(() => true);
+    window.confirm = mockConfirm;
 
-    // Get the file input element
-    const fileInput = screen.getByLabelText('Choose backup file');
-    
-    // Create a mock file
-    const file = new File(['backup content'], 'backup.sql', { type: 'application/sql' });
-    
-    // Simulate file selection
-    fireEvent.change(fileInput, { target: { files: [file] } });
-
-    // Check that file is selected
-    expect(fileInput.files[0]).toBe(file);
-    expect(fileInput.files).toHaveLength(1);
-  });
-
-  test('initiates database restore when restore button is clicked with a file selected', async () => {
     // Mock utility service response
-    utilityService.restoreDatabase.mockResolvedValue({
-      message: 'Database restored successfully'
+    utilityService.seedDatabase.mockResolvedValue({
+      message: 'Database seeded successfully!'
     });
 
     render(
@@ -142,52 +131,51 @@ describe('UtilitiesPage', () => {
       </BrowserRouter>
     );
 
-    // Get the file input element
-    const fileInput = screen.getByLabelText('Choose backup file');
-    
-    // Create a mock file
-    const file = new File(['backup content'], 'backup.sql', { type: 'application/sql' });
-    
-    // Simulate file selection
-    fireEvent.change(fileInput, { target: { files: [file] } });
+    // Click seed database button
+    const seedButton = screen.getByText('Seed Database');
+    fireEvent.click(seedButton);
 
-    // Click restore button
-    const restoreButton = screen.getByText('Restore Database');
-    fireEvent.click(restoreButton);
-
-    // Wait for the restore to complete
+    // Wait for the seeding to complete
     await waitFor(() => {
-      expect(utilityService.restoreDatabase).toHaveBeenCalled();
+      expect(utilityService.seedDatabase).toHaveBeenCalled();
     });
 
     // Check that success message is displayed
-    expect(screen.getByText('Database restored successfully')).toBeInTheDocument();
+    expect(screen.getByText('Database seeded successfully!')).toBeInTheDocument();
+
+    // Restore window.confirm
+    mockConfirm.mockRestore();
   });
 
-  test('shows error when trying to restore without selecting a file', () => {
+  test('does not seed database when seed button is clicked and not confirmed', async () => {
+    // Mock window.confirm to return false
+    const mockConfirm = vi.fn(() => false);
+    window.confirm = mockConfirm;
+
     render(
       <BrowserRouter>
         <UtilitiesPage />
       </BrowserRouter>
     );
 
-    // Mock window.alert to prevent actual alert
-    const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    // Click seed database button
+    const seedButton = screen.getByText('Seed Database');
+    fireEvent.click(seedButton);
 
-    // Click restore button without selecting a file
-    const restoreButton = screen.getByText('Restore Database');
-    fireEvent.click(restoreButton);
+    // Check that seedDatabase was not called
+    expect(utilityService.seedDatabase).not.toHaveBeenCalled();
 
-    // Check that alert was called with the correct message
-    expect(mockAlert).toHaveBeenCalledWith('Please select a backup file to restore');
-
-    // Restore window.alert
-    mockAlert.mockRestore();
+    // Restore window.confirm
+    mockConfirm.mockRestore();
   });
 
-  test('shows error message when restore fails', async () => {
+  test('shows error message when seeding fails', async () => {
+    // Mock window.confirm to return true
+    const mockConfirm = vi.fn(() => true);
+    window.confirm = mockConfirm;
+
     // Mock utility service failure
-    utilityService.restoreDatabase.mockRejectedValue(new Error('Restore failed'));
+    utilityService.seedDatabase.mockRejectedValue(new Error('Seeding failed'));
 
     render(
       <BrowserRouter>
@@ -195,25 +183,19 @@ describe('UtilitiesPage', () => {
       </BrowserRouter>
     );
 
-    // Get the file input element
-    const fileInput = screen.getByLabelText('Choose backup file');
-    
-    // Create a mock file
-    const file = new File(['backup content'], 'backup.sql', { type: 'application/sql' });
-    
-    // Simulate file selection
-    fireEvent.change(fileInput, { target: { files: [file] } });
-
-    // Click restore button
-    const restoreButton = screen.getByText('Restore Database');
-    fireEvent.click(restoreButton);
+    // Click seed database button
+    const seedButton = screen.getByText('Seed Database');
+    fireEvent.click(seedButton);
 
     // Wait for the error to be handled
     await waitFor(() => {
-      expect(utilityService.restoreDatabase).toHaveBeenCalled();
+      expect(utilityService.seedDatabase).toHaveBeenCalled();
     });
 
     // Check that error message is displayed
-    expect(screen.getByText('Restore failed')).toBeInTheDocument();
+    expect(screen.getByText('Failed to seed database. Check console for details.')).toBeInTheDocument();
+
+    // Restore window.confirm
+    mockConfirm.mockRestore();
   });
 });

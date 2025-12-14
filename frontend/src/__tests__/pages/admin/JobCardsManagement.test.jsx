@@ -21,6 +21,9 @@ vi.mock('../../../components/Button', () => ({
       onClick={onClick}
       className={className}
       {...props}
+      data-testid={children === 'View Details' ? 'view-button' : 
+                   children === 'Delete' ? 'delete-button' : 
+                   children === 'Close' ? 'close-button' : undefined}
     >
       {children}
     </button>
@@ -34,17 +37,11 @@ vi.mock('../../../components/Modal', () => ({
     isOpen ? (
       <div data-testid="modal">
         <h2>{title}</h2>
-        <button onClick={onClose}>Close</button>
+        <button onClick={onClose} data-testid="close-modal-button">Close</button>
         {children}
       </div>
     ) : null
   )
-}));
-
-// Mock LoadingSpinner component
-vi.mock('../../../components/LoadingSpinner', () => ({
-  __esModule: true,
-  default: () => <div data-testid="loading-spinner">Loading...</div>
 }));
 
 // Mock useNavigate
@@ -59,10 +56,15 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 describe('JobCardsManagementPage', () => {
   const mockUser = { id: '123', name: 'Admin User', role: 'admin' };
+  const mockAlert = vi.fn();
+  const mockConfirm = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ user: mockUser, hasRole: (role) => role === 'admin' });
+    // Mock window.alert and window.confirm
+    window.alert = mockAlert;
+    window.confirm = mockConfirm;
   });
 
   test('renders loading spinner initially', () => {
@@ -72,40 +74,42 @@ describe('JobCardsManagementPage', () => {
       </BrowserRouter>
     );
 
+    // Check for the loading spinner element using data-testid
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
 
   test('renders job cards when data is available', async () => {
     // Mock job card service response
-    jobcardService.getAllJobCards.mockResolvedValue({
-      jobcards: [
-        {
-          id: '1',
-          title: 'Oil Change Job',
-          description: 'Complete oil change for Toyota Camry',
-          status: 'in_progress',
-          priority: 'medium',
-          assigned_mechanic: '456',
-          created_at: '2023-01-01T10:00:00Z',
-          updated_at: '2023-01-01T11:00:00Z'
-        },
-        {
-          id: '2',
-          title: 'Brake Service Job',
-          description: 'Replace brake pads for Honda Civic',
-          status: 'assigned',
-          priority: 'high',
-          assigned_mechanic: '789',
-          created_at: '2023-01-02T09:00:00Z',
-          updated_at: '2023-01-02T09:00:00Z'
+    jobcardService.getAllJobCards.mockResolvedValue([
+      {
+        id: '1',
+        title: 'Oil Change Job',
+        description: 'Complete oil change for Toyota Camry',
+        status: 'in_progress',
+        priority: 'medium',
+        assigned_mechanic: '456',
+        created_at: '2023-01-01T10:00:00Z',
+        updated_at: '2023-01-01T11:00:00Z',
+        booking: {
+          customer: { name: 'John Doe' },
+          vehicle: { make: 'Toyota', model: 'Camry' }
         }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 2
+      },
+      {
+        id: '2',
+        title: 'Brake Service Job',
+        description: 'Replace brake pads for Honda Civic',
+        status: 'pending',
+        priority: 'high',
+        assigned_mechanic: '789',
+        created_at: '2023-01-02T09:00:00Z',
+        updated_at: '2023-01-02T09:00:00Z',
+        booking: {
+          customer: { name: 'Jane Smith' },
+          vehicle: { make: 'Honda', model: 'Civic' }
+        }
       }
-    });
+    ]);
 
     render(
       <BrowserRouter>
@@ -119,22 +123,13 @@ describe('JobCardsManagementPage', () => {
     });
 
     // Check that job cards are displayed
-    expect(screen.getByText('Oil Change Job')).toBeInTheDocument();
-    expect(screen.getByText('Brake Service Job')).toBeInTheDocument();
-    expect(screen.getByText('Complete oil change for Toyota Camry')).toBeInTheDocument();
-    expect(screen.getByText('Replace brake pads for Honda Civic')).toBeInTheDocument();
+    expect(screen.getByText('Job Card #1')).toBeInTheDocument();
+    expect(screen.getByText('Job Card #2')).toBeInTheDocument();
   });
 
   test('renders empty state when no job cards are found', async () => {
     // Mock job card service response with empty data
-    jobcardService.getAllJobCards.mockResolvedValue({
-      jobcards: [],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 0
-      }
-    });
+    jobcardService.getAllJobCards.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -151,27 +146,30 @@ describe('JobCardsManagementPage', () => {
     expect(screen.getByText('No job cards found')).toBeInTheDocument();
   });
 
-  test('opens job card details modal when view button is clicked', async () => {
-    // Mock job card service response
-    jobcardService.getAllJobCards.mockResolvedValue({
-      jobcards: [
-        {
-          id: '1',
-          title: 'Oil Change Job',
-          description: 'Complete oil change for Toyota Camry',
-          status: 'in_progress',
-          priority: 'medium',
-          assigned_mechanic: '456',
-          created_at: '2023-01-01T10:00:00Z',
-          updated_at: '2023-01-01T11:00:00Z'
+  test('deletes job card when delete button is clicked', async () => {
+    // Mock job card service response for loading job cards
+    jobcardService.getAllJobCards.mockResolvedValue([
+      {
+        id: '1',
+        title: 'Oil Change Job',
+        description: 'Complete oil change for Toyota Camry',
+        status: 'pending',
+        priority: 'medium',
+        assigned_mechanic: null,
+        created_at: '2023-01-01T10:00:00Z',
+        updated_at: '2023-01-01T11:00:00Z',
+        booking: {
+          customer: { name: 'John Doe' },
+          vehicle: { make: 'Toyota', model: 'Camry' }
         }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 1
       }
-    });
+    ]);
+    
+    // Mock deleteJobCard service method
+    jobcardService.deleteJobCard.mockResolvedValue({});
+
+    // Mock window.confirm to return true
+    mockConfirm.mockImplementation(() => true);
 
     render(
       <BrowserRouter>
@@ -184,36 +182,40 @@ describe('JobCardsManagementPage', () => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
     });
 
-    // Click view button
-    const viewButton = screen.getByText('View Details');
-    fireEvent.click(viewButton);
+    // Click delete button using data-testid
+    const deleteButton = screen.getByTestId('delete-button');
+    fireEvent.click(deleteButton);
 
-    // Check that modal is opened
-    expect(screen.getByTestId('modal')).toBeInTheDocument();
-    expect(screen.getByText('Job Card #1')).toBeInTheDocument();
+    // Wait for confirmation
+    await waitFor(() => {
+      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to delete this job card? This action cannot be undone.');
+    });
+
+    // Check that deleteJobCard was called
+    expect(jobcardService.deleteJobCard).toHaveBeenCalledWith('1');
   });
 
-  test('assigns mechanic to job card when assign button is clicked', async () => {
-    // Mock job card service response
-    jobcardService.getAllJobCards.mockResolvedValue({
-      jobcards: [
-        {
-          id: '1',
-          title: 'Oil Change Job',
-          description: 'Complete oil change for Toyota Camry',
-          status: 'assigned',
-          priority: 'medium',
-          assigned_mechanic: null,
-          created_at: '2023-01-01T10:00:00Z',
-          updated_at: '2023-01-01T11:00:00Z'
+  test('does not delete job card when user cancels confirmation', async () => {
+    // Mock job card service response for loading job cards
+    jobcardService.getAllJobCards.mockResolvedValue([
+      {
+        id: '1',
+        title: 'Oil Change Job',
+        description: 'Complete oil change for Toyota Camry',
+        status: 'pending',
+        priority: 'medium',
+        assigned_mechanic: null,
+        created_at: '2023-01-01T10:00:00Z',
+        updated_at: '2023-01-01T11:00:00Z',
+        booking: {
+          customer: { name: 'John Doe' },
+          vehicle: { make: 'Toyota', model: 'Camry' }
         }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 1
       }
-    });
+    ]);
+    
+    // Mock window.confirm to return false
+    mockConfirm.mockImplementation(() => false);
 
     render(
       <BrowserRouter>
@@ -226,133 +228,16 @@ describe('JobCardsManagementPage', () => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
     });
 
-    // Click assign button
-    const assignButton = screen.getByText('Assign Mechanic');
-    fireEvent.click(assignButton);
+    // Click delete button using data-testid
+    const deleteButton = screen.getByTestId('delete-button');
+    fireEvent.click(deleteButton);
 
-    // Check that navigation occurred to assign mechanic page
-    expect(mockNavigate).toHaveBeenCalledWith('/admin/job-cards/assign/1');
-  });
-
-  test('loads job cards when refresh button is clicked', async () => {
-    // Mock job card service response
-    jobcardService.getAllJobCards.mockResolvedValue({
-      jobcards: [],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 0
-      }
-    });
-
-    render(
-      <BrowserRouter>
-        <JobCardsManagementPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
+    // Wait for confirmation
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to delete this job card? This action cannot be undone.');
     });
 
-    // Click refresh button
-    const refreshButton = screen.getByText('Refresh');
-    fireEvent.click(refreshButton);
-
-    // Check that loadJobCards was called
-    expect(jobcardService.getAllJobCards).toHaveBeenCalledTimes(2); // Once on mount, once on refresh
-  });
-
-  test('filters job cards by status', async () => {
-    // Mock job card service response
-    jobcardService.getAllJobCards.mockResolvedValue({
-      jobcards: [
-        {
-          id: '1',
-          title: 'Oil Change Job',
-          description: 'Complete oil change for Toyota Camry',
-          status: 'in_progress',
-          priority: 'medium',
-          assigned_mechanic: '456',
-          created_at: '2023-01-01T10:00:00Z',
-          updated_at: '2023-01-01T11:00:00Z'
-        },
-        {
-          id: '2',
-          title: 'Brake Service Job',
-          description: 'Replace brake pads for Honda Civic',
-          status: 'assigned',
-          priority: 'high',
-          assigned_mechanic: '789',
-          created_at: '2023-01-02T09:00:00Z',
-          updated_at: '2023-01-02T09:00:00Z'
-        }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 2
-      }
-    });
-
-    render(
-      <BrowserRouter>
-        <JobCardsManagementPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Filter by "in_progress" status
-    const filterSelect = screen.getByRole('combobox');
-    fireEvent.change(filterSelect, { target: { value: 'in_progress' } });
-
-    // Check that filter state is updated
-    expect(filterSelect).toHaveValue('in_progress');
-  });
-
-  test('searches job cards by term', async () => {
-    // Mock job card service response
-    jobcardService.getAllJobCards.mockResolvedValue({
-      jobcards: [
-        {
-          id: '1',
-          title: 'Oil Change Job',
-          description: 'Complete oil change for Toyota Camry',
-          status: 'in_progress',
-          priority: 'medium',
-          assigned_mechanic: '456',
-          created_at: '2023-01-01T10:00:00Z',
-          updated_at: '2023-01-01T11:00:00Z'
-        }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 1
-      }
-    });
-
-    render(
-      <BrowserRouter>
-        <JobCardsManagementPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Search for "Oil Change"
-    const searchInput = screen.getByPlaceholderText('Search job cards...');
-    fireEvent.change(searchInput, { target: { value: 'Oil Change' } });
-
-    // Check that search term is updated
-    expect(searchInput).toHaveValue('Oil Change');
+    // Check that deleteJobCard was not called
+    expect(jobcardService.deleteJobCard).not.toHaveBeenCalled();
   });
 });

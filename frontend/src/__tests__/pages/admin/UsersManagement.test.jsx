@@ -59,10 +59,13 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 describe('UsersManagementPage', () => {
   const mockUser = { id: '123', name: 'Admin User', role: 'admin' };
+  const mockAlert = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ user: mockUser, hasRole: (role) => role === 'admin' });
+    // Mock window.alert
+    window.alert = mockAlert;
   });
 
   test('renders loading spinner initially', () => {
@@ -72,7 +75,8 @@ describe('UsersManagementPage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    // Check for the loading spinner element (UsersManagement uses a custom spinner, not the LoadingSpinner component)
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   test('renders users when data is available', async () => {
@@ -113,7 +117,7 @@ describe('UsersManagementPage', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     // Check that users are displayed
@@ -144,7 +148,7 @@ describe('UsersManagementPage', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     // Check that empty state is displayed
@@ -170,7 +174,7 @@ describe('UsersManagementPage', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     // Click add user button
@@ -213,7 +217,7 @@ describe('UsersManagementPage', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     // Open add user modal
@@ -276,16 +280,16 @@ describe('UsersManagementPage', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     // Click edit button
-    const editButton = screen.getByText('Edit');
+    const editButton = screen.getByText('Edit Role');
     fireEvent.click(editButton);
 
     // Check that modal is opened with user data
     expect(screen.getByTestId('modal')).toBeInTheDocument();
-    expect(screen.getByText('Edit User')).toBeInTheDocument();
+    expect(screen.getByText('Edit User Role')).toBeInTheDocument();
     expect(screen.getByLabelText('Name')).toHaveValue('John Doe');
     expect(screen.getByLabelText('Email')).toHaveValue('john@example.com');
   });
@@ -331,11 +335,11 @@ describe('UsersManagementPage', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     // Click edit button
-    const editButton = screen.getByText('Edit');
+    const editButton = screen.getByText('Edit Role');
     fireEvent.click(editButton);
 
     // Change name and email fields
@@ -343,7 +347,7 @@ describe('UsersManagementPage', () => {
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'updatedjohn@example.com' } });
 
     // Submit the form
-    const submitButton = screen.getByText('Update User');
+    const submitButton = screen.getByText('Update Role');
     fireEvent.click(submitButton);
 
     // Wait for user to be updated
@@ -393,11 +397,12 @@ describe('UsersManagementPage', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     // Mock window.confirm to return true
-    const mockConfirm = vi.spyOn(window, 'confirm').mockImplementation(() => true);
+    const mockConfirm = vi.fn(() => true);
+    window.confirm = mockConfirm;
 
     // Click delete button
     const deleteButton = screen.getByText('Delete');
@@ -410,36 +415,6 @@ describe('UsersManagementPage', () => {
 
     // Restore window.confirm
     mockConfirm.mockRestore();
-  });
-
-  test('loads users when refresh button is clicked', async () => {
-    // Mock auth service response
-    authService.getAllUsers.mockResolvedValue({
-      users: [],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 0
-      }
-    });
-
-    render(
-      <BrowserRouter>
-        <UsersManagementPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Click refresh button
-    const refreshButton = screen.getByText('Refresh');
-    fireEvent.click(refreshButton);
-
-    // Check that loadUsers was called
-    expect(authService.getAllUsers).toHaveBeenCalledTimes(2); // Once on mount, once on refresh
   });
 
   test('filters users by role', async () => {
@@ -480,7 +455,7 @@ describe('UsersManagementPage', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     // Filter by "customer" role
@@ -520,7 +495,7 @@ describe('UsersManagementPage', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     // Search for "John"

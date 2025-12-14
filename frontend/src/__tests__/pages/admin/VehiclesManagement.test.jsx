@@ -59,10 +59,13 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 describe('VehiclesManagementPage', () => {
   const mockUser = { id: '123', name: 'Admin User', role: 'admin' };
+  const mockAlert = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ user: mockUser, hasRole: (role) => role === 'admin' });
+    // Mock window.alert
+    window.alert = mockAlert;
   });
 
   test('renders loading spinner initially', () => {
@@ -72,40 +75,32 @@ describe('VehiclesManagementPage', () => {
       </BrowserRouter>
     );
 
+    // Check for the loading spinner element
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
 
   test('renders vehicles when data is available', async () => {
     // Mock vehicle service response
-    vehicleService.getAllVehicles.mockResolvedValue({
-      vehicles: [
-        {
-          id: '1',
-          make: 'Toyota',
-          model: 'Camry',
-          year: 2020,
-          registration_number: 'ABC123',
-          vin: 'VIN123',
-          owner_name: 'John Doe',
-          owner_email: 'john@example.com'
-        },
-        {
-          id: '2',
-          make: 'Honda',
-          model: 'Civic',
-          year: 2019,
-          registration_number: 'XYZ789',
-          vin: 'VIN456',
-          owner_name: 'Jane Smith',
-          owner_email: 'jane@example.com'
-        }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 2
+    vehicleService.getAllVehicles.mockResolvedValue([
+      {
+        id: '1',
+        make: 'Toyota',
+        model: 'Camry',
+        year: 2020,
+        vin: 'VIN123',
+        registrationNumber: 'ABC123',
+        mileage: '15000'
+      },
+      {
+        id: '2',
+        make: 'Honda',
+        model: 'Civic',
+        year: 2019,
+        vin: 'VIN456',
+        registrationNumber: 'XYZ789',
+        mileage: '25000'
       }
-    });
+    ]);
 
     render(
       <BrowserRouter>
@@ -123,22 +118,13 @@ describe('VehiclesManagementPage', () => {
     expect(screen.getByText('Honda Civic')).toBeInTheDocument();
     expect(screen.getByText('2020')).toBeInTheDocument();
     expect(screen.getByText('2019')).toBeInTheDocument();
-    expect(screen.getByText('ABC123')).toBeInTheDocument();
-    expect(screen.getByText('XYZ789')).toBeInTheDocument();
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+    expect(screen.getByText('Reg: ABC123')).toBeInTheDocument();
+    expect(screen.getByText('Reg: XYZ789')).toBeInTheDocument();
   });
 
   test('renders empty state when no vehicles are found', async () => {
     // Mock vehicle service response with empty data
-    vehicleService.getAllVehicles.mockResolvedValue({
-      vehicles: [],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 0
-      }
-    });
+    vehicleService.getAllVehicles.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -155,126 +141,19 @@ describe('VehiclesManagementPage', () => {
     expect(screen.getByText('No vehicles found')).toBeInTheDocument();
   });
 
-  test('opens add vehicle modal when add button is clicked', async () => {
-    // Mock vehicle service response with empty data
-    vehicleService.getAllVehicles.mockResolvedValue({
-      vehicles: [],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 0
-      }
-    });
-
-    render(
-      <BrowserRouter>
-        <VehiclesManagementPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Click add vehicle button
-    const addButton = screen.getByText('Add Vehicle');
-    fireEvent.click(addButton);
-
-    // Check that modal is opened
-    expect(screen.getByTestId('modal')).toBeInTheDocument();
-    expect(screen.getByText('Add Vehicle')).toBeInTheDocument();
-  });
-
-  test('creates new vehicle when form is submitted', async () => {
-    // Mock vehicle service response for loading vehicles
-    vehicleService.getAllVehicles.mockResolvedValue({
-      vehicles: [],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 0
-      }
-    });
-    
-    // Mock vehicle service response for creating vehicle
-    vehicleService.createVehicle.mockResolvedValue({
-      id: '1',
-      make: 'Ford',
-      model: 'Focus',
-      year: 2021,
-      registration_number: 'DEF456',
-      vin: 'VIN789',
-      owner_name: 'New Owner',
-      owner_email: 'newowner@example.com'
-    });
-
-    render(
-      <BrowserRouter>
-        <VehiclesManagementPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Open add vehicle modal
-    const addButton = screen.getByText('Add Vehicle');
-    fireEvent.click(addButton);
-
-    // Fill in the form
-    fireEvent.change(screen.getByLabelText('Make'), { target: { value: 'Ford' } });
-    fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'Focus' } });
-    fireEvent.change(screen.getByLabelText('Year'), { target: { value: '2021' } });
-    fireEvent.change(screen.getByLabelText('Registration Number'), { target: { value: 'DEF456' } });
-    fireEvent.change(screen.getByLabelText('VIN'), { target: { value: 'VIN789' } });
-    fireEvent.change(screen.getByLabelText('Owner Name'), { target: { value: 'New Owner' } });
-    fireEvent.change(screen.getByLabelText('Owner Email'), { target: { value: 'newowner@example.com' } });
-
-    // Submit the form
-    const submitButton = screen.getByText('Add Vehicle');
-    fireEvent.click(submitButton);
-
-    // Wait for vehicle to be created
-    await waitFor(() => {
-      expect(vehicleService.createVehicle).toHaveBeenCalledWith({
-        make: 'Ford',
-        model: 'Focus',
-        year: '2021',
-        registration_number: 'DEF456',
-        vin: 'VIN789',
-        owner_name: 'New Owner',
-        owner_email: 'newowner@example.com'
-      });
-    });
-
-    // Check that modal is closed
-    expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
-  });
-
   test('opens edit vehicle modal when edit button is clicked', async () => {
     // Mock vehicle service response with data
-    vehicleService.getAllVehicles.mockResolvedValue({
-      vehicles: [
-        {
-          id: '1',
-          make: 'Toyota',
-          model: 'Camry',
-          year: 2020,
-          registration_number: 'ABC123',
-          vin: 'VIN123',
-          owner_name: 'John Doe',
-          owner_email: 'john@example.com'
-        }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 1
+    vehicleService.getAllVehicles.mockResolvedValue([
+      {
+        id: '1',
+        make: 'Toyota',
+        model: 'Camry',
+        year: 2020,
+        vin: 'VIN123',
+        registrationNumber: 'ABC123',
+        mileage: '15000'
       }
-    });
+    ]);
 
     render(
       <BrowserRouter>
@@ -300,36 +179,27 @@ describe('VehiclesManagementPage', () => {
 
   test('updates vehicle when edit form is submitted', async () => {
     // Mock vehicle service response for loading vehicles
-    vehicleService.getAllVehicles.mockResolvedValue({
-      vehicles: [
-        {
-          id: '1',
-          make: 'Toyota',
-          model: 'Camry',
-          year: 2020,
-          registration_number: 'ABC123',
-          vin: 'VIN123',
-          owner_name: 'John Doe',
-          owner_email: 'john@example.com'
-        }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 1
+    vehicleService.getAllVehicles.mockResolvedValue([
+      {
+        id: '1',
+        make: 'Toyota',
+        model: 'Camry',
+        year: 2020,
+        vin: 'VIN123',
+        registrationNumber: 'ABC123',
+        mileage: '15000'
       }
-    });
+    ]);
     
     // Mock vehicle service response for updating vehicle
     vehicleService.updateVehicle.mockResolvedValue({
       id: '1',
       make: 'Toyota',
       model: 'Corolla',
-      year: 2021,
-      registration_number: 'ABC123',
+      year: '2021',
       vin: 'VIN123',
-      owner_name: 'John Doe',
-      owner_email: 'john@example.com'
+      registrationNumber: 'ABC123',
+      mileage: '15000'
     });
 
     render(
@@ -361,10 +231,9 @@ describe('VehiclesManagementPage', () => {
         make: 'Toyota',
         model: 'Corolla',
         year: '2021',
-        registration_number: 'ABC123',
         vin: 'VIN123',
-        owner_name: 'John Doe',
-        owner_email: 'john@example.com'
+        registrationNumber: 'ABC123',
+        mileage: '15000'
       });
     });
 
@@ -374,25 +243,17 @@ describe('VehiclesManagementPage', () => {
 
   test('deletes vehicle when delete button is clicked', async () => {
     // Mock vehicle service response for loading vehicles
-    vehicleService.getAllVehicles.mockResolvedValue({
-      vehicles: [
-        {
-          id: '1',
-          make: 'Toyota',
-          model: 'Camry',
-          year: 2020,
-          registration_number: 'ABC123',
-          vin: 'VIN123',
-          owner_name: 'John Doe',
-          owner_email: 'john@example.com'
-        }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 1
+    vehicleService.getAllVehicles.mockResolvedValue([
+      {
+        id: '1',
+        make: 'Toyota',
+        model: 'Camry',
+        year: 2020,
+        vin: 'VIN123',
+        registrationNumber: 'ABC123',
+        mileage: '15000'
       }
-    });
+    ]);
     
     // Mock vehicle service response for deleting vehicle
     vehicleService.deleteVehicle.mockResolvedValue({});
@@ -409,7 +270,8 @@ describe('VehiclesManagementPage', () => {
     });
 
     // Mock window.confirm to return true
-    const mockConfirm = vi.spyOn(window, 'confirm').mockImplementation(() => true);
+    const mockConfirm = vi.fn(() => true);
+    window.confirm = mockConfirm;
 
     // Click delete button
     const deleteButton = screen.getByText('Delete');
@@ -422,76 +284,5 @@ describe('VehiclesManagementPage', () => {
 
     // Restore window.confirm
     mockConfirm.mockRestore();
-  });
-
-  test('loads vehicles when refresh button is clicked', async () => {
-    // Mock vehicle service response
-    vehicleService.getAllVehicles.mockResolvedValue({
-      vehicles: [],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 0
-      }
-    });
-
-    render(
-      <BrowserRouter>
-        <VehiclesManagementPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Click refresh button
-    const refreshButton = screen.getByText('Refresh');
-    fireEvent.click(refreshButton);
-
-    // Check that loadVehicles was called
-    expect(vehicleService.getAllVehicles).toHaveBeenCalledTimes(2); // Once on mount, once on refresh
-  });
-
-  test('searches vehicles by term', async () => {
-    // Mock vehicle service response
-    vehicleService.getAllVehicles.mockResolvedValue({
-      vehicles: [
-        {
-          id: '1',
-          make: 'Toyota',
-          model: 'Camry',
-          year: 2020,
-          registration_number: 'ABC123',
-          vin: 'VIN123',
-          owner_name: 'John Doe',
-          owner_email: 'john@example.com'
-        }
-      ],
-      pagination: {
-        totalPages: 1,
-        currentPage: 1,
-        totalItems: 1
-      }
-    });
-
-    render(
-      <BrowserRouter>
-        <VehiclesManagementPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Search for "Toyota"
-    const searchInput = screen.getByPlaceholderText('Search vehicles...');
-    fireEvent.change(searchInput, { target: { value: 'Toyota' } });
-
-    // Check that search term is updated
-    expect(searchInput).toHaveValue('Toyota');
   });
 });

@@ -88,8 +88,8 @@ const PartsManagementPage = () => {
       
       console.log('Parts data received:', data);
       
-      // Ensure data is an array
-      const dataArray = Array.isArray(data) ? data : (data.parts || []);
+      // Ensure data is an array, handle undefined case
+      const dataArray = Array.isArray(data) ? data : (data && data.parts ? data.parts : []);
       
       // Map backend field names to frontend expected names
       const mappedData = dataArray.map(part => ({
@@ -119,8 +119,8 @@ const PartsManagementPage = () => {
       
       console.log('Suppliers data received:', data);
       
-      // Ensure data is an array
-      const dataArray = Array.isArray(data) ? data : (data.suppliers || []);
+      // Ensure data is an array, handle undefined case
+      const dataArray = Array.isArray(data) ? data : (data && data.suppliers ? data.suppliers : []);
       
       // Map backend field names to frontend expected names if needed
       const mappedData = dataArray.map(supplier => ({
@@ -327,7 +327,7 @@ const PartsManagementPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" data-testid="loading-spinner"></div>
       </div>
     );
   }
