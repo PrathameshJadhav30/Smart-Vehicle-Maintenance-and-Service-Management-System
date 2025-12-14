@@ -91,8 +91,16 @@ describe('CustomerDashboard', () => {
     expect(screen.getByText('Recent Bookings')).toBeInTheDocument();
     expect(screen.getByText('Recent Invoices')).toBeInTheDocument();
     
-    // Check that vehicles count is displayed
-    expect(screen.getByText('2')).toBeInTheDocument(); // 2 vehicles
+    // Check that vehicles count is displayed (using role and text content)
+    const vehicleCountElements = screen.getAllByText('2');
+    // Find the element that has 'Vehicles' text nearby
+    let vehicleCountElement = null;
+    vehicleCountElements.forEach(element => {
+      if (element.parentElement && element.parentElement.textContent.includes('Vehicles')) {
+        vehicleCountElement = element;
+      }
+    });
+    expect(vehicleCountElement).toBeInTheDocument();
     
     // Check that bookings are displayed
     expect(screen.getByText('Oil Change')).toBeInTheDocument();
@@ -144,7 +152,15 @@ describe('CustomerDashboard', () => {
     expect(screen.getByText('No bookings yet')).toBeInTheDocument();
     expect(screen.getByText('No invoices yet')).toBeInTheDocument();
     
-    // Check vehicle count is 0
-    expect(screen.getByText('0')).toBeInTheDocument();
+    // Check vehicle count is 0 (using role and text content)
+    const zeroCountElements = screen.getAllByText('0');
+    // Find the element that has 'Vehicles' text nearby
+    let vehicleZeroElement = null;
+    zeroCountElements.forEach(element => {
+      if (element.parentElement && element.parentElement.textContent.includes('Vehicles')) {
+        vehicleZeroElement = element;
+      }
+    });
+    expect(vehicleZeroElement).toBeInTheDocument();
   });
 });

@@ -220,7 +220,8 @@ describe('MyBookingsPage', () => {
     });
 
     // Mock window.confirm to return true
-    const mockConfirm = vi.spyOn(window, 'confirm').mockImplementation(() => true);
+    const mockConfirm = vi.fn(() => true);
+    window.confirm = mockConfirm;
 
     // Click cancel button
     const cancelButton = screen.getByText('Cancel Booking');
@@ -230,8 +231,5 @@ describe('MyBookingsPage', () => {
     await waitFor(() => {
       expect(bookingService.cancelBooking).toHaveBeenCalledWith('1');
     });
-
-    // Restore window.confirm
-    mockConfirm.mockRestore();
   });
 });

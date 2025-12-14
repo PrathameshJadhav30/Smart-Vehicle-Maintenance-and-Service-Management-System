@@ -41,6 +41,11 @@ const BookServicePage = () => {
   const loadVehicles = async () => {
     try {
       setLoading(true);
+      // Don't try to load vehicles if user is not logged in
+      if (!user || !user.id) {
+        setVehicles([]);
+        return;
+      }
       const data = await vehicleService.getVehiclesByUserId(user.id);
       // Extract vehicles array from response
       setVehicles(Array.isArray(data) ? data : (data.vehicles || []));
