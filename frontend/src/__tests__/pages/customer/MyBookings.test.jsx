@@ -78,7 +78,7 @@ describe('MyBookingsPage', () => {
 
     // Check that empty state is displayed
     expect(screen.getByText('No bookings found')).toBeInTheDocument();
-    expect(screen.getByText('Book a Service')).toBeInTheDocument();
+    expect(screen.getByText('Book Your First Service')).toBeInTheDocument();
   });
 
   test('renders bookings when data is available', async () => {
@@ -155,8 +155,8 @@ describe('MyBookingsPage', () => {
     expect(screen.getByText('Brake Service')).toBeInTheDocument();
 
     // Filter by pending status
-    const pendingFilter = screen.getByText('Pending');
-    fireEvent.click(pendingFilter);
+    const filterSelect = screen.getByRole('combobox');
+    fireEvent.change(filterSelect, { target: { value: 'pending' } });
 
     // Wait for filtering to complete
     await waitFor(() => {
@@ -183,7 +183,7 @@ describe('MyBookingsPage', () => {
     });
 
     // Click book service button
-    const bookServiceButton = screen.getByText('Book a Service');
+    const bookServiceButton = screen.getByText('Book Your First Service');
     fireEvent.click(bookServiceButton);
 
     // Check that navigation occurs

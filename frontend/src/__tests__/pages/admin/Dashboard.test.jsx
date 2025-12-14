@@ -41,7 +41,7 @@ describe('AdminDashboard', () => {
     useAuth.mockReturnValue({ user: mockUser });
   });
 
-  test('renders loading spinner initially', () => {
+  test('renders loading spinner initially', async () => {
     render(
       <BrowserRouter>
         <AdminDashboard />

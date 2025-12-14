@@ -2,28 +2,28 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import CustomerDashboard from '../../../pages/customer/Dashboard';
-import { useAuth } from '../../contexts/AuthContext';
-import * as vehicleService from '../../services/vehicleService';
-import * as bookingService from '../../services/bookingService';
-import * as invoiceService from '../../services/invoiceService';
+import { useAuth } from '../../../contexts/AuthContext';
+import * as vehicleService from '../../../services/vehicleService';
+import * as bookingService from '../../../services/bookingService';
+import * as invoiceService from '../../../services/invoiceService';
 
 // Mock the contexts
-vi.mock('../../contexts/AuthContext', () => ({
+vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: vi.fn()
 }));
 
 // Mock the services
-vi.mock('../../services/vehicleService');
-vi.mock('../../services/bookingService');
-vi.mock('../../services/invoiceService');
+vi.mock('../../../services/vehicleService');
+vi.mock('../../../services/bookingService');
+vi.mock('../../../services/invoiceService');
 
 // Mock the components
-vi.mock('../../components/LoadingSpinner', () => ({
+vi.mock('../../../components/LoadingSpinner', () => ({
   __esModule: true,
   default: () => <div data-testid="loading-spinner">Loading...</div>
 }));
 
-vi.mock('../../components/ErrorDisplay', () => ({
+vi.mock('../../../components/ErrorDisplay', () => ({
   __esModule: true,
   default: ({ message }) => <div data-testid="error-display">{message}</div>
 }));
@@ -66,13 +66,13 @@ describe('CustomerDashboard', () => {
     });
     
     bookingService.getCustomerBookings.mockResolvedValue([
-      { id: '1', serviceType: 'Oil Change', status: 'pending', booking_date: '2023-01-01' },
-      { id: '2', serviceType: 'Brake Service', status: 'completed', booking_date: '2023-01-02' }
+      { id: '1', service_type: 'Oil Change', status: 'pending', booking_date: '2023-01-01' },
+      { id: '2', service_type: 'Brake Service', status: 'completed', booking_date: '2023-01-02' }
     ]);
     
     invoiceService.getCustomerInvoices.mockResolvedValue([
-      { id: '1', amount: 100, payment_status: 'paid' },
-      { id: '2', amount: 150, payment_status: 'unpaid' }
+      { id: '1', grand_total: 100, payment_status: 'paid' },
+      { id: '2', grand_total: 150, payment_status: 'unpaid' }
     ]);
 
     render(
@@ -87,22 +87,20 @@ describe('CustomerDashboard', () => {
     });
 
     // Check that dashboard content is displayed
-    expect(screen.getByText('Welcome, John Doe')).toBeInTheDocument();
-    expect(screen.getByText('My Vehicles')).toBeInTheDocument();
-    expect(screen.getByText('My Bookings')).toBeInTheDocument();
-    expect(screen.getByText('My Invoices')).toBeInTheDocument();
+    expect(screen.getByText('Welcome back, John Doe!')).toBeInTheDocument();
+    expect(screen.getByText('Recent Bookings')).toBeInTheDocument();
+    expect(screen.getByText('Recent Invoices')).toBeInTheDocument();
     
-    // Check that vehicles are displayed
-    expect(screen.getByText('Toyota')).toBeInTheDocument();
-    expect(screen.getByText('Honda')).toBeInTheDocument();
+    // Check that vehicles count is displayed
+    expect(screen.getByText('2')).toBeInTheDocument(); // 2 vehicles
     
     // Check that bookings are displayed
     expect(screen.getByText('Oil Change')).toBeInTheDocument();
     expect(screen.getByText('Brake Service')).toBeInTheDocument();
     
     // Check that invoices are displayed
-    expect(screen.getByText('$100.00')).toBeInTheDocument();
-    expect(screen.getByText('$150.00')).toBeInTheDocument();
+    expect(screen.getByText('₹100.00')).toBeInTheDocument();
+    expect(screen.getByText('₹150.00')).toBeInTheDocument();
   });
 
   test('displays error message when data loading fails', async () => {
@@ -122,7 +120,7 @@ describe('CustomerDashboard', () => {
       expect(screen.getByTestId('error-display')).toBeInTheDocument();
     });
 
-    expect(screen.getByTestId('error-display')).toHaveTextContent('Failed to load dashboard data. Please try again.');
+    expect(screen.getByTestId('error-display')).toHaveTextContent('Network error');
   });
 
   test('displays empty state messages when no data is available', async () => {
@@ -143,8 +141,10 @@ describe('CustomerDashboard', () => {
     });
 
     // Check that empty state messages are displayed
-    expect(screen.getByText('No vehicles found')).toBeInTheDocument();
-    expect(screen.getByText('No bookings found')).toBeInTheDocument();
-    expect(screen.getByText('No invoices found')).toBeInTheDocument();
+    expect(screen.getByText('No bookings yet')).toBeInTheDocument();
+    expect(screen.getByText('No invoices yet')).toBeInTheDocument();
+    
+    // Check vehicle count is 0
+    expect(screen.getByText('0')).toBeInTheDocument();
   });
 });

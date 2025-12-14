@@ -418,8 +418,7 @@ describe('VehiclesPage', () => {
     });
 
     // Mock window.confirm to return true
-    window.confirm = vi.fn(() => true);
-    const mockConfirm = vi.spyOn(window, 'confirm');
+    const mockConfirm = vi.spyOn(window, 'confirm').mockImplementation(() => true);
 
     // Click delete button
     const deleteButton = screen.getAllByText('Delete')[0];
@@ -434,5 +433,80 @@ describe('VehiclesPage', () => {
 
     // Restore window.confirm
     mockConfirm.mockRestore();
+  });
+
+  test('loads vehicles when refresh button is clicked', async () => {
+    // Mock vehicle service response
+    vehicleService.getVehiclesByUserId.mockResolvedValue({
+      vehicles: [],
+      pagination: {
+        totalPages: 1,
+        totalItems: 0
+      }
+    });
+
+    render(
+      <BrowserRouter>
+        <VehiclesPage />
+      </BrowserRouter>
+    );
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
+
+    // Click refresh/search button (simulate typing in search box)
+    const searchInput = screen.getByPlaceholderText('Search vehicles (make, model, VIN)...');
+    fireEvent.change(searchInput, { target: { value: 'Toyota' } });
+
+    // Check that loadVehicles was called with search term
+    await waitFor(() => {
+      expect(vehicleService.getVehiclesByUserId).toHaveBeenCalledWith('123', {
+        page: 1,
+        limit: 5,
+        search: 'Toyota',
+        sortBy: 'created_at',
+        sortOrder: 'desc'
+      });
+    });
+  });
+
+  test('searches vehicles by term', async () => {
+    // Mock vehicle service response
+    vehicleService.getVehiclesByUserId.mockResolvedValue({
+      vehicles: [
+        {
+          id: '1',
+          make: 'Toyota',
+          model: 'Camry',
+          year: 2020,
+          registration_number: 'ABC123',
+          mileage: 15000
+        }
+      ],
+      pagination: {
+        totalPages: 1,
+        totalItems: 1
+      }
+    });
+
+    render(
+      <BrowserRouter>
+        <VehiclesPage />
+      </BrowserRouter>
+    );
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
+
+    // Search for "Toyota"
+    const searchInput = screen.getByPlaceholderText('Search vehicles (make, model, VIN)...');
+    fireEvent.change(searchInput, { target: { value: 'Toyota' } });
+
+    // Check that search term is updated
+    expect(searchInput).toHaveValue('Toyota');
   });
 });

@@ -5,6 +5,7 @@ import JobCardsPage from '../../../pages/mechanic/JobCards';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as jobcardService from '../../../services/jobcardService';
 import * as bookingService from '../../../services/bookingService';
+import * as vehicleService from '../../../services/vehicleService';
 
 // Mock the contexts
 vi.mock('../../../contexts/AuthContext', () => ({
@@ -14,6 +15,7 @@ vi.mock('../../../contexts/AuthContext', () => ({
 // Mock the services
 vi.mock('../../../services/jobcardService');
 vi.mock('../../../services/bookingService');
+vi.mock('../../../services/vehicleService');
 
 // Mock the Button component
 vi.mock('../../../components/Button', () => ({
@@ -68,6 +70,10 @@ describe('JobCardsPage', () => {
   });
 
   test('renders loading spinner initially', () => {
+    // Mock the dropdown data loading functions to prevent network errors
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
+    
     render(
       <BrowserRouter>
         <JobCardsPage />
@@ -101,6 +107,10 @@ describe('JobCardsPage', () => {
         updated_at: '2023-01-02T09:00:00Z'
       }
     ]);
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -123,6 +133,10 @@ describe('JobCardsPage', () => {
   test('renders empty state when no job cards are found', async () => {
     // Mock job card service response with empty data
     jobcardService.getAllJobCards.mockResolvedValue([]);
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -142,6 +156,10 @@ describe('JobCardsPage', () => {
   test('opens create job card modal when add button is clicked', async () => {
     // Mock job card service response with empty data
     jobcardService.getAllJobCards.mockResolvedValue([]);
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -176,6 +194,10 @@ describe('JobCardsPage', () => {
       priority: 'medium',
       assigned_mechanic: '123'
     });
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -230,6 +252,10 @@ describe('JobCardsPage', () => {
         updated_at: '2023-01-01T11:00:00Z'
       }
     ]);
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -277,6 +303,10 @@ describe('JobCardsPage', () => {
       priority: 'high',
       assigned_mechanic: '123'
     });
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -334,6 +364,10 @@ describe('JobCardsPage', () => {
     
     // Mock job card service response for deleting job card
     jobcardService.deleteJobCard.mockResolvedValue({});
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -365,6 +399,10 @@ describe('JobCardsPage', () => {
   test('loads job cards when refresh button is clicked', async () => {
     // Mock job card service response
     jobcardService.getAllJobCards.mockResolvedValue([]);
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -409,6 +447,10 @@ describe('JobCardsPage', () => {
         updated_at: '2023-01-02T09:00:00Z'
       }
     ]);
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -443,6 +485,10 @@ describe('JobCardsPage', () => {
         updated_at: '2023-01-01T11:00:00Z'
       }
     ]);
+    
+    // Mock dropdown data
+    vehicleService.getAllVehicles.mockResolvedValue([]);
+    bookingService.getAllBookings.mockResolvedValue([]);
 
     render(
       <BrowserRouter>

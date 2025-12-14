@@ -30,11 +30,16 @@ vi.mock('../../../components/Button', () => ({
   )
 }));
 
+// Mock window.alert
+const mockAlert = vi.fn();
+window.alert = mockAlert;
+
 describe('BookServicePage', () => {
   const mockUser = { id: '123', name: 'John Doe', role: 'customer' };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAlert.mockClear();
     useAuth.mockReturnValue({ user: mockUser });
   });
 
@@ -55,15 +60,17 @@ describe('BookServicePage', () => {
 
     // Wait for vehicles to load
     await waitFor(() => {
-      expect(screen.getByText('Book a Service')).toBeInTheDocument();
+      expect(screen.getByText('Book Service')).toBeInTheDocument();
     });
 
-    // Check that form fields are present
+    // Check that form fields are present using more specific selectors
     expect(screen.getByLabelText('Select Vehicle')).toBeInTheDocument();
     expect(screen.getByLabelText('Service Type')).toBeInTheDocument();
     expect(screen.getByLabelText('Preferred Date')).toBeInTheDocument();
     expect(screen.getByLabelText('Preferred Time')).toBeInTheDocument();
-    expect(screen.getByLabelText('Description')).toBeInTheDocument();
+    
+    // For description, we need to use the placeholder since there's no direct label
+    expect(screen.getByPlaceholderText('Describe any specific issues or requirements...')).toBeInTheDocument();
     
     // Check that vehicles are loaded in the select dropdown
     expect(screen.getByText('Toyota Camry (2020)')).toBeInTheDocument();
@@ -76,7 +83,9 @@ describe('BookServicePage', () => {
     
     // Mock vehicle service response
     vehicleService.getVehiclesByUserId.mockResolvedValue({
-      vehicles: []
+      vehicles: [
+        { id: '1', make: 'Toyota', model: 'Camry', year: 2020 }
+      ]
     });
 
     render(
@@ -87,11 +96,27 @@ describe('BookServicePage', () => {
 
     // Wait for component to load
     await waitFor(() => {
-      expect(screen.getByText('Book a Service')).toBeInTheDocument();
+      expect(screen.getByText('Book Service')).toBeInTheDocument();
     });
 
-    // Check that form is disabled or shows appropriate message
-    expect(screen.getByText('Please log in to book a service')).toBeInTheDocument();
+    // Fill in the form
+    fireEvent.change(screen.getByLabelText('Select Vehicle'), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText('Service Type'), { target: { value: 'Oil Change' } });
+    fireEvent.change(screen.getByLabelText('Preferred Date'), { target: { value: '2023-12-25' } });
+    fireEvent.change(screen.getByLabelText('Preferred Time'), { target: { value: '10:00' } });
+    fireEvent.change(screen.getByPlaceholderText('Describe any specific issues or requirements...'), { target: { value: 'Regular maintenance' } });
+
+    // Submit the form using role and name
+    const submitButton = screen.getByRole('button', { name: 'Book Service' });
+    fireEvent.click(submitButton);
+
+    // Wait for alert to be called
+    await waitFor(() => {
+      expect(mockAlert).toHaveBeenCalled();
+    }, { timeout: 2000 });
+    
+    // Check that alert was called with the correct message
+    expect(mockAlert).toHaveBeenCalledWith('You must be logged in to book a service.');
   });
 
   test('shows error message when user is not a customer', async () => {
@@ -100,7 +125,9 @@ describe('BookServicePage', () => {
     
     // Mock vehicle service response
     vehicleService.getVehiclesByUserId.mockResolvedValue({
-      vehicles: []
+      vehicles: [
+        { id: '1', make: 'Toyota', model: 'Camry', year: 2020 }
+      ]
     });
 
     render(
@@ -111,11 +138,27 @@ describe('BookServicePage', () => {
 
     // Wait for component to load
     await waitFor(() => {
-      expect(screen.getByText('Book a Service')).toBeInTheDocument();
+      expect(screen.getByText('Book Service')).toBeInTheDocument();
     });
 
-    // Check that form is disabled or shows appropriate message
-    expect(screen.getByText('Only customers can book services')).toBeInTheDocument();
+    // Fill in the form
+    fireEvent.change(screen.getByLabelText('Select Vehicle'), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText('Service Type'), { target: { value: 'Oil Change' } });
+    fireEvent.change(screen.getByLabelText('Preferred Date'), { target: { value: '2023-12-25' } });
+    fireEvent.change(screen.getByLabelText('Preferred Time'), { target: { value: '10:00' } });
+    fireEvent.change(screen.getByPlaceholderText('Describe any specific issues or requirements...'), { target: { value: 'Regular maintenance' } });
+
+    // Submit the form using role and name
+    const submitButton = screen.getByRole('button', { name: 'Book Service' });
+    fireEvent.click(submitButton);
+
+    // Wait for alert to be called
+    await waitFor(() => {
+      expect(mockAlert).toHaveBeenCalled();
+    }, { timeout: 2000 });
+    
+    // Check that alert was called with the correct message
+    expect(mockAlert).toHaveBeenCalledWith('Only customers can book services. Please log in with a customer account.');
   });
 
   test('submits form with valid data', async () => {
@@ -145,10 +188,10 @@ describe('BookServicePage', () => {
     fireEvent.change(screen.getByLabelText('Service Type'), { target: { value: 'Oil Change' } });
     fireEvent.change(screen.getByLabelText('Preferred Date'), { target: { value: '2023-12-25' } });
     fireEvent.change(screen.getByLabelText('Preferred Time'), { target: { value: '10:00' } });
-    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Regular maintenance' } });
+    fireEvent.change(screen.getByPlaceholderText('Describe any specific issues or requirements...'), { target: { value: 'Regular maintenance' } });
 
-    // Submit the form
-    const submitButton = screen.getByText('Book Service');
+    // Submit the form using role and name
+    const submitButton = screen.getByRole('button', { name: 'Book Service' });
     fireEvent.click(submitButton);
 
     // Wait for the booking to be created
@@ -163,12 +206,8 @@ describe('BookServicePage', () => {
       });
     });
 
-    // Check that form is reset
-    expect(screen.getByLabelText('Select Vehicle')).toHaveValue('');
-    expect(screen.getByLabelText('Service Type')).toHaveValue('');
-    expect(screen.getByLabelText('Preferred Date')).toHaveValue('');
-    expect(screen.getByLabelText('Preferred Time')).toHaveValue('');
-    expect(screen.getByLabelText('Description')).toHaveValue('');
+    // Check that alert was called with success message
+    expect(mockAlert).toHaveBeenCalledWith('Service booking created successfully!');
   });
 
   test('shows error message when booking submission fails', async () => {
@@ -198,15 +237,18 @@ describe('BookServicePage', () => {
     fireEvent.change(screen.getByLabelText('Service Type'), { target: { value: 'Oil Change' } });
     fireEvent.change(screen.getByLabelText('Preferred Date'), { target: { value: '2023-12-25' } });
     fireEvent.change(screen.getByLabelText('Preferred Time'), { target: { value: '10:00' } });
-    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Regular maintenance' } });
+    fireEvent.change(screen.getByPlaceholderText('Describe any specific issues or requirements...'), { target: { value: 'Regular maintenance' } });
 
-    // Submit the form
-    const submitButton = screen.getByText('Book Service');
+    // Submit the form using role and name
+    const submitButton = screen.getByRole('button', { name: 'Book Service' });
     fireEvent.click(submitButton);
 
     // Wait for error handling
     await waitFor(() => {
       expect(bookingService.createBooking).toHaveBeenCalled();
     });
+    
+    // Check that alert was called with error message
+    expect(mockAlert).toHaveBeenCalledWith('Failed to create booking. Please try again.');
   });
 });

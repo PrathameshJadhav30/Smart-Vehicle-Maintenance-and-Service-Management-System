@@ -66,6 +66,9 @@ describe('PartsUsagePage', () => {
   });
 
   test('renders loading spinner initially', () => {
+    // Mock the suppliers loading function to prevent network errors
+    partsService.getAllSuppliers.mockResolvedValue([]);
+    
     render(
       <BrowserRouter>
         <PartsUsagePage />
@@ -84,7 +87,8 @@ describe('PartsUsagePage', () => {
         part_number: 'EO-123',
         quantity: 50,
         price: 25.00,
-        supplier: 'Auto Parts Co.'
+        supplier: 'Auto Parts Co.',
+        supplier_name: 'Auto Parts Co.'
       },
       {
         id: '2',
@@ -92,9 +96,13 @@ describe('PartsUsagePage', () => {
         part_number: 'BP-456',
         quantity: 30,
         price: 45.00,
-        supplier: 'Brake Specialists'
+        supplier: 'Brake Specialists',
+        supplier_name: 'Brake Specialists'
       }
     ]);
+    
+    // Mock suppliers data
+    partsService.getAllSuppliers.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -119,6 +127,9 @@ describe('PartsUsagePage', () => {
   test('renders empty state when no parts are found', async () => {
     // Mock parts service response with empty data
     partsService.getAllParts.mockResolvedValue([]);
+    
+    // Mock suppliers data
+    partsService.getAllSuppliers.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -138,6 +149,9 @@ describe('PartsUsagePage', () => {
   test('opens add part modal when add button is clicked', async () => {
     // Mock parts service response with empty data
     partsService.getAllParts.mockResolvedValue([]);
+    
+    // Mock suppliers data
+    partsService.getAllSuppliers.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -170,8 +184,12 @@ describe('PartsUsagePage', () => {
       part_number: 'NP-789',
       quantity: 25,
       price: 30.00,
-      supplier: 'New Supplier'
+      supplier: 'New Supplier',
+      supplier_name: 'New Supplier'
     });
+    
+    // Mock suppliers data
+    partsService.getAllSuppliers.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -223,9 +241,13 @@ describe('PartsUsagePage', () => {
         part_number: 'EO-123',
         quantity: 50,
         price: 25.00,
-        supplier: 'Auto Parts Co.'
+        supplier: 'Auto Parts Co.',
+        supplier_name: 'Auto Parts Co.'
       }
     ]);
+    
+    // Mock suppliers data
+    partsService.getAllSuppliers.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -258,7 +280,8 @@ describe('PartsUsagePage', () => {
         part_number: 'EO-123',
         quantity: 50,
         price: 25.00,
-        supplier: 'Auto Parts Co.'
+        supplier: 'Auto Parts Co.',
+        supplier_name: 'Auto Parts Co.'
       }
     ]);
     
@@ -269,8 +292,12 @@ describe('PartsUsagePage', () => {
       part_number: 'EO-123',
       quantity: 45,
       price: 27.50,
-      supplier: 'Auto Parts Co.'
+      supplier: 'Auto Parts Co.',
+      supplier_name: 'Auto Parts Co.'
     });
+    
+    // Mock suppliers data
+    partsService.getAllSuppliers.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -320,12 +347,16 @@ describe('PartsUsagePage', () => {
         part_number: 'EO-123',
         quantity: 50,
         price: 25.00,
-        supplier: 'Auto Parts Co.'
+        supplier: 'Auto Parts Co.',
+        supplier_name: 'Auto Parts Co.'
       }
     ]);
     
     // Mock parts service response for deleting part
     partsService.deletePart.mockResolvedValue({});
+    
+    // Mock suppliers data
+    partsService.getAllSuppliers.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -357,6 +388,9 @@ describe('PartsUsagePage', () => {
   test('loads parts when refresh button is clicked', async () => {
     // Mock parts service response
     partsService.getAllParts.mockResolvedValue([]);
+    
+    // Mock suppliers data
+    partsService.getAllSuppliers.mockResolvedValue([]);
 
     render(
       <BrowserRouter>
@@ -386,9 +420,13 @@ describe('PartsUsagePage', () => {
         part_number: 'EO-123',
         quantity: 50,
         price: 25.00,
-        supplier: 'Auto Parts Co.'
+        supplier: 'Auto Parts Co.',
+        supplier_name: 'Auto Parts Co.'
       }
     ]);
+    
+    // Mock suppliers data
+    partsService.getAllSuppliers.mockResolvedValue([]);
 
     render(
       <BrowserRouter>

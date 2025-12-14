@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import CustomerProfilePage from '../../../pages/customer/Profile';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -52,9 +52,9 @@ describe('CustomerProfilePage', () => {
 
     // Check that profile information is displayed
     expect(screen.getByRole('heading', { name: /John Doe/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/john@example\.com/i)[0]).toBeInTheDocument();
-    expect(screen.getAllByText('123-456-7890')[0]).toBeInTheDocument();
-    expect(screen.getAllByText('123 Main St')[0]).toBeInTheDocument();
+    expect(screen.getByText(/john@example\.com/i)).toBeInTheDocument();
+    expect(screen.getByText('123-456-7890')).toBeInTheDocument();
+    expect(screen.getByText('123 Main St')).toBeInTheDocument();
   });
 
   test('switches to edit mode when edit button is clicked', () => {
@@ -66,7 +66,7 @@ describe('CustomerProfilePage', () => {
 
     // Initially in view mode
     expect(screen.getByText('Edit Profile')).toBeInTheDocument();
-    expect(screen.queryByRole('form', { name: '' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
 
     // Click edit button
     const editButton = screen.getByText('Edit Profile');
@@ -89,7 +89,7 @@ describe('CustomerProfilePage', () => {
     });
         
     // Mock window.alert to prevent actual alert
-    window.alert = vi.fn();
+    const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
         
     render(
       <BrowserRouter>
@@ -132,6 +132,9 @@ describe('CustomerProfilePage', () => {
 
     // Should be back in view mode
     expect(screen.getByText('Edit Profile')).toBeInTheDocument();
+    
+    // Restore window.alert
+    mockAlert.mockRestore();
   });
 
   test('shows error message when profile update fails', async () => {
@@ -139,7 +142,7 @@ describe('CustomerProfilePage', () => {
     authService.updateProfile.mockRejectedValue(new Error('Network error'));
     
     // Mock window.alert to prevent actual alert
-    window.alert = vi.fn();
+    const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
     render(
       <BrowserRouter>
@@ -159,6 +162,9 @@ describe('CustomerProfilePage', () => {
     await waitFor(() => {
       expect(authService.updateProfile).toHaveBeenCalled();
     });
+    
+    // Restore window.alert
+    mockAlert.mockRestore();
   });
 
   test('changes password when password form is submitted', async () => {
@@ -166,7 +172,7 @@ describe('CustomerProfilePage', () => {
     authService.changePassword.mockResolvedValue({ message: 'Password changed successfully' });
     
     // Mock window.alert to prevent actual alert
-    window.alert = vi.fn();
+    const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
     render(
       <BrowserRouter>
@@ -174,11 +180,7 @@ describe('CustomerProfilePage', () => {
       </BrowserRouter>
     );
 
-    // Switch to edit mode (password form is always visible)
-    const editButton = screen.getByText('Edit Profile');
-    fireEvent.click(editButton);
-
-    // Fill in the password form
+    // Fill in the password form (password form is always visible)
     fireEvent.change(screen.getByLabelText('Current Password'), { target: { value: 'oldpassword' } });
     fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpassword' } });
     fireEvent.change(screen.getByLabelText('Confirm New Password'), { target: { value: 'newpassword' } });
@@ -199,26 +201,25 @@ describe('CustomerProfilePage', () => {
     expect(screen.getByLabelText('Current Password')).toHaveValue('');
     expect(screen.getByLabelText('New Password')).toHaveValue('');
     expect(screen.getByLabelText('Confirm New Password')).toHaveValue('');
+    
+    // Restore window.alert
+    mockAlert.mockRestore();
   });
 
   test('shows error when new passwords do not match', () => {
+    // Mock window.alert to prevent actual alert
+    const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
     render(
       <BrowserRouter>
         <CustomerProfilePage />
       </BrowserRouter>
     );
 
-    // Switch to edit mode
-    const editButton = screen.getByText('Edit Profile');
-    fireEvent.click(editButton);
-
     // Fill in the password form with mismatched passwords
     fireEvent.change(screen.getByLabelText('Current Password'), { target: { value: 'oldpassword' } });
     fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpassword' } });
     fireEvent.change(screen.getByLabelText('Confirm New Password'), { target: { value: 'differentpassword' } });
-
-    // Mock window.alert to prevent actual alert
-    window.alert = vi.fn();
 
     // Submit the password form
     const changePasswordButton = screen.getByRole('button', { name: /change password/i });
@@ -226,5 +227,8 @@ describe('CustomerProfilePage', () => {
 
     // Check that alert was called with the correct message
     expect(window.alert).toHaveBeenCalledWith('New passwords do not match!');
+    
+    // Restore window.alert
+    mockAlert.mockRestore();
   });
 });

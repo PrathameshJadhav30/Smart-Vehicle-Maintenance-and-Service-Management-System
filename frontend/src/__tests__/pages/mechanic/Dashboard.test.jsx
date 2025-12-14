@@ -39,7 +39,7 @@ describe('MechanicDashboard', () => {
     useAuth.mockReturnValue({ user: mockUser });
   });
 
-  test('renders loading spinner initially', () => {
+  test('renders loading spinner initially', async () => {
     render(
       <BrowserRouter>
         <MechanicDashboard />
@@ -151,7 +151,7 @@ describe('MechanicDashboard', () => {
     });
 
     // Check that empty state messages are displayed
-    expect(screen.getByText('No assigned bookings')).toBeInTheDocument();
-    expect(screen.getByText('No active job cards')).toBeInTheDocument();
+    expect(screen.getByText('No bookings assigned')).toBeInTheDocument();
+    expect(screen.getByText('No active jobs')).toBeInTheDocument();
   });
 });
