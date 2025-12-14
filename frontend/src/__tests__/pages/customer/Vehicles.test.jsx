@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import VehiclesPage from '../../../pages/customer/Vehicles';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -229,7 +229,9 @@ describe('VehiclesPage', () => {
     // Submit the form
     const modal = screen.getByTestId('modal');
     const submitButton = within(modal).getByRole('button', { name: /add vehicle/i });
-    fireEvent.click(submitButton);
+    await act(async () => {
+      fireEvent.click(submitButton);
+    });
 
     // Wait for vehicle to be created
     await waitFor(() => {
@@ -356,7 +358,9 @@ describe('VehiclesPage', () => {
     // Submit the form
     const modal = screen.getByTestId('modal');
     const submitButton = within(modal).getByRole('button', { name: /save changes/i });
-    fireEvent.click(submitButton);
+    await act(async () => {
+      fireEvent.click(submitButton);
+    });
 
     // Wait for vehicle to be updated
     await waitFor(() => {
@@ -419,7 +423,9 @@ describe('VehiclesPage', () => {
 
     // Click delete button
     const deleteButton = screen.getAllByText('Delete')[0];
-    fireEvent.click(deleteButton);
+    await act(async () => {
+      fireEvent.click(deleteButton);
+    });
 
     // Wait for vehicle to be deleted
     await waitFor(() => {
