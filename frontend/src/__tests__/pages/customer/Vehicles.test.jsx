@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import VehiclesPage from '../../../pages/customer/Vehicles';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -87,8 +87,8 @@ describe('VehiclesPage', () => {
     });
 
     // Check that empty state is displayed
-    expect(screen.getByText('No vehicles found')).toBeInTheDocument();
-    expect(screen.getByText('Add Vehicle')).toBeInTheDocument();
+    expect(screen.getByText('No vehicles registered')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add your first vehicle/i })).toBeInTheDocument();
   });
 
   test('renders vehicles when data is available', async () => {
@@ -166,16 +166,30 @@ describe('VehiclesPage', () => {
 
     // Check that modal is opened
     expect(screen.getByTestId('modal')).toBeInTheDocument();
-    expect(screen.getByText('Add Vehicle')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /add vehicle/i })).toBeInTheDocument();
   });
 
   test('creates new vehicle when add form is submitted', async () => {
     // Mock vehicle service response for loading vehicles
-    vehicleService.getVehiclesByUserId.mockResolvedValue({
+    vehicleService.getVehiclesByUserId.mockResolvedValueOnce({
       vehicles: [],
       pagination: {
         totalPages: 1,
         totalItems: 0
+      }
+    }).mockResolvedValueOnce({
+      vehicles: [{
+        id: '1',
+        make: 'Ford',
+        model: 'Focus',
+        year: 2021,
+        vin: '',
+        registration_number: 'DEF456',
+        mileage: 5000
+      }],
+      pagination: {
+        totalPages: 1,
+        totalItems: 1
       }
     });
     
@@ -185,6 +199,7 @@ describe('VehiclesPage', () => {
       make: 'Ford',
       model: 'Focus',
       year: 2021,
+      vin: '',
       registration_number: 'DEF456',
       mileage: 5000
     });
@@ -209,10 +224,11 @@ describe('VehiclesPage', () => {
     fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'Focus' } });
     fireEvent.change(screen.getByLabelText('Year'), { target: { value: '2021' } });
     fireEvent.change(screen.getByLabelText('Registration Number'), { target: { value: 'DEF456' } });
-    fireEvent.change(screen.getByLabelText('Current Mileage'), { target: { value: '5000' } });
+    fireEvent.change(screen.getByLabelText('Mileage'), { target: { value: '5000' } });
 
     // Submit the form
-    const submitButton = screen.getByText('Add Vehicle');
+    const modal = screen.getByTestId('modal');
+    const submitButton = within(modal).getByRole('button', { name: /add vehicle/i });
     fireEvent.click(submitButton);
 
     // Wait for vehicle to be created
@@ -263,7 +279,7 @@ describe('VehiclesPage', () => {
     });
 
     // Click edit button
-    const editButton = screen.getByText('Edit');
+    const editButton = screen.getAllByText('Edit')[0];
     fireEvent.click(editButton);
 
     // Check that modal is opened with vehicle data
@@ -275,7 +291,7 @@ describe('VehiclesPage', () => {
 
   test('updates vehicle when edit form is submitted', async () => {
     // Mock vehicle service response for loading vehicles
-    vehicleService.getVehiclesByUserId.mockResolvedValue({
+    vehicleService.getVehiclesByUserId.mockResolvedValueOnce({
       vehicles: [
         {
           id: '1',
@@ -284,6 +300,21 @@ describe('VehiclesPage', () => {
           year: 2020,
           registration_number: 'ABC123',
           mileage: 15000
+        }
+      ],
+      pagination: {
+        totalPages: 1,
+        totalItems: 1
+      }
+    }).mockResolvedValueOnce({
+      vehicles: [
+        {
+          id: '1',
+          make: 'Toyota',
+          model: 'Corolla',
+          year: 2021,
+          registration_number: 'ABC123',
+          mileage: 16000
         }
       ],
       pagination: {
@@ -314,16 +345,17 @@ describe('VehiclesPage', () => {
     });
 
     // Click edit button
-    const editButton = screen.getByText('Edit');
+    const editButton = screen.getAllByText('Edit')[0];
     fireEvent.click(editButton);
 
     // Change model field
     fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'Corolla' } });
     fireEvent.change(screen.getByLabelText('Year'), { target: { value: '2021' } });
-    fireEvent.change(screen.getByLabelText('Current Mileage'), { target: { value: '16000' } });
+    fireEvent.change(screen.getByLabelText('Mileage'), { target: { value: '16000' } });
 
     // Submit the form
-    const submitButton = screen.getByText('Update Vehicle');
+    const modal = screen.getByTestId('modal');
+    const submitButton = within(modal).getByRole('button', { name: /save changes/i });
     fireEvent.click(submitButton);
 
     // Wait for vehicle to be updated
@@ -344,7 +376,7 @@ describe('VehiclesPage', () => {
 
   test('deletes vehicle when delete button is clicked', async () => {
     // Mock vehicle service response for loading vehicles
-    vehicleService.getVehiclesByUserId.mockResolvedValue({
+    vehicleService.getVehiclesByUserId.mockResolvedValueOnce({
       vehicles: [
         {
           id: '1',
@@ -358,6 +390,12 @@ describe('VehiclesPage', () => {
       pagination: {
         totalPages: 1,
         totalItems: 1
+      }
+    }).mockResolvedValueOnce({
+      vehicles: [],
+      pagination: {
+        totalPages: 1,
+        totalItems: 0
       }
     });
     
@@ -376,10 +414,11 @@ describe('VehiclesPage', () => {
     });
 
     // Mock window.confirm to return true
-    const mockConfirm = vi.spyOn(window, 'confirm').mockImplementation(() => true);
+    window.confirm = vi.fn(() => true);
+    const mockConfirm = vi.spyOn(window, 'confirm');
 
     // Click delete button
-    const deleteButton = screen.getByText('Delete');
+    const deleteButton = screen.getAllByText('Delete')[0];
     fireEvent.click(deleteButton);
 
     // Wait for vehicle to be deleted

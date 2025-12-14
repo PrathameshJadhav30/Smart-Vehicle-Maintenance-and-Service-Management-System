@@ -48,6 +48,7 @@ describe('AdminDashboard', () => {
       </BrowserRouter>
     );
 
+    // Check for the loading spinner element
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
 
@@ -89,6 +90,11 @@ describe('AdminDashboard', () => {
     // Wait for loading to complete
     await waitFor(() => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
+    
+    // Wait for dashboard content to be displayed
+    await waitFor(() => {
+      expect(screen.getByText('Welcome, Admin User!')).toBeInTheDocument();
     });
 
     // Check that dashboard content is displayed
@@ -173,7 +179,7 @@ describe('AdminDashboard', () => {
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+      expect(screen.queryByText('Welcome, Admin User!')).toBeInTheDocument();
     });
 
     // Check that dashboard content is displayed
