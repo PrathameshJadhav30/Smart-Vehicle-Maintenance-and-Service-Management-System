@@ -51,10 +51,14 @@ describe('CustomerProfilePage', () => {
     );
 
     // Check that profile information is displayed
-    expect(screen.getByRole('heading', { name: /John Doe/i })).toBeInTheDocument();
-    expect(screen.getByText(/john@example\.com/i)).toBeInTheDocument();
-    expect(screen.getByText('123-456-7890')).toBeInTheDocument();
-    expect(screen.getByText('123 Main St')).toBeInTheDocument();
+    // Target the specific paragraph containing the name within the Name label container
+    expect(screen.getByText('John Doe', { selector: 'p.mt-1.text-lg.font-semibold.text-gray-900' })).toBeInTheDocument();
+    // Target the specific paragraph containing the email within the Email label container
+    expect(screen.getByText('john@example.com', { selector: 'p.mt-1.text-lg.font-semibold.text-gray-900' })).toBeInTheDocument();
+    // Target the specific paragraph containing the phone
+    expect(screen.getByText('123-456-7890', { selector: 'p.mt-1.text-lg.font-semibold.text-gray-900' })).toBeInTheDocument();
+    // Target the specific paragraph containing the address
+    expect(screen.getByText('123 Main St', { selector: 'p.mt-1.text-lg.font-semibold.text-gray-900' })).toBeInTheDocument();
   });
 
   test('switches to edit mode when edit button is clicked', () => {
@@ -89,7 +93,8 @@ describe('CustomerProfilePage', () => {
     });
         
     // Mock window.alert to prevent actual alert
-    const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const mockAlert = vi.fn();
+    window.alert = mockAlert;
         
     render(
       <BrowserRouter>
@@ -132,9 +137,6 @@ describe('CustomerProfilePage', () => {
 
     // Should be back in view mode
     expect(screen.getByText('Edit Profile')).toBeInTheDocument();
-    
-    // Restore window.alert
-    mockAlert.mockRestore();
   });
 
   test('shows error message when profile update fails', async () => {
@@ -142,7 +144,8 @@ describe('CustomerProfilePage', () => {
     authService.updateProfile.mockRejectedValue(new Error('Network error'));
     
     // Mock window.alert to prevent actual alert
-    const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const mockAlert = vi.fn();
+    window.alert = mockAlert;
 
     render(
       <BrowserRouter>
@@ -162,9 +165,6 @@ describe('CustomerProfilePage', () => {
     await waitFor(() => {
       expect(authService.updateProfile).toHaveBeenCalled();
     });
-    
-    // Restore window.alert
-    mockAlert.mockRestore();
   });
 
   test('changes password when password form is submitted', async () => {
@@ -172,7 +172,8 @@ describe('CustomerProfilePage', () => {
     authService.changePassword.mockResolvedValue({ message: 'Password changed successfully' });
     
     // Mock window.alert to prevent actual alert
-    const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const mockAlert = vi.fn();
+    window.alert = mockAlert;
 
     render(
       <BrowserRouter>
@@ -201,14 +202,12 @@ describe('CustomerProfilePage', () => {
     expect(screen.getByLabelText('Current Password')).toHaveValue('');
     expect(screen.getByLabelText('New Password')).toHaveValue('');
     expect(screen.getByLabelText('Confirm New Password')).toHaveValue('');
-    
-    // Restore window.alert
-    mockAlert.mockRestore();
   });
 
   test('shows error when new passwords do not match', () => {
     // Mock window.alert to prevent actual alert
-    const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const mockAlert = vi.fn();
+    window.alert = mockAlert;
 
     render(
       <BrowserRouter>
@@ -227,8 +226,5 @@ describe('CustomerProfilePage', () => {
 
     // Check that alert was called with the correct message
     expect(window.alert).toHaveBeenCalledWith('New passwords do not match!');
-    
-    // Restore window.alert
-    mockAlert.mockRestore();
   });
 });

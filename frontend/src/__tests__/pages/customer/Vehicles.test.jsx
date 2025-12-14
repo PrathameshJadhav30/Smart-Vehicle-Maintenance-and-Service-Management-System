@@ -418,7 +418,8 @@ describe('VehiclesPage', () => {
     });
 
     // Mock window.confirm to return true
-    const mockConfirm = vi.spyOn(window, 'confirm').mockImplementation(() => true);
+    const mockConfirm = vi.fn(() => true);
+    window.confirm = mockConfirm;
 
     // Click delete button
     const deleteButton = screen.getAllByText('Delete')[0];
@@ -430,9 +431,6 @@ describe('VehiclesPage', () => {
     await waitFor(() => {
       expect(vehicleService.deleteVehicle).toHaveBeenCalledWith('1');
     });
-
-    // Restore window.confirm
-    mockConfirm.mockRestore();
   });
 
   test('loads vehicles when refresh button is clicked', async () => {
