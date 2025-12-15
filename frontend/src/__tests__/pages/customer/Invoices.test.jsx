@@ -55,7 +55,12 @@ describe('InvoicesPage', () => {
     useAuth.mockReturnValue({ user: mockUser });
   });
 
-  test('renders loading spinner initially', () => {
+  test('renders loading spinner initially', async () => {
+    // Mock the invoice service to delay response
+    invoiceService.getCustomerInvoices.mockImplementation(() => new Promise(resolve => {
+      setTimeout(() => resolve([]), 100);
+    }));
+
     render(
       <BrowserRouter>
         <InvoicesPage />
@@ -64,6 +69,11 @@ describe('InvoicesPage', () => {
 
     // Check for the loading spinner div using a class-based query
     expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(document.querySelector('.animate-spin')).not.toBeInTheDocument();
+    });
   });
 
   test('renders empty state when no invoices are found', async () => {
