@@ -40,7 +40,28 @@ vi.mock('../../../contexts/ToastContext', () => ({
   useToast: () => mockUseToast()
 }));
 
-// Mock AuthLayout to render children directly
+// Mock components
+vi.mock('../../../components/Button', () => ({
+  __esModule: true,
+  default: ({ children, loading, ...props }) => (
+    <button {...props} disabled={loading}>
+      {children}
+      {loading && <span>Loading...</span>}
+    </button>
+  )
+}));
+
+vi.mock('../../../components/Input', () => ({
+  __esModule: true,
+  default: ({ label, id, error, ...props }) => (
+    <div>
+      {label && <label htmlFor={id}>{label}</label>}
+      <input id={id} {...props} />
+      {error && <span data-testid="error">{error}</span>}
+    </div>
+  )
+}));
+
 vi.mock('../../../layouts/AuthLayout', () => ({
   __esModule: true,
   default: ({ children }) => <div>{children}</div>

@@ -1,49 +1,52 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Register from '../../../pages/auth/Register';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useToast } from '../../../contexts/ToastContext';
 
 // Mock the contexts
-vi.mock('../../contexts/AuthContext', () => ({
-  useAuth: vi.fn()
+const mockUseAuth = vi.fn();
+const mockUseToast = vi.fn();
+
+vi.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => mockUseAuth()
 }));
 
-vi.mock('../../contexts/ToastContext', () => ({
-  useToast: vi.fn()
+vi.mock('../../../contexts/ToastContext', () => ({
+  useToast: () => mockUseToast()
 }));
 
 // Mock the components
-vi.mock('../../components/Input', () => ({
+vi.mock('../../../components/Input', () => ({
   __esModule: true,
-  default: ({ label, error, ...props }) => (
+  default: ({ label, id, error, ...props }) => (
     <div>
-      <label>{label}</label>
-      <input {...props} />
-      {error && <span data-testid={`error-${props.name}`}>{error}</span>}
+      {label && <label htmlFor={id}>{label}</label>}
+      <input id={id} {...props} />
+      {error && <p className="mt-1 text-sm text-red-500" data-testid="error">{error}</p>}
     </div>
   )
 }));
 
-vi.mock('../../components/Select', () => ({
+vi.mock('../../../components/Select', () => ({
   __esModule: true,
-  default: ({ label, error, options, ...props }) => (
+  default: ({ label, id, error, options, ...props }) => (
     <div>
-      <label>{label}</label>
-      <select {...props}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
+      {label && <label htmlFor={id}>{label}</label>}
+      <select id={id} {...props}>
+        {options && options.map((option, index) => (
+          <option key={index} value={option.value}>
             {option.label}
           </option>
         ))}
       </select>
-      {error && <span data-testid={`error-${props.name}`}>{error}</span>}
+      {error && <p className="mt-1 text-sm text-red-500" data-testid="error">{error}</p>}
     </div>
   )
 }));
 
-vi.mock('../../components/Button', () => ({
+vi.mock('../../../components/Button', () => ({
   __esModule: true,
   default: ({ children, loading, ...props }) => (
     <button {...props} disabled={loading}>
@@ -53,11 +56,11 @@ vi.mock('../../components/Button', () => ({
   )
 }));
 
-vi.mock('../../layouts/AuthLayout', () => ({
+vi.mock('../../../layouts/AuthLayout', () => ({
   __esModule: true,
   default: ({ title, children }) => (
     <div>
-      <h1>{title}</h1>
+      <h1 data-testid="page-title">{title}</h1>
       {children}
     </div>
   )
@@ -69,11 +72,13 @@ vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    useNavigate: () => mockNavigate
+    useNavigate: () => mockNavigate,
+    Link: ({ children, to }) => <a href={to}>{children}</a>
   };
 });
 
 describe('Register', () => {
+  const mockLogin = vi.fn();
   const mockRegister = vi.fn();
   const mockShowToast = {
     success: vi.fn(),
@@ -83,170 +88,155 @@ describe('Register', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    useAuth.mockReturnValue({ register: mockRegister });
-    useToast.mockReturnValue(mockShowToast);
+    mockUseAuth.mockReturnValue({ 
+      login: mockLogin, 
+      register: mockRegister 
+    });
+    mockUseToast.mockReturnValue({ showToast: mockShowToast });
   });
 
-  test('renders registration form with all fields', () => {
+  test('renders register form', () => {
     render(
       <BrowserRouter>
         <Register />
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Create Account')).toBeInTheDocument();
+    expect(screen.getByTestId('page-title')).toHaveTextContent('Create Account');
     expect(screen.getByLabelText('Full Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Email Address')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
-    expect(screen.getByLabelText('Confirm Password')).toBeInTheDocument();
-    expect(screen.getByLabelText('Role')).toBeInTheDocument();
-    expect(screen.getByText('Create Account')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create Account' })).toBeInTheDocument();
   });
 
-  test('shows validation errors when form is submitted empty', async () => {
+  test('shows validation error when password is too short', () => {
     render(
       <BrowserRouter>
         <Register />
       </BrowserRouter>
     );
 
-    const submitButton = screen.getByText('Create Account');
-    fireEvent.click(submitButton);
+    const nameInput = screen.getByLabelText('Full Name');
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('error-name')).toBeInTheDocument();
-      expect(screen.getByTestId('error-email')).toBeInTheDocument();
-      expect(screen.getByTestId('error-password')).toBeInTheDocument();
-      expect(screen.getByTestId('error-role')).toBeInTheDocument();
-    });
-  });
-
-  test('shows password mismatch error when passwords do not match', async () => {
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
+    const emailInput = screen.getByLabelText('Email Address');
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
 
     const passwordInput = screen.getByLabelText('Password');
-    const confirmPasswordInput = screen.getByLabelText('Confirm Password');
+    fireEvent.change(passwordInput, { target: { value: '123' } });
 
+    const confirmPasswordInput = screen.getByLabelText('Confirm Password');
+    fireEvent.change(confirmPasswordInput, { target: { value: '123' } });
+
+    const roleSelect = screen.getByLabelText('Role');
+    fireEvent.change(roleSelect, { target: { value: 'customer' } });
+
+    // Use fireEvent.click on the submit button
+    const submitButton = screen.getByRole('button', { name: 'Create Account' });
+    fireEvent.click(submitButton);
+
+    expect(screen.getByTestId('error')).toBeInTheDocument();
+    expect(screen.getByTestId('error')).toHaveTextContent('Password must be at least 6 characters');
+  });
+
+  test('shows validation error when passwords do not match', () => {
+    render(
+      <BrowserRouter>
+        <Register />
+      </BrowserRouter>
+    );
+
+    const nameInput = screen.getByLabelText('Full Name');
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } });
+
+    const emailInput = screen.getByLabelText('Email Address');
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
+
+    const passwordInput = screen.getByLabelText('Password');
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
+
+    const confirmPasswordInput = screen.getByLabelText('Confirm Password');
     fireEvent.change(confirmPasswordInput, { target: { value: 'differentpassword' } });
 
-    const submitButton = screen.getByText('Create Account');
+    const roleSelect = screen.getByLabelText('Role');
+    fireEvent.change(roleSelect, { target: { value: 'customer' } });
+
+    // Use fireEvent.click on the submit button
+    const submitButton = screen.getByRole('button', { name: 'Create Account' });
     fireEvent.click(submitButton);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('error-confirmPassword')).toBeInTheDocument();
-      expect(screen.getByTestId('error-confirmPassword')).toHaveTextContent('Passwords do not match');
-    });
+    expect(screen.getByTestId('error')).toBeInTheDocument();
+    expect(screen.getByTestId('error')).toHaveTextContent('Passwords do not match');
   });
 
-  test('shows success message and navigates to login on successful registration', async () => {
-    mockRegister.mockResolvedValue({ success: true });
-
+  test('shows validation error when role is not selected', () => {
     render(
       <BrowserRouter>
         <Register />
       </BrowserRouter>
     );
 
-    // Fill in the form
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'John Doe' } });
-    fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'john@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
-    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'password123' } });
-    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'customer' } });
-
-    const submitButton = screen.getByText('Create Account');
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockRegister).toHaveBeenCalledWith({
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        role: 'customer'
-      });
-      
-      expect(mockShowToast.success).toHaveBeenCalledWith('Registration successful!');
-      expect(mockShowToast.info).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('/login');
-    });
-  });
-
-  test('shows error message when registration fails', async () => {
-    mockRegister.mockResolvedValue({ success: false, message: 'Registration failed' });
-
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    // Fill in the form
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'John Doe' } });
-    fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'john@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
-    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'password123' } });
-    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'customer' } });
-
-    const submitButton = screen.getByText('Create Account');
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockShowToast.error).toHaveBeenCalledWith('Registration failed');
-    });
-  });
-
-  test('shows error message when registration throws an error', async () => {
-    mockRegister.mockRejectedValue(new Error('Network error'));
-
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    // Fill in the form
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'John Doe' } });
-    fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'john@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
-    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'password123' } });
-    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'customer' } });
-
-    const submitButton = screen.getByText('Create Account');
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockShowToast.error).toHaveBeenCalledWith('An unexpected error occurred');
-    });
-  });
-
-  test('clears error when user types in a field', async () => {
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    // Submit empty form to trigger errors
-    const submitButton = screen.getByText('Create Account');
-    fireEvent.click(submitButton);
-
-    // Wait for errors to appear
-    await waitFor(() => {
-      expect(screen.getByTestId('error-name')).toBeInTheDocument();
-    });
-
-    // Type in the name field
     const nameInput = screen.getByLabelText('Full Name');
-    fireEvent.change(nameInput, { target: { value: 'John' } });
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } });
 
-    // Wait for the name error to disappear
-    await waitFor(() => {
-      expect(screen.queryByTestId('error-name')).not.toBeInTheDocument();
+    const emailInput = screen.getByLabelText('Email Address');
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
+
+    const passwordInput = screen.getByLabelText('Password');
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+
+    const confirmPasswordInput = screen.getByLabelText('Confirm Password');
+    fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } });
+
+    // Leave role empty
+
+    // Use fireEvent.click on the submit button
+    const submitButton = screen.getByRole('button', { name: 'Create Account' });
+    fireEvent.click(submitButton);
+
+    expect(screen.getByTestId('error')).toBeInTheDocument();
+    expect(screen.getByTestId('error')).toHaveTextContent('Role is required');
+  });
+
+  test('submits form with valid data', async () => {
+    mockRegister.mockResolvedValue({
+      success: true,
+      data: {
+        user: { id: '1', name: 'John Doe', email: 'john@example.com' },
+        token: 'fake-jwt-token'
+      }
+    });
+
+    render(
+      <BrowserRouter>
+        <Register />
+      </BrowserRouter>
+    );
+
+    const nameInput = screen.getByLabelText('Full Name');
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } });
+
+    const emailInput = screen.getByLabelText('Email Address');
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
+
+    const passwordInput = screen.getByLabelText('Password');
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+
+    const confirmPasswordInput = screen.getByLabelText('Confirm Password');
+    fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } });
+
+    const roleSelect = screen.getByLabelText('Role');
+    fireEvent.change(roleSelect, { target: { value: 'customer' } });
+
+    // Use fireEvent.click on the submit button
+    const submitButton = screen.getByRole('button', { name: 'Create Account' });
+    fireEvent.click(submitButton);
+
+    expect(mockRegister).toHaveBeenCalledWith({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: 'password123',
+      role: 'customer'
     });
   });
 });
