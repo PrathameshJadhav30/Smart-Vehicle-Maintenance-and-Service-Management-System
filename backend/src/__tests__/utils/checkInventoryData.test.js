@@ -1,13 +1,13 @@
-import checkInventoryData from '../../utils/checkInventoryData.js';
-import { query } from '../../config/database.js';
+import checkInventoryData from '../../utils/checkInventoryData';
+import { query } from '../../config/database';
 
 // Mock the database module
-jest.mock('../../config/database.js', () => ({
+jest.mock('../../config/database', () => ({
   query: jest.fn()
 }));
 
 describe('checkInventoryData Utility', () => {
-  const mockDb = require('../../config/database.js');
+  const mockDb = require('../../config/database');
   
   beforeEach(() => {
     jest.clearAllMocks();
