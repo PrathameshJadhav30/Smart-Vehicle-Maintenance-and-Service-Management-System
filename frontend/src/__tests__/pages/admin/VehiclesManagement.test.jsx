@@ -230,10 +230,10 @@ describe('VehiclesManagementPage', () => {
       expect(vehicleService.updateVehicle).toHaveBeenCalledWith('1', {
         make: 'Toyota',
         model: 'Corolla',
-        year: '2021',
+        year: '2021', // Year should be a string as it comes from an input field
         vin: 'VIN123',
         registrationNumber: 'ABC123',
-        mileage: '15000'
+        mileage: '15000' // Mileage should be a string as it comes from an input field
       });
     });
 
