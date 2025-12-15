@@ -69,7 +69,12 @@ describe('AssignedBookingsPage', () => {
     useAuth.mockReturnValue({ user: mockUser, hasRole: (role) => role === 'mechanic' });
   });
 
-  test('renders loading spinner initially', () => {
+  test('renders loading spinner initially', async () => {
+    // Mock a delayed response to ensure we can catch the loading state
+    bookingService.getMechanicBookings.mockImplementation(() => new Promise(resolve => {
+      setTimeout(() => resolve([]), 100);
+    }));
+
     render(
       <BrowserRouter>
         <AssignedBookingsPage />
@@ -77,6 +82,11 @@ describe('AssignedBookingsPage', () => {
     );
 
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    
+    // Wait for the loading to complete
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
   });
 
   test('renders bookings when data is available', async () => {
@@ -122,10 +132,16 @@ describe('AssignedBookingsPage', () => {
     // Check that bookings are displayed
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-    expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
-    expect(screen.getByText('Honda Civic')).toBeInTheDocument();
+    // Check for make and model separately since they're in different divs
+    expect(screen.getByText('Camry')).toBeInTheDocument();
+    expect(screen.getByText('Toyota')).toBeInTheDocument();
+    expect(screen.getByText('Civic')).toBeInTheDocument();
+    expect(screen.getByText('Honda')).toBeInTheDocument();
     expect(screen.getByText('Oil Change')).toBeInTheDocument();
     expect(screen.getByText('Brake Service')).toBeInTheDocument();
+    
+    // Check that Start Job button is present for assigned booking
+    expect(screen.getByText('Start Job')).toBeInTheDocument();
   });
 
   test('renders empty state when no bookings are found', async () => {

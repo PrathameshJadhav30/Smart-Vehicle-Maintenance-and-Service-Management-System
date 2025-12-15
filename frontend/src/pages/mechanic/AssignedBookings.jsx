@@ -400,7 +400,7 @@ const AssignedBookingsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div data-testid="loading-spinner" className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -678,6 +678,16 @@ const AssignedBookingsPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex justify-end space-x-2">
+                              {booking.status === 'assigned' && (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleStartJob(booking.id)}
+                                  className="mr-2"
+                                >
+                                  Start Job
+                                </Button>
+                              )}
                               <button
                                 onClick={() => handleViewDetails(booking.id)}
                                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
