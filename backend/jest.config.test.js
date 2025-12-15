@@ -1,5 +1,8 @@
 export default {
   testEnvironment: 'node',
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setupTests.js'],
   collectCoverageFrom: [
     'src/**/*.js',
@@ -11,6 +14,11 @@ export default {
   ],
   testMatch: [
     '**/__tests__/**/*.test.js'
+  ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/src/__tests__/setupTests.js',
+    '/src/__tests__/testServer.js'
   ],
   transform: {
     '^.+\\.js$': 'babel-jest'
