@@ -357,6 +357,7 @@ const AssignedJobsPage = () => {
                   className="block w-full md:w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
+                  role="combobox"
                 >
                   <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
@@ -370,348 +371,224 @@ const AssignedJobsPage = () => {
             </div>
           </div>
           
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 mb-6">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-yellow-100 rounded-md p-3">
-                    <svg className="h-6 w-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Pending Jobs</dt>
-                      <dd className="flex items-baseline">
-                        <div className="text-2xl font-semibold text-gray-900">{pendingJobs.length}</div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
+          {/* Show unified empty state when no job cards */}
+          {jobCards.length === 0 && !loading ? (
+            <div className="bg-white shadow rounded-lg p-8 text-center">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="mt-2 text-lg font-medium text-gray-900">No job cards found</h3>
+              <p className="mt-1 text-gray-500">You don't have any assigned job cards at the moment.</p>
             </div>
-            
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-blue-100 rounded-md p-3">
-                    <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">In Progress</dt>
-                      <dd className="flex items-baseline">
-                        <div className="text-2xl font-semibold text-gray-900">{inProgressJobs.length}</div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-green-100 rounded-md p-3">
-                    <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Completed</dt>
-                      <dd className="flex items-baseline">
-                        <div className="text-2xl font-semibold text-gray-900">{completedJobs.length}</div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Pending Jobs Section */}
-          <div className="mb-8">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Pending Jobs</h2>
-            {pendingJobs.length === 0 ? (
-              <div className="bg-white shadow rounded-lg p-8 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <h3 className="mt-2 text-lg font-medium text-gray-900">No pending jobs</h3>
-                <p className="mt-1 text-gray-500">You don't have any pending jobs at the moment.</p>
-              </div>
-            ) : (
-              <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul className="divide-y divide-gray-200">
-                  {pendingJobs.map((jobCard) => (
-                    <li key={jobCard.id}>
-                      <div className="px-4 py-4 sm:px-6">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-blue-600 truncate">
-                            Job #{String(jobCard.id).substring(0, 8)}
-                          </p>
-                          <div className="ml-2 flex-shrink-0 flex">
-                            {getStatusBadge(jobCard.status)}
-                          </div>
-                        </div>
-                        <div className="mt-2 sm:flex sm:justify-between">
-                          <div className="sm:flex">
-                            <p className="flex items-center text-sm text-gray-500">
-                              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                              </svg>
-                              Customer: {jobCard.booking?.customer?.name || 'N/A'}
-                            </p>
-                            <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                              </svg>
-                              Vehicle: {jobCard.booking?.vehicle?.make} {jobCard.booking?.vehicle?.model} ({jobCard.booking?.vehicle?.year})
-                            </p>
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                            </svg>
-                            <span>
-                              Created: {formatDate(jobCard.created_at)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="mt-2 flex justify-between items-center">
-                          <p className="text-sm text-gray-500">
-                            Service: {jobCard.booking?.serviceType || 'N/A'}
-                          </p>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="secondary" 
-                              size="small"
-                              onClick={() => openDetailsModal(jobCard)}
-                            >
-                              View Details
-                            </Button>
-                            <Button 
-                              variant="success" 
-                              size="small"
-                              onClick={() => openAcceptModal(jobCard)}
-                            >
-                              Accept Job
-                            </Button>
-                          </div>
-                        </div>
+          ) : (
+            <>
+              {/* Stats Overview */}
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 mb-6">
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 bg-yellow-100 rounded-md p-3">
+                        <svg className="h-6 w-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                       </div>
-                    </li>
-                  ))}
-                </ul>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-500 truncate">Pending Jobs</dt>
+                          <dd className="flex items-baseline">
+                            <div className="text-2xl font-semibold text-gray-900">{pendingJobs.length}</div>
+                          </dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                        <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-500 truncate">In Progress</dt>
+                          <dd className="flex items-baseline">
+                            <div className="text-2xl font-semibold text-gray-900">{inProgressJobs.length}</div>
+                          </dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 bg-green-100 rounded-md p-3">
+                        <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-500 truncate">Completed</dt>
+                          <dd className="flex items-baseline">
+                            <div className="text-2xl font-semibold text-gray-900">{completedJobs.length}</div>
+                          </dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-          
-          {/* In Progress Jobs Section */}
-          <div className="mb-8">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">In Progress Jobs</h2>
-            {inProgressJobs.length === 0 ? (
-              <div className="bg-white shadow rounded-lg p-8 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <h3 className="mt-2 text-lg font-medium text-gray-900">No jobs in progress</h3>
-                <p className="mt-1 text-gray-500">You don't have any jobs in progress at the moment.</p>
-              </div>
-            ) : (
+              
+              {/* Filtered Job Cards */}
               <div className="bg-white shadow overflow-hidden sm:rounded-md">
                 <ul className="divide-y divide-gray-200">
-                  {inProgressJobs.map((jobCard) => (
-                    <li key={jobCard.id}>
-                      <div className="px-4 py-4 sm:px-6">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-blue-600 truncate">
-                            Job #{String(jobCard.id).substring(0, 8)}
-                          </p>
-                          <div className="ml-2 flex-shrink-0 flex">
-                            {getStatusBadge(jobCard.status)}
-                          </div>
-                        </div>
-                        <div className="mt-2 sm:flex sm:justify-between">
-                          <div className="sm:flex">
-                            <p className="flex items-center text-sm text-gray-500">
-                              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                              </svg>
-                              Customer: {jobCard.booking?.customer?.name || 'N/A'}
+                  {jobCards
+                    .filter(job => filter === 'all' || job.status === filter)
+                    .filter(job => {
+                      if (!searchTerm) return true;
+                      const term = searchTerm.toLowerCase();
+                      return (
+                        (job.booking?.customer?.name && job.booking.customer.name.toLowerCase().includes(term)) ||
+                        (job.booking?.vehicle?.make && job.booking.vehicle.make.toLowerCase().includes(term)) ||
+                        (job.booking?.vehicle?.model && job.booking.vehicle.model.toLowerCase().includes(term)) ||
+                        (job.booking?.serviceType && job.booking.serviceType.toLowerCase().includes(term))
+                      );
+                    })
+                    .map((jobCard) => (
+                      <li key={jobCard.id}>
+                        <div className="px-4 py-4 sm:px-6">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-blue-600 truncate">
+                              Job #{String(jobCard.id).substring(0, 8)}
                             </p>
-                            <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                              </svg>
-                              Vehicle: {jobCard.booking?.vehicle?.make} {jobCard.booking?.vehicle?.model} ({jobCard.booking?.vehicle?.year})
-                            </p>
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                            </svg>
-                            <span>
-                              Started: {formatDate(jobCard.started_at)}
-                            </span>
-                          </div>
-                        </div>
-                        {jobCard.percent_complete && (
-                          <div className="mt-2">
-                            <div className="flex justify-between text-sm text-gray-500">
-                              <span>Progress</span>
-                              <span>{jobCard.percent_complete}%</span>
-                            </div>
-                            <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full" 
-                                style={{ width: `${jobCard.percent_complete}%` }}
-                              ></div>
+                            <div className="ml-2 flex-shrink-0 flex">
+                              {getStatusBadge(jobCard.status)}
                             </div>
                           </div>
-                        )}
-                        <div className="mt-2 flex justify-between items-center">
-                          <p className="text-sm text-gray-500">
-                            Service: {jobCard.booking?.serviceType || 'N/A'}
-                          </p>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="secondary" 
-                              size="small"
-                              onClick={() => openDetailsModal(jobCard)}
-                            >
-                              View Details
-                            </Button>
-                            <Button 
-                              variant="secondary" 
-                              size="small"
-                              onClick={() => navigate(`/mechanic/job-cards/edit/${jobCard.id}`)}
-                            >
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="info" 
-                              size="small"
-                              onClick={() => openProgressModal(jobCard)}
-                            >
-                              Update Progress
-                            </Button>
-                            <Button 
-                              variant="primary" 
-                              size="small"
-                              onClick={() => openAddTaskModal(jobCard)}
-                            >
-                              Add Task
-                            </Button>
-                            <Button 
-                              variant="warning" 
-                              size="small"
-                              onClick={() => openAddPartModal(jobCard)}
-                            >
-                              Add Part
-                            </Button>
-                            {/* Added Cost Estimation button */}
-                            <Button 
-                              variant="info" 
-                              size="small"
-                              onClick={() => openCostEstimationModal(jobCard)}
-                            >
-                              Cost Estimation
-                            </Button>
-                            <Button 
-                              variant="success" 
-                              size="small"
-                              onClick={() => handleMarkAsCompleted(jobCard.id)}
-                            >
-                              Mark as Completed
-                            </Button>
+                          <div className="mt-2 sm:flex sm:justify-between">
+                            <div className="sm:flex">
+                              <p className="flex items-center text-sm text-gray-500">
+                                <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                </svg>
+                                Customer: {jobCard.booking?.customer?.name || 'N/A'}
+                              </p>
+                              <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
+                                <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                </svg>
+                                Vehicle: {jobCard.booking?.vehicle?.make} {jobCard.booking?.vehicle?.model} ({jobCard.booking?.vehicle?.year})
+                              </p>
+                            </div>
+                            <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                              </svg>
+                              <span>
+                                {jobCard.status === 'completed' ? 'Completed' : jobCard.status === 'in_progress' ? 'Started' : 'Created'}: {formatDate(jobCard.status === 'completed' ? jobCard.completed_at : jobCard.status === 'in_progress' ? jobCard.started_at : jobCard.created_at)}
+                              </span>
+                            </div>
+                          </div>
+                          {jobCard.status === 'in_progress' && jobCard.percent_complete && (
+                            <div className="mt-2">
+                              <div className="flex justify-between text-sm text-gray-500">
+                                <span>Progress</span>
+                                <span>{jobCard.percent_complete}%</span>
+                              </div>
+                              <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full" 
+                                  style={{ width: `${jobCard.percent_complete}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
+                          <div className="mt-2 flex justify-between items-center">
+                            <p className="text-sm text-gray-500">
+                              Service: {jobCard.booking?.serviceType || 'N/A'}
+                            </p>
+                            <div className="flex space-x-2">
+                              <Button 
+                                variant="secondary" 
+                                size="small"
+                                onClick={() => openDetailsModal(jobCard)}
+                              >
+                                View Details
+                              </Button>
+                              <Button 
+                                variant="secondary" 
+                                size="small"
+                                onClick={() => navigate(`/mechanic/job-cards/edit/${jobCard.id}`)}
+                              >
+                                Edit
+                              </Button>
+                              {jobCard.status === 'pending' && (
+                                <Button 
+                                  variant="success" 
+                                  size="small"
+                                  onClick={() => openAcceptModal(jobCard)}
+                                >
+                                  Accept Job
+                                </Button>
+                              )}
+                              {jobCard.status === 'in_progress' && (
+                                <>
+                                  <Button 
+                                    variant="info" 
+                                    size="small"
+                                    onClick={() => openProgressModal(jobCard)}
+                                  >
+                                    Update Progress
+                                  </Button>
+                                  <Button 
+                                    variant="primary" 
+                                    size="small"
+                                    onClick={() => openAddTaskModal(jobCard)}
+                                  >
+                                    Add Task
+                                  </Button>
+                                  <Button 
+                                    variant="warning" 
+                                    size="small"
+                                    onClick={() => openAddPartModal(jobCard)}
+                                  >
+                                    Add Part
+                                  </Button>
+                                  {/* Added Cost Estimation button */}
+                                  <Button 
+                                    variant="info" 
+                                    size="small"
+                                    onClick={() => openCostEstimationModal(jobCard)}
+                                  >
+                                    Cost Estimation
+                                  </Button>
+                                  <Button 
+                                    variant="success" 
+                                    size="small"
+                                    onClick={() => handleMarkAsCompleted(jobCard.id)}
+                                  >
+                                    Mark as Completed
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    ))}
                 </ul>
               </div>
-            )}
-          </div>
-          
-          {/* Completed Jobs Section */}
-          <div>
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Completed Jobs</h2>
-            {completedJobs.length === 0 ? (
-              <div className="bg-white shadow rounded-lg p-8 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <h3 className="mt-2 text-lg font-medium text-gray-900">No completed jobs</h3>
-                <p className="mt-1 text-gray-500">You haven't completed any jobs yet.</p>
-              </div>
-            ) : (
-              <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul className="divide-y divide-gray-200">
-                  {completedJobs.map((jobCard) => (
-                    <li key={jobCard.id}>
-                      <div className="px-4 py-4 sm:px-6">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-blue-600 truncate">
-                            Job #{String(jobCard.id).substring(0, 8)}
-                          </p>
-                          <div className="ml-2 flex-shrink-0 flex">
-                            {getStatusBadge(jobCard.status)}
-                          </div>
-                        </div>
-                        <div className="mt-2 sm:flex sm:justify-between">
-                          <div className="sm:flex">
-                            <p className="flex items-center text-sm text-gray-500">
-                              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                              </svg>
-                              Customer: {jobCard.booking?.customer?.name || 'N/A'}
-                            </p>
-                            <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                              </svg>
-                              Vehicle: {jobCard.booking?.vehicle?.make} {jobCard.booking?.vehicle?.model} ({jobCard.booking?.vehicle?.year})
-                            </p>
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                            </svg>
-                            <span>
-                              Completed: {formatDate(jobCard.completed_at)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="mt-2 flex justify-between items-center">
-                          <p className="text-sm text-gray-500">
-                            Service: {jobCard.booking?.serviceType || 'N/A'}
-                          </p>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="secondary" 
-                              size="small"
-                              onClick={() => openDetailsModal(jobCard)}
-                            >
-                              View Details
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
-
+      
       {/* Accept Job Modal */}
       {showAcceptModal && (
         <Modal 
@@ -753,7 +630,7 @@ const AssignedJobsPage = () => {
         <Modal 
           isOpen={showDetailsModal} 
           onClose={() => setShowDetailsModal(false)} 
-          title={`Job Details #${String(selectedJobCard.id || '').substring(0, 8)}`}
+          title={`Job Card #${String(selectedJobCard.id || '').substring(0, 8)}`}
         >
           <div className="space-y-4">
             <div>

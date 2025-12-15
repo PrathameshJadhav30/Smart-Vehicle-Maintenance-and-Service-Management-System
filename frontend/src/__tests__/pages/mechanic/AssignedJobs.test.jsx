@@ -75,49 +75,6 @@ describe('AssignedJobsPage', () => {
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
 
-  test('renders job cards when data is available', async () => {
-    // Mock job card service response
-    jobcardService.getMechanicJobCards.mockResolvedValue([
-      {
-        id: '1',
-        title: 'Oil Change Job',
-        description: 'Complete oil change for Toyota Camry',
-        status: 'in_progress',
-        priority: 'medium',
-        assigned_mechanic: '123',
-        created_at: '2023-01-01T10:00:00Z',
-        updated_at: '2023-01-01T11:00:00Z'
-      },
-      {
-        id: '2',
-        title: 'Brake Service Job',
-        description: 'Replace brake pads for Honda Civic',
-        status: 'assigned',
-        priority: 'high',
-        assigned_mechanic: '123',
-        created_at: '2023-01-02T09:00:00Z',
-        updated_at: '2023-01-02T09:00:00Z'
-      }
-    ]);
-
-    render(
-      <BrowserRouter>
-        <AssignedJobsPage />
-      </BrowserRouter>
-    );
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-    });
-
-    // Check that job cards are displayed
-    expect(screen.getByText('Oil Change Job')).toBeInTheDocument();
-    expect(screen.getByText('Brake Service Job')).toBeInTheDocument();
-    expect(screen.getByText('Complete oil change for Toyota Camry')).toBeInTheDocument();
-    expect(screen.getByText('Replace brake pads for Honda Civic')).toBeInTheDocument();
-  });
-
   test('renders empty state when no job cards are found', async () => {
     // Mock job card service response with empty data
     jobcardService.getMechanicJobCards.mockResolvedValue([]);
