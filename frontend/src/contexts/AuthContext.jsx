@@ -99,6 +99,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      // Stop loading before dispatching LOGIN_SUCCESS
+      dispatch({ type: 'STOP_LOADING' });
+      
       // Update state
       dispatch({ type: 'LOGIN_SUCCESS', payload: { token, user } });
       
