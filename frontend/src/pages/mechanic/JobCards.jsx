@@ -609,12 +609,12 @@ const JobCardsPage = () => {
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Vehicle
                     </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {/* <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Description
                     </th>
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Priority
-                    </th>
+                    </th> */}
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
@@ -678,14 +678,14 @@ const JobCardsPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      {/* <td className="px-6 py-4">
                         <div className="text-sm text-gray-900 max-w-xs truncate">
                           {jobCard.description || jobCard.notes || 'No description'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getPriorityBadge(jobCard.priority)}
-                      </td>
+                      </td> */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(jobCard.status)}
                       </td>

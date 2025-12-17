@@ -14,39 +14,52 @@ const CustomerDashboard = () => {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [allBookings, setAllBookings] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [allInvoices, setAllInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        setError(null);
         
         // Create promises for all API calls
         const vehiclePromise = vehicleService.getVehiclesByUserId(user.id);
-        const bookingPromise = bookingService.getCustomerBookings(user.id);
-        const invoicePromise = invoiceService.getCustomerInvoices(user.id);
+        // Fetch all bookings for accurate count
+        const allBookingsPromise = bookingService.getCustomerBookings(user.id);
+        // Fetch bookings for display (first 3)
+        const displayBookingsPromise = bookingService.getCustomerBookings(user.id);
+        // Fetch all invoices for accurate count and total calculation
+        const allInvoicesPromise = invoiceService.getCustomerInvoices(user.id);
+        // Fetch invoices for display (first 3)
+        const displayInvoicesPromise = invoiceService.getCustomerInvoices(user.id);
         
         // Add timeout to each promise
         const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), ms));
         
         // Execute all promises with timeout
-        const [vehiclesResponse, bookingsData, invoicesData] = await Promise.all([
+        const [vehiclesResponse, allBookingsData, displayBookingsData, allInvoices, displayInvoices] = await Promise.all([
           Promise.race([vehiclePromise, timeout(10000)]),
-          Promise.race([bookingPromise, timeout(10000)]),
-          Promise.race([invoicePromise, timeout(10000)])
+          Promise.race([allBookingsPromise, timeout(10000)]),
+          Promise.race([displayBookingsPromise, timeout(10000)]),
+          Promise.race([allInvoicesPromise, timeout(10000)]),
+          Promise.race([displayInvoicesPromise, timeout(10000)])
         ]);
         
         // Extract vehicles array from paginated response
         const vehiclesArray = vehiclesResponse.vehicles || vehiclesResponse || [];
         setVehicles(vehiclesArray.slice(0, 3)); // Get only the first 3 for display
-        setBookings(bookingsData.slice(0, 3)); // Get only the first 3 for display
-        setInvoices(invoicesData.slice(0, 3)); // Get only the first 3 for display
+        setBookings(displayBookingsData.slice(0, 3)); // Get only the first 3 for display
+        setInvoices(displayInvoices.slice(0, 3)); // Get only the first 3 for display
+        
+        // Store all bookings and invoices for accurate count and total calculation
+        setAllBookings(allBookingsData);
+        setAllInvoices(allInvoices);
       } catch (error) {
         console.error('Error loading dashboard data:', error);
-        setError(error.message || 'Failed to load dashboard data. Please try again.');
+        // Redirect to home page immediately on error
+        navigate('/');
       } finally {
         setLoading(false);
       }
@@ -293,10 +306,6 @@ const CustomerDashboard = () => {
     }).format(numericAmount);
   };
 
-  const retry = () => {
-    window.location.reload();
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -305,26 +314,16 @@ const CustomerDashboard = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <ErrorDisplay 
-          title="Error loading dashboard" 
-          message={error} 
-          onRetry={retry} 
-        />
-      </div>
-    );
-  }
-
   // Calculate total due with proper error handling
   const calculateTotalDue = () => {
     try {
-      const total = invoices.reduce((sum, invoice) => {
+      const total = allInvoices.reduce((sum, invoice) => {
         // Try different property names that might contain the amount
-        const amount = invoice.grand_total || invoice.totalAmount || invoice.amount || 0;
+        const amount = invoice.grand_total || invoice.total_amount || invoice.totalAmount || invoice.amount || 0;
         const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-        return sum + (isNaN(numericAmount) ? 0 : numericAmount);
+        
+        // Only add positive amounts
+        return sum + (isNaN(numericAmount) || numericAmount <= 0 ? 0 : numericAmount);
       }, 0);
       return total;
     } catch (error) {
@@ -366,7 +365,7 @@ const CustomerDashboard = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-2xl font-bold text-gray-900">{bookings.length}</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{allBookings.length}</h3>
                 <p className="text-sm text-gray-500">Bookings</p>
               </div>
             </div>
@@ -380,7 +379,7 @@ const CustomerDashboard = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-2xl font-bold text-gray-900">{invoices.length}</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{allInvoices.length}</h3>
                 <p className="text-sm text-gray-500">Invoices</p>
               </div>
             </div>

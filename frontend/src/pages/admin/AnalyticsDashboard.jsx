@@ -65,7 +65,6 @@ const AnalyticsDashboardPage = () => {
   const loadAllData = async () => {
     try {
       setLoading(true);
-      setError(null);
       
       // Add timeout to the promise
       const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), ms));
@@ -99,7 +98,7 @@ const AnalyticsDashboardPage = () => {
       const mappedStats = {
         totalVehicles: stats.totalVehicles || 0,
         pendingBookings: stats.pendingBookings || 0,
-        activeJobs: stats.activeJobcards || 0,
+        activeJobs: stats.activeJobs || 0,
         lowStockParts: stats.lowStockParts || 0,
         totalUsers: stats.totalUsers || 0, // Changed from totalCustomers to totalUsers
         revenue: stats.monthlyRevenue || 0,
