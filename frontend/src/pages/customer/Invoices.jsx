@@ -12,15 +12,24 @@ const InvoicesPage = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [filter, setFilter] = useState('all'); // all, paid, unpaid
 
   useEffect(() => {
     loadInvoices();
-  }, []);
+  }, [filter]);
 
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      const data = await invoiceService.getCustomerInvoices(user.id);
+      // Pass filter options to the service
+      const options = {};
+      if (filter === 'paid') {
+        options.status = 'paid';
+      } else if (filter === 'unpaid') {
+        options.status = 'unpaid';
+      }
+      
+      const data = await invoiceService.getCustomerInvoices(user.id, options);
       // Ensure we're working with an array
       const processedData = Array.isArray(data) ? data : [];
       setInvoices(processedData);
@@ -153,8 +162,34 @@ const InvoicesPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Invoices</h1>
-          <p className="mt-2 text-gray-600">View and manage your service invoices</p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">My Invoices</h1>
+              <p className="mt-2 text-gray-600">View and manage your service invoices</p>
+            </div>
+            
+            {/* Filter Buttons */}
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'all' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+              >
+                All Invoices
+              </button>
+              <button
+                onClick={() => setFilter('paid')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'paid' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+              >
+                Paid
+              </button>
+              <button
+                onClick={() => setFilter('unpaid')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'unpaid' ? 'bg-amber-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+              >
+                Unpaid
+              </button>
+            </div>
+          </div>
         </div>
 
         {invoices.length === 0 ? (

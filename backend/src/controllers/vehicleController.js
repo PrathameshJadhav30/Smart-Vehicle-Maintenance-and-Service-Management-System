@@ -115,26 +115,68 @@ export const getUserVehicles = async (req, res) => {
   try {
     const userId = req.params.id;
     
-    // Check if user exists
-    const userResult = await query(
-      'SELECT id FROM users WHERE id = $1',
-      [userId]
-    );
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
     
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+    // Extract search and sort parameters
+    const search = req.query.search || '';
+    const sortBy = req.query.sortBy || 'created_at';
+    const sortOrder = req.query.sortOrder === 'asc' ? 'ASC' : 'DESC';
+    
+    let queryText = `
+      SELECT v.*, u.name as customer_name, u.email as customer_email 
+      FROM vehicles v 
+      JOIN users u ON v.customer_id = u.id
+      WHERE v.customer_id = $1
+    `;
+    
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM vehicles v 
+      JOIN users u ON v.customer_id = u.id
+      WHERE v.customer_id = $1
+    `;
+    
+    const params = [userId];
+    const countParams = [userId];
+    
+    // Add search condition if provided
+    if (search) {
+      queryText += ` AND (v.make ILIKE $2 OR v.model ILIKE $2 OR v.vin ILIKE $2)`;
+      countQuery += ` AND (v.make ILIKE $2 OR v.model ILIKE $2 OR v.vin ILIKE $2)`;
+      params.push(`%${search}%`);
+      countParams.push(`%${search}%`);
     }
     
-    const result = await query(
-      `SELECT v.*, u.name as customer_name, u.email as customer_email 
-       FROM vehicles v 
-       JOIN users u ON v.customer_id = u.id
-       WHERE v.customer_id = $1
-       ORDER BY v.created_at DESC`,
-      [userId]
-    );
+    // Add sorting
+    const validSortColumns = ['make', 'model', 'year', 'vin', 'created_at'];
+    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
+    queryText += ` ORDER BY v.${sortColumn} ${sortOrder}`;
     
-    res.json({ vehicles: result.rows });
+    // Add pagination
+    queryText += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+    
+    // Execute both queries
+    const [result, countResult] = await Promise.all([
+      query(queryText, params),
+      query(countQuery, countParams)
+    ]);
+    
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
+    
+    res.json({ 
+      vehicles: result.rows,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit
+      }
+    });
   } catch (error) {
     console.error('Get user vehicles error:', error);
     res.status(500).json({ message: 'Server error' });

@@ -42,10 +42,25 @@ export const getInvoiceByBookingId = async (bookingId) => {
 /**
  * Get invoices for a customer
  * @param {string} customerId - Customer ID
+ * @param {Object} options - Filter options
+ * @param {string} options.status - Filter by status (paid/unpaid)
  * @returns {Promise<Array>} List of customer invoices
  */
-export const getCustomerInvoices = async (customerId) => {
-  const response = await api.get(`/invoices/customer/${customerId}`);
+export const getCustomerInvoices = async (customerId, options = {}) => {
+  const { status } = options;
+  
+  // Build query string
+  const queryParams = new URLSearchParams();
+  if (status) {
+    queryParams.append('status', status);
+  }
+  
+  const queryString = queryParams.toString();
+  const url = queryString 
+    ? `/invoices/customer/${customerId}?${queryString}`
+    : `/invoices/customer/${customerId}`;
+    
+  const response = await api.get(url);
   return response.data.invoices;
 };
 

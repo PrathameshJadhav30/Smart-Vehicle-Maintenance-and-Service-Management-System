@@ -237,9 +237,6 @@ const MyBookingsPage = () => {
                 className="block w-full pl-4 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg shadow-sm transition duration-200 appearance-none bg-white"
               >
                 <option value="all">All Bookings</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="confirmed">Confirmed</option>
                 <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>

@@ -119,16 +119,27 @@ export const getInvoiceByBookingId = async (req, res) => {
 export const getCustomerInvoices = async (req, res) => {
   try {
     const customerId = req.params.id || req.user.id;
+    const status = req.query.status;
     
-    const result = await query(
-      `SELECT i.*, v.model, v.vin
-       FROM invoices i
-       JOIN jobcards j ON i.jobcard_id = j.id
-       JOIN vehicles v ON j.vehicle_id = v.id
-       WHERE i.customer_id = $1 AND j.customer_id = $1
-       ORDER BY i.created_at DESC`,
-      [customerId]
-    );
+    let queryText = `
+      SELECT i.*, v.model, v.vin
+      FROM invoices i
+      JOIN jobcards j ON i.jobcard_id = j.id
+      JOIN vehicles v ON j.vehicle_id = v.id
+      WHERE i.customer_id = $1 AND j.customer_id = $1
+    `;
+    
+    const params = [customerId];
+    
+    // Add status filter if provided
+    if (status) {
+      queryText += ` AND i.status = $2`;
+      params.push(status);
+    }
+    
+    queryText += ` ORDER BY i.created_at DESC`;
+    
+    const result = await query(queryText, params);
     
     res.json({ invoices: result.rows });
   } catch (error) {
