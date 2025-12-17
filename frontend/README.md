@@ -1,161 +1,109 @@
-# SVMMS Frontend - Smart Vehicle Maintenance & Service Management System
+# Frontend: Smart Vehicle Maintenance and Service Management System
 
-A comprehensive React frontend for the Smart Vehicle Maintenance & Service Management System with role-based authentication and full API integration.
+This directory contains the React-based frontend for the SVMMS application. It is a modern, responsive, and role-based user interface built with Vite, React, and Tailwind CSS.
 
-## Features
+## Table of Contents
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Installation and Setup](#-installation-and-setup)
+- [Available Scripts](#-available-scripts)
+- [Project Structure](#-project-structure)
+- [State Management](#-state-management)
+- [Testing](#-testing)
+- [Development Guidelines](#-development-guidelines)
 
-- **Role-based Authentication**: Customer, Mechanic, and Admin roles with protected routes
-- **Responsive Design**: Mobile-first approach with Tailwind CSS
-- **API Integration**: Complete integration with all backend endpoints
-- **Form Validation**: Client-side validation with react-hook-form and yup
-- **Notifications**: Toast notifications for user feedback
-- **Modern UI Components**: Reusable components for consistent UX
+## ✨ Features
 
-## Tech Stack
+- **Role-Based Access Control**: Separate, tailored dashboards and functionality for Customers, Mechanics, and Admins.
+- **Responsive Design**: A mobile-first interface built with Tailwind CSS that works seamlessly across all devices.
+- **API Integration**: Full integration with the backend API for real-time data handling.
+- **Interactive UI**: Features like toast notifications, modals, and loading states to enhance user experience.
+- **Client-Side Validation**: Robust form validation to ensure data integrity before it's sent to the server.
 
-- **React 18+** with functional components and hooks
-- **Vite** for fast development and building
-- **React Router v6** for routing
-- **Tailwind CSS** for styling
-- **Axios** for API requests
-- **React Hook Form** with Yup for form validation
-- **Heroicons** for SVG icons
+## 🚀 Tech Stack
 
-## Getting Started
+- **React**: v18+, with extensive use of Hooks and functional components.
+- **Vite**: For a fast and efficient development experience and optimized builds.
+- **React Router**: For client-side routing and navigation.
+- **Tailwind CSS**: For a utility-first styling workflow.
+- **Axios**: For making HTTP requests to the backend API.
+- **React Context**: For managing global state like authentication.
+- **Vitest & React Testing Library**: For unit and component testing.
+
+## 🛠️ Installation and Setup
 
 ### Prerequisites
+- **Node.js**: v18 or higher
+- **npm**: v8 or higher
+- The [backend server](../backend) must be running.
 
-- Node.js (v16 or higher)
-- npm or yarn
+### Quick Start
 
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   ```
-
-2. Navigate to the frontend directory:
+1. **Navigate to the frontend directory**:
    ```bash
    cd frontend
    ```
 
-3. Install dependencies:
+2. **Install dependencies**:
    ```bash
    npm install
    ```
 
+3. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:5173`.
+
 ### Environment Variables
+The frontend is configured to connect to the backend API at `http://localhost:5000` by default, using a proxy defined in `vite.config.js`. You do not need to create a `.env` file unless you need to override the default API URL.
 
-Create a `.env` file in the frontend root directory based on `.env.example`:
+## 📜 Available Scripts
 
-```env
-VITE_API_BASE_URL=http://localhost:5000/api
-```
+- `npm run dev`: Starts the Vite development server with hot module reloading.
+- `npm run build`: Compiles and bundles the application for production.
+- `npm run preview`: Serves the production build locally for testing.
+- `npm test`: Runs the test suite using Vitest.
+- `npm run lint`: Lints the codebase for potential errors and style issues.
 
-### Running the Application
+## 📁 Project Structure
 
-#### Development Mode
-
-```bash
-npm run dev
-```
-
-The application will be available at `http://localhost:5173`
-
-#### Production Build
-
-```bash
-npm run build
-```
-
-#### Preview Production Build
-
-```bash
-npm run preview
-```
-
-## Project Structure
+The `src` directory is organized to promote scalability and maintainability.
 
 ```
 src/
-├── components/        # Reusable UI components
-├── contexts/          # React contexts (Auth, Toast)
-├── hooks/             # Custom hooks
-├── layouts/           # Page layouts
-├── pages/             # Page components
-│   ├── admin/         # Admin role pages
-│   ├── auth/          # Authentication pages
-│   ├── customer/      # Customer role pages
-│   └── mechanic/      # Mechanic role pages
-├── services/          # API service functions
-├── styles/            # Styling utilities and tokens
-└── utils/             # Utility functions
+├── assets/         # Static files like images and SVGs
+├── components/     # Reusable UI components (Button, Card, Input)
+├── contexts/       # React Context for global state (AuthContext, ToastContext)
+├── layouts/        # Wraps pages with a consistent structure (e.g., AuthLayout)
+├── pages/          # Top-level page components, organized by user role
+│   ├── admin/      # Pages accessible only to Admins
+│   ├── auth/       # Login, Register, Forgot Password pages
+│   ├── customer/   # Pages for the Customer dashboard
+│   └── mechanic/   # Pages for the Mechanic dashboard
+├── services/       # Functions for interacting with the backend API
+├── styles/         # Global styles and Tailwind design tokens
+└── utils/          # Helper functions and formatters
 ```
 
-## Available Roles
+## 🧠 State Management
 
-1. **Customer**
-   - Manage vehicles
-   - Book services
-   - View booking history
-   - Access invoices
+This project uses **React Context** for managing global state.
 
-2. **Mechanic**
-   - Handle service bookings
-   - Manage job cards
-   - Track jobs
-   - Update statuses
+- **`AuthContext`**: Manages the user's authentication status, role, and token. It provides this information to all components, allowing the UI to adapt based on whether a user is logged in and what their role is.
+- **`ToastContext`**: Provides a global method for displaying toast notifications, making it easy to give users feedback from any component.
 
-3. **Admin**
-   - Revenue analytics
-   - User/booking oversight
-   - Inventory management
-   - Low stock alerts
-   - System metrics
+For local component state, standard React hooks like `useState` and `useReducer` are used.
 
-## Color Palette
+## 🧪 Testing
 
-- **Primary**: `#0F62FE` (Blue)
-- **Secondary**: `#00B388` (Teal/Green)
-- **Background**: `#F7FAFC` (Gray-50)
-- **Surface/Cards**: `#FFFFFF` (White)
-- **Text**: `#1F2937` (Gray-800)
-- **Muted Text**: `#6B7280` (Gray-500)
-- **Success**: `#10B981` (Green-500)
-- **Error**: `#EF4444` (Red-500)
+The frontend uses **Vitest** for running tests and **React Testing Library** for rendering and interacting with components in a test environment.
 
-## Development Guidelines
+For detailed instructions on how to run the test suite and a summary of test results, see the [Frontend Testing Documentation](./TESTING.md).
 
-- All components should be functional components using hooks
-- Use the provided design tokens for consistent styling
-- Follow the established folder structure
-- Implement proper error handling and loading states
-- Write accessible code with proper semantic HTML
+## 🎨 Development Guidelines
 
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Create production build
-- `npm run preview` - Preview production build locally
-- `npm run lint` - Run ESLint
-
-## Demo Credentials
-
-For testing purposes, you can use the following credentials after seeding the database:
-
-- **Customer**: customer@example.com / password
-- **Mechanic**: mechanic@example.com / password
-- **Admin**: admin@example.com / password
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a pull request
-
-## License
-
-This project is licensed under the MIT License.
+- **Component-Based Architecture**: Build features as small, reusable components.
+- **Styling**: Use Tailwind CSS utility classes. Avoid writing custom CSS files unless absolutely necessary.
+- **Error Handling**: Gracefully handle API errors and display informative messages to the user.
+- **Accessibility**: Ensure all components are accessible by using semantic HTML and providing necessary ARIA attributes.

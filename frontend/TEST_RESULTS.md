@@ -1,5 +1,7 @@
 # Frontend Test Results
 
+**Note**: This file is an auto-generated report from the test runner. Do not edit it manually, as your changes will be overwritten.
+
 ## Summary
 
 - **Total Test Files**: 50

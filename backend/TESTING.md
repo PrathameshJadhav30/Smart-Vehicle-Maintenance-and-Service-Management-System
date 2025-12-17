@@ -1,215 +1,106 @@
-# SVMMS Backend Testing Guide
+# Backend Testing Guide
 
-This document explains how to run and manage tests for the Smart Vehicle Maintenance and Service Management System (SVMMS) backend.
+This document provides instructions for running and writing tests for the backend of the Smart Vehicle Maintenance and Service Management System (SVMMS).
 
-## Test Structure
+## Table of Contents
+- [Testing Frameworks](#-testing-frameworks)
+- [How to Run Tests](#-how-to-run-tests)
+- [Test File Location](#-test-file-location)
+- [Writing New Tests](#-writing-new-tests)
+- [Debugging Tests](#-debugging-tests)
 
-All tests are located in the `src/__tests__` directory, organized by component type:
+## 🧪 Testing Frameworks
+
+The backend testing suite uses the following technologies:
+
+- **[Jest](https://jestjs.io/)**: A delightful JavaScript testing framework with a focus on simplicity.
+- **[Supertest](https://github.com/visionmedia/supertest)**: A library for testing Node.js HTTP servers, used for making requests to the API endpoints.
+
+## ✅ How to Run Tests
+
+### Prerequisites
+Make sure all dependencies are installed by running `npm install` in the `backend` directory.
+
+### Running the Full Test Suite
+To run all tests, use the following command:
+
+```bash
+npm test
+```
+This command will execute all `.test.js` files inside the `src/__tests__` directory.
+
+### Watch Mode
+To run tests in watch mode, which is useful during development, use:
+```bash
+npm test -- --watch
+```
+
+### Generating a Coverage Report
+To see how much of your code is covered by tests, run:
+```bash
+npm test -- --coverage
+```
+This will generate a `coverage` directory with a detailed HTML report.
+
+## 📁 Test File Location
+
+All test files are located in the `src/__tests__` directory. The folder structure within `__tests__` mirrors the `src` directory, making it easy to find tests related to specific parts of the application.
 
 ```
 src/
 └── __tests__/
-    ├── controllers/          # Controller tests
-    ├── middleware/           # Middleware tests
-    ├── routes/               # Route definition tests
-    ├── utils/               # Utility function tests
-    └── setupTests.js        # Test setup configuration
+    ├── controllers/   # Tests for the business logic in controllers
+    ├── middleware/    # Tests for authentication and validation middleware
+    └── utils/         # Tests for utility functions
 ```
 
-### Comprehensive Test Coverage
+## ✍️ Writing New Tests
 
-The test suite provides comprehensive coverage for all backend components:
+When adding new features, you should also add corresponding tests.
 
-1. **Controllers** - All business logic and API endpoints
-2. **Middleware** - Authentication, authorization, and validation middleware
-3. **Routes** - Route definitions and HTTP method mappings
-4. **Utilities** - Helper functions and caching mechanisms
-5. **Integration** - End-to-end testing of complete workflows
-
-## Prerequisites
-
-Before running tests, ensure you have:
-
-1. All npm dependencies installed:
-   ```bash
-   npm install
-   ```
-
-2. A test database configured (optional for mocked tests)
-
-## Running Tests
-
-### Run All Tests
-
-```bash
-npm run test:controllers
-```
-
-This command uses the custom Jest configuration to run all tests including controllers, middleware, routes, and utilities.
-
-### Run Tests with Verbose Output
-
-```bash
-npm run test:controllers -- --verbose
-```
-
-### Run Specific Test Files
-
-```bash
-# Run a specific controller test
-npm run test:controllers -- src/__tests__/controllers/authController.test.js
-
-# Run a specific middleware test
-npm run test:controllers -- src/__tests__/middleware/authMiddleware.test.js
-
-# Run a specific utility test
-npm run test:controllers -- src/__tests__/utils/cache.test.js
-```
-
-### Run Tests in Watch Mode
-
-```bash
-npm run test:controllers -- --watch
-```
-
-## Test Coverage
-
-To generate a coverage report:
-
-```bash
-npm run test:controllers -- --coverage
-```
-
-Coverage reports will be generated in the `coverage/` directory.
-
-## Test Environment
-
-Tests run in an isolated environment with:
-
-- Mocked database queries
-- Mocked external services
-- Mocked authentication
-- Suppressed console output
-- Custom environment variables
-
-## Writing New Tests
-
-### Test File Naming Convention
-
-Test files should follow the pattern: `{component}.test.js`
-
-Example: `authController.test.js`
+### Naming Convention
+Test files should be named `{feature-name}.test.js` (e.g., `authController.test.js`).
 
 ### Test Structure
+Follow the "Arrange-Act-Assert" pattern to structure your tests:
+1.  **Arrange**: Set up the test environment by mocking functions and preparing data.
+2.  **Act**: Execute the code you want to test (e.g., call a controller function or make an API request).
+3.  **Assert**: Check that the results are what you expect.
 
-Each test file should:
-
-1. Import required modules
-2. Mock external dependencies
-3. Group related tests in `describe` blocks
-4. Use clear, descriptive test names
-5. Follow the Arrange-Act-Assert pattern
-
-### Example Tests
-
-#### Controller Test
+### Example Controller Test
 
 ```javascript
+import request from 'supertest';
+import app from '../app'; // Assuming your Express app is exported from 'app.js'
+
 describe('Auth Controller', () => {
-  describe('POST /api/auth/login', () => {
-    it('should login user successfully with valid credentials', async () => {
-      // Arrange
-      const loginData = { email: 'user@example.com', password: 'password123' };
-      
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ 
-        rows: [{ id: 1, email: 'user@example.com', password_hash: 'hashed_password' }] 
-      });
-      
-      // Act
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData);
-      
-      // Assert
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('token');
-    });
-  });
-});
-```
-
-#### Middleware Test
-
-```javascript
-describe('Auth Middleware', () => {
-  it('should authenticate user successfully with valid token', () => {
+  it('should return a JWT token for valid credentials', async () => {
     // Arrange
-    const mockUser = { id: 1, email: 'test@example.com', role: 'customer' };
-    req.headers.authorization = 'Bearer valid_token';
-    
-    jwt.verify.mockReturnValue(mockUser);
-    
+    const validCredentials = {
+      email: 'customer@example.com',
+      password: 'password',
+    };
+
     // Act
-    authMiddleware(req, res, next);
-    
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send(validCredentials);
+
     // Assert
-    expect(jwt.verify).toHaveBeenCalledWith('valid_token', process.env.JWT_SECRET);
-    expect(req.user).toEqual(mockUser);
-    expect(next).toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('token');
   });
 });
 ```
 
-#### Utility Test
+## 🐛 Debugging Tests
 
-```javascript
-describe('Cache Utility', () => {
-  it('should store and retrieve values correctly', () => {
-    // Act
-    cache.set('key1', 'value1');
-    
-    // Assert
-    expect(cache.get('key1')).toBe('value1');
-  });
-});
-```
-
-## Debugging Tests
-
-### Enable Console Output
-
-To see console logs during tests, temporarily modify `setupTests.js`:
-
-```javascript
-// Comment out these lines to see console output
-// console.log = jest.fn();
-// console.info = jest.fn();
-// console.warn = jest.fn();
-// console.error = jest.fn();
-```
-
-### Run Tests with Debug Information
-
+If you need to debug a failing test, you can use `console.log` statements within your test files. To see the output, run Jest with the `--verbose` flag:
 ```bash
-npm run test:controllers -- --verbose --detectOpenHandles
+npm test -- --verbose
 ```
-
-## Continuous Integration
-
-The test suite is designed to run in CI environments. All tests are self-contained and don't require external services to be running.
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Module not found errors**: Ensure all dependencies are installed
-2. **Database connection errors**: Tests should use mocks, not real database connections
-3. **Authentication errors**: Make sure JWT tokens are properly mocked
-
-### Getting Help
-
-If you encounter issues:
-1. Check that you're in the `backend/` directory
-2. Verify all npm packages are installed
-3. Ensure you're using the correct Node.js version (14+)
+For more complex debugging, you can use the Node.js inspector by running:
+```bash
+node --inspect-brk node_modules/.bin/jest --runInBand
+```
+You can then connect a debugger like the one in Chrome DevTools.
