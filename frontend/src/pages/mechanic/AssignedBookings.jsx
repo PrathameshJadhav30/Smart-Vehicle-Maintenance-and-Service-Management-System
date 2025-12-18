@@ -149,17 +149,109 @@ const AssignedBookingsPage = () => {
 
       {/* Booking Details Modal */}
       {showBookingDetailsModal && selectedBooking && (
-        <Modal isOpen onClose={closeBookingDetailsModal} title={`Booking #${selectedBooking.id}`}>
-          <p><strong>Customer:</strong> {selectedBooking.customer_name}</p>
-          <p><strong>Vehicle:</strong> {selectedBooking.make} {selectedBooking.model}</p>
-          <p><strong>Status:</strong> {selectedBooking.status}</p>
-          <div className="mt-4 text-right">
-            <Button onClick={closeBookingDetailsModal}>Close</Button>
+        <Modal 
+          isOpen 
+          onClose={closeBookingDetailsModal} 
+          title={`Booking #${selectedBooking.id}`}
+          size="md"
+        >
+          <div className="space-y-6 py-4">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {selectedBooking.make && selectedBooking.model 
+                      ? `${selectedBooking.make} ${selectedBooking.model}` 
+                      : (selectedBooking.model || 'Unknown Vehicle')}
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedBooking.year && `Year: ${selectedBooking.year}`}
+                  </p>
+                </div>
+                <span className={`px-3 py-1.5 inline-flex text-xs leading-4 font-semibold rounded-full ${
+                  selectedBooking.status === 'pending' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                  selectedBooking.status === 'approved' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                  selectedBooking.status === 'assigned' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
+                  selectedBooking.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                  selectedBooking.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-200' :
+                  selectedBooking.status === 'cancelled' ? 'bg-red-100 text-red-800 border border-red-200' :
+                  selectedBooking.status === 'rejected' ? 'bg-red-100 text-red-800 border border-red-200' :
+                  'bg-gray-100 text-gray-800 border border-gray-200'
+                }`}>
+                  {selectedBooking.status === 'pending' ? 'Pending' :
+                   selectedBooking.status === 'approved' ? 'Approved' :
+                   selectedBooking.status === 'assigned' ? 'Assigned' :
+                   selectedBooking.status === 'in_progress' ? 'In Progress' :
+                   selectedBooking.status === 'completed' ? 'Completed' :
+                   selectedBooking.status === 'cancelled' ? 'Cancelled' :
+                   selectedBooking.status === 'rejected' ? 'Rejected' :
+                   selectedBooking.status || 'Unknown'}
+                </span>
+              </div>
+              
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white p-3 rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">VIN</p>
+                  <p className="font-medium text-gray-900">{selectedBooking.vin || 'N/A'}</p>
+                </div>
+                
+                <div className="bg-white p-3 rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Service Type</p>
+                  <p className="font-medium text-gray-900">{selectedBooking.service_type || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                <h4 className="text-base font-bold text-gray-900 mb-4">Customer Information</h4>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Name</p>
+                    <p className="font-medium text-gray-900">{selectedBooking.customer_name || 'N/A'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Phone</p>
+                    <p className="font-medium text-gray-900">{selectedBooking.customer_phone || 'N/A'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Email</p>
+                    <p className="font-medium text-gray-900">{selectedBooking.customer_email || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                <h4 className="text-base font-bold text-gray-900 mb-4">Appointment Details</h4>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Date</p>
+                    <p className="font-medium text-gray-900">
+                      {formatBookingDateWithoutTime(selectedBooking.booking_date, selectedBooking.booking_time) || 'N/A'}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Additional Notes</p>
+                    <p className="font-medium text-gray-900">{selectedBooking.notes || 'None'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-8 flex justify-end">
+            <Button 
+              variant="secondary" 
+              onClick={closeBookingDetailsModal}
+            >
+              Close
+            </Button>
           </div>
         </Modal>
-      )}
-
-      {/* Invoice Modal */}
+      )}      {/* Invoice Modal */}
       {showInvoiceModal && selectedInvoice && (
         <Modal isOpen onClose={closeInvoiceModal} title={`Invoice #${selectedInvoice.invoice.id}`}>
           <p><strong>Total:</strong> {formatCurrency(selectedInvoice.invoice.grand_total)}</p>
