@@ -411,7 +411,7 @@ const AdminDashboard = () => {
             <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
               <button 
                 onClick={() => navigate('/admin/users')}
                 className="flex flex-col items-center justify-center p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group"
@@ -459,10 +459,33 @@ const AdminDashboard = () => {
                 </div>
                 <span className="mt-3 text-sm font-medium text-gray-900">Analytics</span>
               </button>
+              
+              <button 
+                onClick={() => navigate('/admin/vehicles')}
+                className="flex flex-col items-center justify-center p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group"
+              >
+                <div className="flex-shrink-0 bg-indigo-100 rounded-full p-3 group-hover:bg-indigo-200 transition-colors duration-200">
+                  <svg className="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="mt-3 text-sm font-medium text-gray-900">Vehicles</span>
+              </button>
+              
+              <button 
+                onClick={() => navigate('/admin/invoices')}
+                className="flex flex-col items-center justify-center p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group"
+              >
+                <div className="flex-shrink-0 bg-teal-100 rounded-full p-3 group-hover:bg-teal-200 transition-colors duration-200">
+                  <svg className="h-6 w-6 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <span className="mt-3 text-sm font-medium text-gray-900">Invoices</span>
+              </button>
             </div>
           </div>
-        </div>
-      </div>
+        </div>      </div>
     </div>
   );
 };
