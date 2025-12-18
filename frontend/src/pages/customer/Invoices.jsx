@@ -292,7 +292,7 @@ const InvoicesPage = () => {
                       variant="secondary" 
                       size="medium"
                       onClick={() => viewInvoiceDetails(invoice)}
-                      className="flex-1 justify-center bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-none"
+                      className="flex-1 justify-center bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-none min-w-[120px]"
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -303,7 +303,7 @@ const InvoicesPage = () => {
                     {(invoice.status !== 'paid' && invoice.paymentStatus !== 'paid') && (
                       <Button 
                         size="medium"
-                        className="flex-1 px-4 py-2 rounded-lg justify-center"
+                        className="flex-1 px-4 py-2 rounded-lg justify-center min-w-[120px]"
                         onClick={() => handlePayment(invoice)}
                         disabled={processingPayment}
                       >

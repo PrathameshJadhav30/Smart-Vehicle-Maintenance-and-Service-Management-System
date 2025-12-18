@@ -213,7 +213,6 @@ const UsersManagementPage = () => {
                       <TableHeaderCell className="px-6 py-3">User</TableHeaderCell>
                       <TableHeaderCell className="px-6 py-3">Email</TableHeaderCell>
                       <TableHeaderCell className="px-6 py-3">Role</TableHeaderCell>
-                      <TableHeaderCell className="px-6 py-3">Joined</TableHeaderCell>
                       <TableHeaderCell className="px-6 py-3 text-right">Actions</TableHeaderCell>
                     </TableRow>
                   </TableHead>
@@ -240,11 +239,6 @@ const UsersManagementPage = () => {
                         <TableCell className="px-6 py-4">
                           <div className="flex items-center">
                             {getRoleBadge(user.role)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-6 py-4">
-                          <div className="text-sm text-gray-500">
-                            {formatDate(user.createdAt)}
                           </div>
                         </TableCell>
                         <TableCell className="px-6 py-4 text-right text-sm font-medium">

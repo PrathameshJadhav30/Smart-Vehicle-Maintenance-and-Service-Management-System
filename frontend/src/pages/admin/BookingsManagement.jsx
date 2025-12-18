@@ -54,9 +54,8 @@ const BookingsManagementPage = () => {
         const response = await bookingService.getAllBookings({ page: 1, limit: 100 }); // Get more bookings
         data = response?.bookings || [];
       } else {
-        const response = await bookingService.getAllBookings({ page: 1, limit: 100 }); // Get more bookings
-        const allBookings = response?.bookings || [];
-        data = allBookings.filter(booking => booking.status === filter);
+        const response = await bookingService.getAllBookings({ page: 1, limit: 100, status: filter }); // Get more bookings
+        data = response?.bookings || [];
       }
       
       setBookings(data || []);
@@ -95,7 +94,7 @@ const BookingsManagementPage = () => {
     };
 
     initialize();
-  }, []);
+  }, [filter]);
 
   const refreshBookings = () => {
     loadBookings();
@@ -240,10 +239,8 @@ const BookingsManagementPage = () => {
                 className="block w-full md:w-44 pl-3 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white transition-all duration-200"
               >
                 <option value="all">All Bookings</option>
-                <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="assigned">Assigned</option>
-                <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="rejected">Rejected</option>
@@ -305,7 +302,7 @@ const BookingsManagementPage = () => {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm text-gray-900">
-                            {booking.make || ''} {booking.model || 'Unknown Vehicle'} ({booking.year || 'N/A'})
+                            {booking.make && booking.model ? `${booking.make} ${booking.model}` : (booking.model || 'Unknown Vehicle')} {booking.year && `(${booking.year})`}
                           </div>
                         </TableCell>
                         <TableCell>

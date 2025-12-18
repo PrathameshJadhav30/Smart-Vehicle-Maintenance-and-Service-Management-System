@@ -165,13 +165,14 @@ export const getAllBookings = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     
-    // Extract search and sort parameters
+    // Extract search, sort, and status filter parameters
     const search = req.query.search || '';
+    const status = req.query.status || '';
     const sortBy = req.query.sortBy || 'booking_date';
     const sortOrder = req.query.sortOrder === 'asc' ? 'ASC' : 'DESC';
     
     let queryText = `
-      SELECT b.id, b.customer_id, b.vehicle_id, b.service_type, b.booking_date, b.booking_time, b.status, b.notes, b.created_at, b.updated_at, b.mechanic_id, b.estimated_cost, v.model, v.vin, u.name AS customer_name
+      SELECT b.id, b.customer_id, b.vehicle_id, b.service_type, b.booking_date, b.booking_time, b.status, b.notes, b.created_at, b.updated_at, b.mechanic_id, b.estimated_cost, v.model, v.vin, v.make, v.year, u.name AS customer_name, u.phone AS customer_phone
       FROM bookings b
       JOIN vehicles v ON b.vehicle_id = v.id
       JOIN users u ON b.customer_id = u.id
@@ -193,6 +194,13 @@ export const getAllBookings = async (req, res) => {
       conditions.push(`(u.name ILIKE $${params.length + 1} OR v.model ILIKE $${params.length + 1} OR v.vin ILIKE $${params.length + 1})`);
       params.push(`%${search}%`);
       countParams.push(`%${search}%`);
+    }
+    
+    // Add status condition if provided
+    if (status) {
+      conditions.push(`b.status = $${params.length + 1}`);
+      params.push(status);
+      countParams.push(status);
     }
     
     // Apply conditions to both queries

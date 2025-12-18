@@ -41,13 +41,14 @@ export const getAllBookings = async (options = {}) => {
     return response.data.bookings || [];
   }
   
-  const { page = 1, limit = 10, search = '', sortBy = 'booking_date', sortOrder = 'desc' } = options;
+  const { page = 1, limit = 10, search = '', status = '', sortBy = 'booking_date', sortOrder = 'desc' } = options;
   
   // Build query string
   const queryParams = new URLSearchParams({
     page,
     limit,
     ...(search && { search }),
+    ...(status && { status }),
     ...(sortBy && { sortBy }),
     ...(sortOrder && { sortOrder })
   }).toString();
