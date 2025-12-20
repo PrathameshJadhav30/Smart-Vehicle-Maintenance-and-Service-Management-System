@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { query } from '../config/database.js';
 
 export const register = async (req, res) => {
@@ -29,16 +30,30 @@ export const register = async (req, res) => {
     
     const user = result.rows[0];
     
-    // Generate JWT token
-    const token = jwt.sign(
+    // Generate access token (short-lived)
+    const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m' }
+    );
+    
+    // Generate refresh token (long-lived)
+    const refreshToken = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
+    );
+    
+    // Store refresh token in database
+    await query(
+      'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, NOW() + $3::interval)',
+      [user.id, refreshToken, process.env.JWT_REFRESH_EXPIRES_IN || '7 days']
     );
     
     res.status(201).json({
       message: 'User registered successfully',
-      token,
+      accessToken,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -77,16 +92,30 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    // Generate JWT token
-    const token = jwt.sign(
+    // Generate access token (short-lived)
+    const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m' }
+    );
+    
+    // Generate refresh token (long-lived)
+    const refreshToken = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
+    );
+    
+    // Store refresh token in database
+    await query(
+      'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, NOW() + $3::interval)',
+      [user.id, refreshToken, process.env.JWT_REFRESH_EXPIRES_IN || '7 days']
     );
     
     res.json({
       message: 'Login successful',
-      token,
+      accessToken,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -270,6 +299,91 @@ export const resetPassword = async (req, res) => {
     res.json({ message: 'Password reset successfully' });
   } catch (error) {
     console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Refresh Access Token
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Refresh token required' });
+    }
+    
+    // Verify refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+    
+    // Check if refresh token exists in database and is not expired
+    const tokenResult = await query(
+      'SELECT user_id FROM refresh_tokens WHERE token = $1 AND expires_at > NOW()',
+      [refreshToken]
+    );
+    
+    if (tokenResult.rows.length === 0) {
+      return res.status(401).json({ message: 'Refresh token expired or invalid' });
+    }
+    
+    const userId = tokenResult.rows[0].user_id;
+    
+    // Get user details
+    const userResult = await query(
+      'SELECT id, email, role FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m' }
+    );
+    
+    res.json({
+      accessToken: newAccessToken
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Logout User
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (refreshToken) {
+      // Remove refresh token from database
+      await query(
+        'DELETE FROM refresh_tokens WHERE token = $1',
+        [refreshToken]
+      );
+    }
+    
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

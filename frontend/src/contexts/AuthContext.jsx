@@ -1,10 +1,12 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
 import axios from '../services/api';
+import { getProfile } from '../services/authService';
 
 // Initial state - always start without authentication
 const initialState = {
   user: null,
-  token: null,
+  accessToken: null,
+  refreshToken: null,
   isAuthenticated: false,
   role: null,
   loading: false, // Start with loading false
@@ -17,7 +19,8 @@ const authReducer = (state, action) => {
       return {
         ...state,
         user: action.payload.user,
-        token: action.payload.token,
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken,
         isAuthenticated: true,
         role: action.payload.user.role,
         loading: false,
@@ -26,7 +29,8 @@ const authReducer = (state, action) => {
       return {
         ...state,
         user: null,
-        token: null,
+        accessToken: null,
+        refreshToken: null,
         isAuthenticated: false,
         role: null,
         loading: false,
@@ -46,6 +50,11 @@ const authReducer = (state, action) => {
         ...state,
         user: action.payload.user,
       };
+    case 'REFRESH_TOKEN':
+      return {
+        ...state,
+        accessToken: action.payload.accessToken,
+      };
     default:
       return state;
   }
@@ -61,10 +70,10 @@ export const AuthProvider = ({ children }) => {
   // Initialize auth state from localStorage on mount
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
+      const accessToken = localStorage.getItem('accessToken');
+      if (accessToken) {
         // Set token in axios headers
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
         
         // Verify token by making a request to get user profile
         try {
@@ -74,11 +83,16 @@ export const AuthProvider = ({ children }) => {
           // Update state with user data
           dispatch({ 
             type: 'LOGIN_SUCCESS', 
-            payload: { token, user } 
+            payload: { 
+              accessToken, 
+              refreshToken: localStorage.getItem('refreshToken'),
+              user 
+            } 
           });
         } catch (error) {
           // If token is invalid, remove it
-          localStorage.removeItem('token');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
           delete axios.defaults.headers.common['Authorization'];
         }
       }
@@ -92,18 +106,15 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: 'LOADING' });
       
-      const response = await axios.post('/auth/login', credentials);
-      const { token, user } = response.data;
-      
-      // Set token in localStorage and axios headers
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Import login function locally to avoid circular dependency
+      const { login: authLogin } = await import('../services/authService');
+      const { accessToken, refreshToken, user } = await authLogin(credentials.email, credentials.password);
       
       // Stop loading before dispatching LOGIN_SUCCESS
       dispatch({ type: 'STOP_LOADING' });
       
       // Update state
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { token, user } });
+      dispatch({ type: 'LOGIN_SUCCESS', payload: { accessToken, refreshToken, user } });
       
       return { success: true, user };
     } catch (error) {
@@ -116,19 +127,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Logout function
-  const logout = () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
-    dispatch({ type: 'LOGOUT' });
+  const logout = async () => {
+    try {
+      // Import logout function locally to avoid circular dependency
+      const { logout: authLogout } = await import('../services/authService');
+      await authLogout();
+    } catch (error) {
+      console.warn('Logout error:', error);
+    } finally {
+      dispatch({ type: 'LOGOUT' });
+    }
   };
 
   // Register function
   const register = async (userData) => {
     try {
       dispatch({ type: 'LOADING' });
-      const response = await axios.post('/auth/register', userData);
+      // Import register function locally to avoid circular dependency
+      const { register: authRegister } = await import('../services/authService');
+      const { accessToken, refreshToken, user } = await authRegister(userData);
       dispatch({ type: 'STOP_LOADING' });
-      return { success: true, data: response.data };
+      
+      // Update state
+      dispatch({ type: 'LOGIN_SUCCESS', payload: { accessToken, refreshToken, user } });
+      
+      return { success: true, data: { accessToken, refreshToken, user } };
     } catch (error) {
       dispatch({ type: 'STOP_LOADING' });
       return { 

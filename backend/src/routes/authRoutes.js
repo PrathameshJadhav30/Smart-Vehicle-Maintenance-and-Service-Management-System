@@ -1,6 +1,6 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login, getProfile, updateProfile, changePassword, forgotPassword, resetPassword } from '../controllers/authController.js';
+import { register, login, getProfile, updateProfile, changePassword, forgotPassword, resetPassword, refreshToken, logout } from '../controllers/authController.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validator.js';
 
@@ -74,5 +74,11 @@ router.post('/reset-password',
   validate,
   resetPassword
 );
+
+// Refresh token
+router.post('/refresh-token', refreshToken);
+
+// Logout
+router.post('/logout', logout);
 
 export default router;

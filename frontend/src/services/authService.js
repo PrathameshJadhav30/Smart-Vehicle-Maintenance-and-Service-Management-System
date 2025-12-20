@@ -1,5 +1,8 @@
 import api from './api';
 
+// Store refresh token promise to prevent multiple simultaneous refresh requests
+let refreshingPromise = null;
+
 /**
  * Authentication Service
  * Handles all authentication-related API calls
@@ -16,7 +19,16 @@ import api from './api';
  */
 export const register = async (userData) => {
   const response = await api.post('/auth/register', userData);
-  return response.data;
+  const { accessToken, refreshToken, user } = response.data;
+  
+  // Store tokens in localStorage
+  localStorage.setItem('accessToken', accessToken);
+  localStorage.setItem('refreshToken', refreshToken);
+  
+  // Set access token in api headers
+  api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+  
+  return { accessToken, refreshToken, user };
 };
 
 /**
@@ -27,7 +39,16 @@ export const register = async (userData) => {
  */
 export const login = async (email, password) => {
   const response = await api.post('/auth/login', { email, password });
-  return response.data;
+  const { accessToken, refreshToken, user } = response.data;
+  
+  // Store tokens in localStorage
+  localStorage.setItem('accessToken', accessToken);
+  localStorage.setItem('refreshToken', refreshToken);
+  
+  // Set access token in api headers
+  api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+  
+  return { accessToken, refreshToken, user };
 };
 
 /**
@@ -132,9 +153,85 @@ export const getAllMechanics = async () => {
   return response.data.mechanics || [];
 };
 
+/**
+ * Refresh Access Token
+ * @returns {Promise<string|null>} New access token or null if failed
+ */
+export const refreshAccessToken = async () => {
+  // If we're already refreshing, return the existing promise
+  if (refreshingPromise) {
+    return refreshingPromise;
+  }
+  
+  // Set the refreshing promise
+  refreshingPromise = _refreshAccessToken();
+  
+  try {
+    const newToken = await refreshingPromise;
+    return newToken;
+  } finally {
+    // Reset the refreshing promise when done
+    refreshingPromise = null;
+  }
+};
+
+/**
+ * Internal function to refresh access token
+ * @returns {Promise<string|null>} New access token or null if failed
+ */
+async function _refreshAccessToken() {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+    
+    const response = await api.post('/auth/refresh-token', { refreshToken });
+    const { accessToken } = response.data;
+    
+    // Update localStorage and api headers
+    localStorage.setItem('accessToken', accessToken);
+    api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+    
+    return accessToken;
+  } catch (error) {
+    // If refresh fails, clear tokens
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    delete api.defaults.headers.common['Authorization'];
+    
+    return null;
+  }
+}
+
+/**
+ * Logout User
+ * @returns {Promise<void>}
+ */
+export const logout = async () => {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    if (refreshToken) {
+      // Notify backend to invalidate refresh token
+      await api.post('/auth/logout', { refreshToken });
+    }
+  } catch (error) {
+    // Ignore errors during logout
+    console.warn('Logout error:', error);
+  } finally {
+    // Clear tokens from localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    delete api.defaults.headers.common['Authorization'];
+  }
+};
+
 export default {
   register,
   login,
+  logout,
   getProfile,
   updateProfile,
   changePassword,
@@ -144,4 +241,5 @@ export default {
   updateUserRole,
   deleteUser,
   getAllMechanics,
+  refreshAccessToken
 };

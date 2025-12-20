@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { refreshAccessToken } from './authService';
 
 // Get API base URL from environment variable or fallback to localhost
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -15,9 +16,9 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
@@ -26,19 +27,31 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle errors
+// Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    // Handle 401 Unauthorized
-    if (error.response?.status === 401) {
-      // Clear auth token but don't automatically redirect
-      // Let the ProtectedRoute handle the redirect
-      localStorage.removeItem('token');
-      // Remove authorization header
-      delete api.defaults.headers.common['Authorization'];
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If error is 401 and we haven't tried to refresh token yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true; // Mark request as retried
+      
+      // Try to refresh the access token
+      const newToken = await refreshAccessToken();
+      
+      if (newToken) {
+        // Update the Authorization header with new token
+        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+        
+        // Retry the original request
+        return api(originalRequest);
+      }
+      
+      // If refresh failed, redirect to login
+      window.location.href = '/login';
     }
     
     // Handle 403 Forbidden
