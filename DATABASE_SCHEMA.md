@@ -10,6 +10,7 @@ erDiagram
     USERS ||--o{ BOOKINGS : creates
     USERS ||--o{ JOBCARDS : assigned_as_mechanic
     USERS ||--o{ INVOICES : receives
+    USERS ||--o{ REFRESH_TOKENS : has
     VEHICLES ||--o{ BOOKINGS : booked_for
     VEHICLES ||--o{ JOBCARDS : serviced_in
     BOOKINGS ||--|| JOBCARDS : generates
@@ -136,6 +137,14 @@ erDiagram
         text address
         timestamp created_at
         timestamp updated_at
+    }
+    
+    REFRESH_TOKENS {
+        integer id PK
+        integer user_id FK
+        text token
+        timestamp expires_at
+        timestamp created_at
     }
 ```
 
@@ -491,7 +500,34 @@ CREATE TABLE invoices (
 - `idx_invoices_customer_created`: Composite index on customer_id and created_at
 - `idx_invoices_status_created`: Composite index on status and created_at
 
-### 10. Migrations Table
+### 10. Refresh Tokens Table
+
+Stores refresh tokens for user authentication and session management.
+
+**Schema:**
+```sql
+CREATE TABLE refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Attributes:**
+- `id`: Unique identifier for each refresh token (Primary Key)
+- `user_id`: Foreign key linking to the user who owns this token
+- `token`: The refresh token string (unique)
+- `expires_at`: Timestamp when this token expires
+- `created_at`: Timestamp when record was created
+
+**Indexes:**
+- `idx_refresh_tokens_token`: Index on token for faster lookups
+- `idx_refresh_tokens_user_id`: Index on user_id
+- `idx_refresh_tokens_expires_at`: Index on expires_at
+
+### 11. Migrations Table
 
 Tracks which database migrations have been applied.
 
@@ -515,24 +551,27 @@ CREATE TABLE migrations (
 2. **Users ↔ Bookings**: One-to-Many (One user can create many bookings)
 3. **Users ↔ Job Cards**: One-to-Many (One mechanic can be assigned to many job cards)
 4. **Users ↔ Invoices**: One-to-Many (One user can receive many invoices)
-5. **Vehicles ↔ Bookings**: One-to-Many (One vehicle can have many bookings)
-6. **Vehicles ↔ Job Cards**: One-to-Many (One vehicle can have many job cards)
-7. **Bookings ↔ Job Cards**: One-to-One (One booking generates one job card)
-8. **Job Cards ↔ Invoices**: One-to-One (One job card generates one invoice)
-9. **Parts ↔ Job Card Spare Parts**: One-to-Many (One part can be used in many job cards)
-10. **Job Cards ↔ Job Card Tasks**: One-to-Many (One job card can contain many tasks)
-11. **Job Cards ↔ Job Card Spare Parts**: One-to-Many (One job card can consume many parts)
-12. **Suppliers ↔ Parts**: One-to-Many (One supplier can supply many parts)
+5. **Users ↔ Refresh Tokens**: One-to-Many (One user can have many refresh tokens)
+6. **Vehicles ↔ Bookings**: One-to-Many (One vehicle can have many bookings)
+7. **Vehicles ↔ Job Cards**: One-to-Many (One vehicle can have many job cards)
+8. **Bookings ↔ Job Cards**: One-to-One (One booking generates one job card)
+9. **Job Cards ↔ Invoices**: One-to-One (One job card generates one invoice)
+10. **Parts ↔ Job Card Spare Parts**: One-to-Many (One part can be used in many job cards)
+11. **Job Cards ↔ Job Card Tasks**: One-to-Many (One job card can contain many tasks)
+12. **Job Cards ↔ Job Card Spare Parts**: One-to-Many (One job card can consume many parts)
+13. **Suppliers ↔ Parts**: One-to-Many (One supplier can supply many parts)
 
 ## Business Rules
 
-1. **Cascade Deletes**: When a user is deleted, all their vehicles, bookings, invoices, and job cards are automatically deleted.
+1. **Cascade Deletes**: When a user is deleted, all their vehicles, bookings, invoices, job cards, and refresh tokens are automatically deleted.
 2. **VIN Uniqueness**: Each vehicle must have a unique VIN.
 3. **Part Number Uniqueness**: Each part must have a unique part number.
 4. **Status Constraints**: All status fields are constrained to predefined values to ensure data integrity.
 5. **Percentage Validation**: Percent complete values are constrained between 0 and 100.
 6. **Priority Levels**: Job card priorities are constrained to 'low', 'medium', or 'high'.
 7. **Role Restrictions**: User roles are constrained to 'customer', 'mechanic', or 'admin'.
+8. **Token Uniqueness**: Each refresh token must be unique.
+9. **Token Expiry**: Refresh tokens have an expiration time after which they become invalid.
 
 ## Performance Optimizations
 
