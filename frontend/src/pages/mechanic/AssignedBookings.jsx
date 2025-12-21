@@ -14,6 +14,7 @@ const AssignedBookingsPage = () => {
   const { user, hasRole } = useAuth();
 
   const [bookings, setBookings] = useState([]);
+  const [filteredBookings, setFilteredBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('booking_date');
@@ -23,6 +24,17 @@ const AssignedBookingsPage = () => {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+
+  // Predefined service types matching the booking form
+  const serviceTypes = [
+    'Oil Change',
+    'Brake Inspection',
+    'Engine Tune-up',
+    'Tire Rotation',
+    'Battery Check',
+    'AC Service',
+    'General Maintenance'
+  ];
 
   const loadBookings = async () => {
     try {
@@ -52,6 +64,61 @@ const AssignedBookingsPage = () => {
     loadBookings();
   }, [user.id, hasRole]);
 
+  // Apply filters whenever bookings, filter, or searchTerm change
+  useEffect(() => {
+    let result = [...bookings];
+    
+    // Apply service type filter
+    if (filter !== 'all') {
+      result = result.filter(booking => booking.service_type === filter);
+    }
+    
+    // Apply search term filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(booking => 
+        booking.customer_name.toLowerCase().includes(term) ||
+        (booking.make && booking.make.toLowerCase().includes(term)) ||
+        (booking.model && booking.model.toLowerCase().includes(term)) ||
+        booking.service_type.toLowerCase().includes(term)
+      );
+    }
+    
+    // Apply sorting
+    result.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'customer':
+          aValue = a.customer_name || '';
+          bValue = b.customer_name || '';
+          break;
+        case 'vehicle':
+          aValue = (a.make || '') + (a.model || '');
+          bValue = (b.make || '') + (b.model || '');
+          break;
+        case 'service':
+          aValue = a.service_type || '';
+          bValue = b.service_type || '';
+          break;
+        case 'status':
+          aValue = a.status || '';
+          bValue = b.status || '';
+          break;
+        default: // booking_date
+          aValue = new Date(a.booking_date + 'T' + a.booking_time);
+          bValue = new Date(b.booking_date + 'T' + b.booking_time);
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+    
+    setFilteredBookings(result);
+  }, [bookings, filter, searchTerm, sortBy, sortOrder]);
   const getStatusColor = (status) => ({
     pending: 'bg-amber-100 text-amber-800',
     approved: 'bg-blue-100 text-blue-800',
@@ -69,12 +136,11 @@ const AssignedBookingsPage = () => {
   );
 
   const handleViewDetails = (bookingId) => {
-    const booking = bookings.find(b => b.id === bookingId);
+    const booking = filteredBookings.find(b => b.id === bookingId) || bookings.find(b => b.id === bookingId);
     if (!booking) return alert('Booking not found');
     setSelectedBooking(booking);
     setShowBookingDetailsModal(true);
   };
-
   const closeBookingDetailsModal = () => {
     setShowBookingDetailsModal(false);
     setSelectedBooking(null);
@@ -109,8 +175,84 @@ const AssignedBookingsPage = () => {
       <h1 className="text-3xl font-bold mb-2">Service Bookings</h1>
       <p className="text-gray-600 mb-6">Manage and review service bookings</p>
 
-      <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+      {/* Filter Controls */}
+      <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow">
+            <div className="flex flex-col">
+              <label htmlFor="serviceFilter" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Filter by Service Type
+              </label>
+              <div className="relative">
+                <select
+                  id="serviceFilter"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white py-2.5 px-4 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:text-sm appearance-none"
+                >
+                  <option value="all">All Services</option>
+                  {serviceTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col">
+              <label htmlFor="searchInput" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Search Bookings
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  id="searchInput"
+                  placeholder="Search customers, vehicles, services..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:text-sm"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between md:justify-end pt-4 md:pt-0">
+            <span className="text-sm text-gray-600 hidden md:block">
+              Showing <span className="font-medium">{filteredBookings.length}</span> of <span className="font-medium">{bookings.length}</span> bookings
+            </span>
+            <button
+              onClick={() => {
+                setFilter('all');
+                setSearchTerm('');
+              }}
+              className="ml-4 inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              <svg className="-ml-0.5 mr-2 h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+              Clear Filters
+            </button>
+          </div>
+        </div>
+        
+        {/* Mobile view of results count */}
+        <div className="mt-3 md:hidden">
+          <span className="text-sm text-gray-600">
+            Showing <span className="font-medium">{filteredBookings.length}</span> of <span className="font-medium">{bookings.length}</span> bookings
+          </span>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow overflow-x-auto">        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium">Customer</th>
@@ -122,27 +264,35 @@ const AssignedBookingsPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {bookings.map((booking) => (
-              <tr key={booking.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">{booking.customer_name}</td>
-                <td className="px-6 py-4">{booking.make} {booking.model}</td>
-                <td className="px-6 py-4">
-                  {formatBookingDateWithoutTime(booking.booking_date, booking.booking_time)}
-                </td>
-                <td className="px-6 py-4">{booking.service_type}</td>
-                <td className="px-6 py-4">
-                  <StatusBadge status={booking.status} />
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button
-                    onClick={() => handleViewDetails(booking.id)}
-                    className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
-                  >
-                    View
-                  </button>
+            {filteredBookings.length > 0 ? (
+              filteredBookings.map((booking) => (
+                <tr key={booking.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">{booking.customer_name}</td>
+                  <td className="px-6 py-4">{booking.make} {booking.model}</td>
+                  <td className="px-6 py-4">
+                    {formatBookingDateWithoutTime(booking.booking_date, booking.booking_time)}
+                  </td>
+                  <td className="px-6 py-4">{booking.service_type}</td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={booking.status} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button
+                      onClick={() => handleViewDetails(booking.id)}
+                      className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                  No bookings found matching the current filters
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

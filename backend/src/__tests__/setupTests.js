@@ -33,3 +33,8 @@ jest.mock('jsonwebtoken', () => ({
   sign: jest.fn().mockReturnValue('jwt_token'),
   verify: jest.fn().mockReturnValue({ id: 1, email: 'test@example.com', role: 'admin' })
 }));
+
+// Mock uuid module
+jest.mock('uuid', () => ({
+  v4: jest.fn().mockReturnValue('mock-uuid-value')
+}));
