@@ -20,7 +20,7 @@ const VehiclesPage = () => {
     registration_number: '',
     mileage: ''
   });
-  
+
   // Pagination, search, and sort states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -44,7 +44,7 @@ const VehiclesPage = () => {
         sortBy,
         sortOrder
       };
-      
+
       const data = await vehicleService.getVehiclesByUserId(user.id, options);
       setVehicles(data.vehicles || []);
       setTotalPages(data.pagination?.totalPages || 1);
@@ -158,56 +158,56 @@ const VehiclesPage = () => {
   // Function to get vehicle icon based on make
   const getVehicleIcon = (make) => {
     const makeLower = (make || '').toLowerCase();
-    
+
+    const baseStyle = "rounded-xl p-3 flex items-center justify-center";
+
     if (makeLower.includes('toyota')) {
       return (
-        <div className="bg-blue-100 rounded-xl p-3 flex items-center justify-center">
-          <svg className="h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.5 3A2.5 2.5 0 0 0 3 5.5v1A2.5 2.5 0 0 0 5.5 9h13A2.5 2.5 0 0 0 21 6.5v-1A2.5 2.5 0 0 0 18.5 3h-13Z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M9 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM9 9V5M15 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM15 9V5" />
+        <div className={`bg-blue-100 ${baseStyle}`}>
+          {/* Toyota car icon */}
+          <svg className="h-10 w-10 text-blue-600" viewBox="0 0 64 64" fill="currentColor">
+            <path d="M12 44h40l4-16H8l4 16zm0 0v4a4 4 0 0 0 8 0v-4h24v4a4 4 0 0 0 8 0v-4M20 28a4 4 0 1 1 8 0 4 4 0 0 1-8 0zm16 0a4 4 0 1 1 8 0 4 4 0 0 1-8 0z" />
           </svg>
         </div>
       );
     } else if (makeLower.includes('honda')) {
       return (
-        <div className="bg-red-100 rounded-xl p-3 flex items-center justify-center">
-          <svg className="h-10 w-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.5 3A2.5 2.5 0 0 0 3 5.5v1A2.5 2.5 0 0 0 5.5 9h13A2.5 2.5 0 0 0 21 6.5v-1A2.5 2.5 0 0 0 18.5 3h-13Z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M9 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM9 9V5M15 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM15 9V5" />
+        <div className={`bg-red-100 ${baseStyle}`}>
+          {/* Honda car icon */}
+          <svg className="h-10 w-10 text-red-600" viewBox="0 0 64 64" fill="currentColor">
+            <path d="M10 40h44l5-18H5l5 18zm0 0v3a3 3 0 0 0 6 0v-3h36v3a3 3 0 0 0 6 0v-3M18 24a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm22 0a3 3 0 1 1 6 0 3 3 0 0 1-6 0z" />
           </svg>
         </div>
       );
     } else if (makeLower.includes('ford')) {
       return (
-        <div className="bg-indigo-100 rounded-xl p-3 flex items-center justify-center">
-          <svg className="h-10 w-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.5 3A2.5 2.5 0 0 0 3 5.5v1A2.5 2.5 0 0 0 5.5 9h13A2.5 2.5 0 0 0 21 6.5v-1A2.5 2.5 0 0 0 18.5 3h-13Z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M9 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM9 9V5M15 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM15 9V5" />
+        <div className={`bg-indigo-100 ${baseStyle}`}>
+          {/* Ford car icon */}
+          <svg className="h-10 w-10 text-indigo-600" viewBox="0 0 64 64" fill="currentColor">
+            <path d="M8 42h48l5-20H3l5 20zm0 0v4a4 4 0 0 0 8 0v-4h40v4a4 4 0 0 0 8 0v-4M18 26a4 4 0 1 1 8 0 4 4 0 0 1-8 0zm22 0a4 4 0 1 1 8 0 4 4 0 0 1-8 0z" />
           </svg>
         </div>
       );
     } else if (makeLower.includes('bmw') || makeLower.includes('mercedes')) {
       return (
-        <div className="bg-green-100 rounded-xl p-3 flex items-center justify-center">
-          <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.5 3A2.5 2.5 0 0 0 3 5.5v1A2.5 2.5 0 0 0 5.5 9h13A2.5 2.5 0 0 0 21 6.5v-1A2.5 2.5 0 0 0 18.5 3h-13Z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M9 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM9 9V5M15 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM15 9V5" />
+        <div className={`bg-green-100 ${baseStyle}`}>
+          {/* BMW / Mercedes car icon */}
+          <svg className="h-10 w-10 text-green-600" viewBox="0 0 64 64" fill="currentColor">
+            <path d="M12 44h40l6-18H6l6 18zm0 0v4a4 4 0 0 0 8 0v-4h24v4a4 4 0 0 0 8 0v-4M20 28a4 4 0 1 1 8 0 4 4 0 0 1-8 0zm16 0a4 4 0 1 1 8 0 4 4 0 0 1-8 0z" />
           </svg>
         </div>
       );
     } else {
       // Default car icon
       return (
-        <div className="bg-gray-100 rounded-xl p-3 flex items-center justify-center">
-          <svg className="h-10 w-10 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.5 3A2.5 2.5 0 0 0 3 5.5v1A2.5 2.5 0 0 0 5.5 9h13A2.5 2.5 0 0 0 21 6.5v-1A2.5 2.5 0 0 0 18.5 3h-13Z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M9 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM9 9V5M15 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM15 9V5" />
+        <div className={`bg-gray-100 ${baseStyle}`}>
+          <svg className="h-10 w-10 text-gray-600" viewBox="0 0 64 64" fill="currentColor">
+            <path d="M10 40h44l5-18H5l5 18zm0 0v3a3 3 0 0 0 6 0v-3h36v3a3 3 0 0 0 6 0v-3M18 24a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm22 0a3 3 0 1 1 6 0 3 3 0 0 1-6 0z" />
           </svg>
         </div>
       );
     }
   };
-
   const SortIndicator = ({ field }) => {
     if (sortBy !== field) return null;
     return sortOrder === 'asc' ? ' ↑' : ' ↓';
@@ -230,7 +230,7 @@ const VehiclesPage = () => {
             <p className="mt-2 text-gray-600">Manage your registered vehicles</p>
           </div>
           <div className="mt-4 md:mt-0">
-            <Button 
+            <Button
               onClick={handleAddClick}
               className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-md"
             >
@@ -273,7 +273,7 @@ const VehiclesPage = () => {
             <h3 className="mt-6 text-2xl font-bold text-gray-900">No vehicles registered</h3>
             <p className="mt-2 text-gray-500 max-w-md mx-auto">Get started by adding your first vehicle to manage your service appointments.</p>
             <div className="mt-8">
-              <Button 
+              <Button
                 onClick={handleAddClick}
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-md"
               >
@@ -289,8 +289,8 @@ const VehiclesPage = () => {
             {/* Grid layout for vehicles */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {vehicles.map((vehicle) => (
-                <div 
-                  key={vehicle.id} 
+                <div
+                  key={vehicle.id}
                   className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-1"
                 >
                   <div className="p-6">
@@ -310,7 +310,7 @@ const VehiclesPage = () => {
                         {vehicle.registration_number || 'No reg'}
                       </span>
                     </div>
-                    
+
                     <div className="mt-6 grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">VIN</p>
@@ -321,7 +321,7 @@ const VehiclesPage = () => {
                         <p className="text-sm text-gray-900">{vehicle.mileage ? `${vehicle.mileage.toLocaleString()} miles` : 'N/A'}</p>
                       </div>
                     </div>
-                    
+
                     <div className="mt-6 flex space-x-3">
                       <button
                         onClick={() => handleEdit(vehicle)}
@@ -346,7 +346,7 @@ const VehiclesPage = () => {
                 </div>
               ))}
             </div>
-            
+
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-2xl shadow-sm">
@@ -354,22 +354,20 @@ const VehiclesPage = () => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                      currentPage === 1 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentPage === 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                      currentPage === totalPages 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    className={`relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentPage === totalPages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     Next
                   </button>
@@ -387,39 +385,36 @@ const VehiclesPage = () => {
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                          currentPage === 1 ? 'cursor-not-allowed' : ''
-                        }`}
+                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${currentPage === 1 ? 'cursor-not-allowed' : ''
+                          }`}
                       >
                         <span className="sr-only">Previous</span>
                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
                         </svg>
                       </button>
-                      
+
                       {[...Array(totalPages)].map((_, i) => {
                         const pageNum = i + 1;
                         return (
                           <button
                             key={pageNum}
                             onClick={() => handlePageChange(pageNum)}
-                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                              currentPage === pageNum
+                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${currentPage === pageNum
                                 ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
                                 : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
-                            }`}
+                              }`}
                           >
                             {pageNum}
                           </button>
                         );
                       })}
-                      
+
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                          currentPage === totalPages ? 'cursor-not-allowed' : ''
-                        }`}
+                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${currentPage === totalPages ? 'cursor-not-allowed' : ''
+                          }`}
                       >
                         <span className="sr-only">Next</span>
                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -522,7 +517,7 @@ const VehiclesPage = () => {
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               type="submit"
               className="px-4 py-2 rounded-lg transition-all duration-200"
             >
@@ -619,7 +614,7 @@ const VehiclesPage = () => {
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               type="submit"
               className="px-4 py-2 rounded-lg transition-all duration-200"
             >
