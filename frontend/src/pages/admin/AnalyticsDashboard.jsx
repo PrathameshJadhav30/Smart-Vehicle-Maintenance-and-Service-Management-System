@@ -60,7 +60,7 @@ const AnalyticsDashboardPage = () => {
       window.removeEventListener('invoiceCreated', handleInvoiceCreated);
       clearInterval(pollingInterval);
     };
-  }, [filters]); // Add filters as dependency so data reloads when filters change
+  }, []); // Remove filters dependency so data doesn't reload when filters change
 
   const loadAllData = async () => {
     try {
@@ -251,29 +251,31 @@ const AnalyticsDashboardPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 gap-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
               <p className="mt-2 text-lg text-gray-600">
                 Monitor key metrics and performance indicators
               </p>
             </div>
-            <button
-              onClick={loadAllData}
-              className="mt-4 md:mt-0 inline-flex items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-            >
-              <svg className="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-              </svg>
-              Refresh Data
-            </button>
+            <div className="flex-shrink-0">
+              <button
+                onClick={loadAllData}
+                className="w-full sm:w-auto inline-flex items-center px-4 py-2.5 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 cursor-pointer"
+              >
+                <svg className="-ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                </svg>
+                Refresh Data
+              </button>
+            </div>
           </div>
           
           {/* Dashboard Stats */}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
               <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-blue-100">
+                <div className="flex-shrink-0 p-3 rounded-lg bg-blue-100">
                   <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -334,46 +336,46 @@ const AnalyticsDashboardPage = () => {
               <h3 className="text-lg font-semibold text-gray-900">System Overview</h3>
             </div>
             <div className="p-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-blue-100 rounded-lg p-3">
-                      <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex-shrink-0 bg-blue-500 rounded-lg p-3 shadow">
+                      <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
                     </div>
                     <div className="ml-4">
-                      <h4 className="text-md font-medium text-gray-900">Users</h4>
+                      <h4 className="text-md font-medium text-blue-800">Users</h4>
                       <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardStats.totalUsers}</p>
-                      <p className="text-sm text-gray-500">Total registered users</p>
+                      <p className="text-sm text-blue-600">Total registered users</p>
                     </div>
                   </div>
                 </div>
-                <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border border-green-200 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-green-100 rounded-lg p-3">
-                      <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex-shrink-0 bg-green-500 rounded-lg p-3 shadow">
+                      <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <div className="ml-4">
-                      <h4 className="text-md font-medium text-gray-900">Revenue</h4>
+                      <h4 className="text-md font-medium text-green-800">Revenue</h4>
                       <p className="mt-1 text-3xl font-bold text-gray-900">{formatCurrency(typeof dashboardStats.revenue === 'number' ? dashboardStats.revenue : 0)}</p>
-                      <p className="text-sm text-gray-500">This month</p>
+                      <p className="text-sm text-green-600">This month</p>
                     </div>
                   </div>
                 </div>
-                <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-purple-100 rounded-lg p-3">
-                      <svg className="h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex-shrink-0 bg-purple-500 rounded-lg p-3 shadow">
+                      <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                     <div className="ml-4">
-                      <h4 className="text-md font-medium text-gray-900">Mechanics</h4>
+                      <h4 className="text-md font-medium text-purple-800">Mechanics</h4>
                       <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardStats.mechanics}</p>
-                      <p className="text-sm text-gray-500">Active mechanics</p>
+                      <p className="text-sm text-purple-600">Active mechanics</p>
                     </div>
                   </div>
                 </div>
@@ -385,7 +387,7 @@ const AnalyticsDashboardPage = () => {
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Vehicle Analytics Chart */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-              <div className="px-6 py-5 border-b border-gray-100">
+              <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <h3 className="text-lg font-semibold text-gray-900">Vehicle Analytics</h3>
               </div>
               <div className="p-6">
@@ -407,7 +409,7 @@ const AnalyticsDashboardPage = () => {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {vehicleStats.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                          <tr key={index} className="hover:bg-blue-50 transition-colors duration-150">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {item.make}
                             </td>
@@ -418,11 +420,11 @@ const AnalyticsDashboardPage = () => {
                               <div className="flex items-center">
                                 <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-3">
                                   <div 
-                                    className="bg-blue-600 h-2.5 rounded-full" 
+                                    className="bg-blue-500 h-2.5 rounded-full" 
                                     style={{ width: `${(item.count / Math.max(...vehicleStats.map(v => v.count))) * 100}%` }}
                                   ></div>
                                 </div>
-                                <span>{typeof item.count === 'number' ? item.count : 0}</span>
+                                <span className="font-medium">{typeof item.count === 'number' ? item.count : 0}</span>
                               </div>
                             </td>
                           </tr>
@@ -444,7 +446,7 @@ const AnalyticsDashboardPage = () => {
             
             {/* Parts Usage Analytics Chart */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-              <div className="px-6 py-5 border-b border-gray-100">
+              <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
                 <h3 className="text-lg font-semibold text-gray-900">Parts Usage Analytics</h3>
               </div>
               <div className="p-6">
@@ -463,7 +465,7 @@ const AnalyticsDashboardPage = () => {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {partsUsageStats.slice(0, 10).map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                          <tr key={index} className="hover:bg-green-50 transition-colors duration-150">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {item.partName}
                             </td>
@@ -471,11 +473,11 @@ const AnalyticsDashboardPage = () => {
                               <div className="flex items-center">
                                 <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-3">
                                   <div 
-                                    className="bg-green-600 h-2.5 rounded-full" 
+                                    className="bg-green-500 h-2.5 rounded-full" 
                                     style={{ width: `${(item.usageCount / maxPartsUsage) * 100}%` }}
                                   ></div>
                                 </div>
-                                <span>{typeof item.usageCount === 'number' ? item.usageCount : 0}</span>
+                                <span className="font-medium">{typeof item.usageCount === 'number' ? item.usageCount : 0}</span>
                               </div>
                             </td>
                           </tr>
@@ -498,18 +500,18 @@ const AnalyticsDashboardPage = () => {
           
           {/* Revenue Analytics Chart with Filters */}
           <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-            <div className="px-6 py-5 border-b border-gray-100">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-violet-50">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <h3 className="text-lg font-semibold text-gray-900">Revenue Analytics</h3>
                 {/* Revenue Filters */}
-                <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
                   <div className="flex flex-col">
                     <label className="text-xs font-medium text-gray-500 mb-1">Start Date</label>
                     <input
                       type="date"
                       value={filters.revenueStartDate}
                       onChange={(e) => handleFilterChange('revenueStartDate', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-full"
                     />
                   </div>
                   <div className="flex flex-col">
@@ -518,19 +520,19 @@ const AnalyticsDashboardPage = () => {
                       type="date"
                       value={filters.revenueEndDate}
                       onChange={(e) => handleFilterChange('revenueEndDate', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-full"
                     />
                   </div>
-                  <div className="flex items-end">
+                  <div className="flex items-end space-x-2">
                     <button
                       onClick={applyFilters}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm whitespace-nowrap cursor-pointer"
                     >
                       Apply
                     </button>
                     <button
                       onClick={resetFilters}
-                      className="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm"
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm whitespace-nowrap cursor-pointer"
                     >
                       Reset
                     </button>
@@ -554,7 +556,7 @@ const AnalyticsDashboardPage = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {revenueStats.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                        <tr key={index} className="hover:bg-purple-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {item.month}
                           </td>
@@ -562,11 +564,11 @@ const AnalyticsDashboardPage = () => {
                             <div className="flex items-center">
                               <div className="w-32 bg-gray-200 rounded-full h-2.5 mr-3">
                                 <div 
-                                  className="bg-purple-600 h-2.5 rounded-full" 
+                                  className="bg-purple-500 h-2.5 rounded-full" 
                                   style={{ width: `${(item.revenue / maxRevenue) * 100}%` }}
                                 ></div>
                               </div>
-                              <span>{formatCurrency(typeof item.revenue === 'number' ? item.revenue : 0)}</span>
+                              <span className="font-medium">{formatCurrency(typeof item.revenue === 'number' ? item.revenue : 0)}</span>
                             </div>
                           </td>
                         </tr>
@@ -588,18 +590,18 @@ const AnalyticsDashboardPage = () => {
           
           {/* Mechanic Performance with Filters */}
           <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-            <div className="px-6 py-5 border-b border-gray-100">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-amber-50 to-orange-50">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <h3 className="text-lg font-semibold text-gray-900">Mechanic Performance</h3>
                 {/* Mechanic Performance Filters */}
-                <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
                   <div className="flex flex-col">
                     <label className="text-xs font-medium text-gray-500 mb-1">Start Date</label>
                     <input
                       type="date"
                       value={filters.mechanicStartDate}
                       onChange={(e) => handleFilterChange('mechanicStartDate', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-full"
                     />
                   </div>
                   <div className="flex flex-col">
@@ -608,19 +610,19 @@ const AnalyticsDashboardPage = () => {
                       type="date"
                       value={filters.mechanicEndDate}
                       onChange={(e) => handleFilterChange('mechanicEndDate', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-full"
                     />
                   </div>
-                  <div className="flex items-end">
+                  <div className="flex items-end space-x-2">
                     <button
                       onClick={applyFilters}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm whitespace-nowrap cursor-pointer"
                     >
                       Apply
                     </button>
                     <button
                       onClick={resetFilters}
-                      className="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm"
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm whitespace-nowrap cursor-pointer"
                     >
                       Reset
                     </button>
@@ -641,16 +643,13 @@ const AnalyticsDashboardPage = () => {
                           Jobs Completed
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Average Rating
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Revenue Generated
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {mechanicPerformance.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
+                        <tr key={index} className="hover:bg-amber-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {item.mechanicName}
                           </td>
@@ -658,22 +657,14 @@ const AnalyticsDashboardPage = () => {
                             <div className="flex items-center">
                               <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-3">
                                 <div 
-                                  className="bg-blue-600 h-2.5 rounded-full" 
+                                  className="bg-amber-500 h-2.5 rounded-full" 
                                   style={{ width: `${(item.jobsCompleted / Math.max(...mechanicPerformance.map(m => m.jobsCompleted))) * 100}%` }}
                                 ></div>
                               </div>
-                              <span>{item.jobsCompleted}</span>
+                              <span className="font-medium">{item.jobsCompleted}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div className="flex items-center">
-                              <svg className="flex-shrink-0 h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              <span className="ml-1">{typeof item.averageRating === 'number' ? item.averageRating.toFixed(1) : 'N/A'}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                             {formatCurrency(typeof item.totalRevenue === 'number' ? item.totalRevenue : 0)}
                           </td>
                         </tr>
