@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import bookingService from '../../services/bookingService';
 import vehicleService from '../../services/vehicleService';
-import Button from '../../components/Button';
 
 const BookServicePage = () => {
   const { user } = useAuth();
@@ -320,124 +319,122 @@ const BookServicePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 sm:py-10 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header Section */}
-        <div className="text-center mb-10 sm:mb-12">
-          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg mb-5 sm:mb-6 mx-auto">
-            <svg className="h-7 w-7 sm:h-8 sm:w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 shadow-lg mb-6 mx-auto">
+            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 sm:mb-4">Service Booking</h1>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-2">
-            Schedule your vehicle service appointment in minutes. Our team will confirm your booking shortly.
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">Book Your Service</h1>
+          <p className="text-gray-600 max-w-xl mx-auto">
+            Schedule your vehicle maintenance with our expert technicians. Fast, reliable, and hassle-free service.
           </p>
         </div>
 
-        {/* Main Content Area */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
-            {/* Form Section - Takes 2 columns on large screens */}
-            <div className="lg:col-span-2 p-5 sm:p-8">
-              <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-10">
-                {/* Vehicle Selection Card */}
-                <div className="border border-gray-200 rounded-2xl p-5 sm:p-6 hover:border-blue-300 transition-all duration-300">
-                  <div className="flex items-start mb-4 sm:mb-5">
-                    <div className="flex-shrink-0 mt-0.5 mr-3 sm:mr-4">
-                      <div className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-blue-100">
-                        <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                        </svg>
-                      </div>
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="md:flex">
+            {/* Form Section */}
+            <div className="md:w-2/3 p-6 sm:p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Vehicle Selection */}
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-lg bg-blue-100 text-blue-600">
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.5 3A2.5 2.5 0 0 0 3 5.5v1A2.5 2.5 0 0 0 5.5 9h13A2.5 2.5 0 0 0 21 6.5v-1A2.5 2.5 0 0 0 18.5 3h-13Z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M9 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM9 9V5M15 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM15 9V5" />
+                      </svg>
                     </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-gray-900">My Vehicle</h2>
-                      <p className="text-gray-500 text-xs sm:text-sm mt-1">Select the vehicle you want to service</p>
-                    </div>
+                    <h2 className="ml-3 text-xl font-bold text-gray-900">Select Your Vehicle</h2>
                   </div>
                   
-                  <div className="mt-5 sm:mt-6">
+                  <div>
                     <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700 mb-2">
                       Vehicle
                     </label>
-                    <select
-                      id="vehicleId"
-                      name="vehicleId"
-                      value={formData.vehicleId}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-900 text-base shadow-sm"
-                      required
-                    >
-                      <option value="">Choose a vehicle</option>
-                      {vehicles.map((vehicle) => (
-                        <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.make} {vehicle.model} ({vehicle.year}) - {vehicle.registrationNumber}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Service Type Card */}
-                <div className="border border-gray-200 rounded-2xl p-5 sm:p-6 hover:border-blue-300 transition-all duration-300">
-                  <div className="flex items-start mb-4 sm:mb-5">
-                    <div className="flex-shrink-0 mt-0.5 mr-3 sm:mr-4">
-                      <div className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-indigo-100">
-                        <svg className="h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <div className="relative">
+                      <select
+                        id="vehicleId"
+                        name="vehicleId"
+                        value={formData.vehicleId}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-900 shadow-sm appearance-none"
+                        required
+                      >
+                        <option value="">Choose a vehicle</option>
+                        {vehicles.map((vehicle) => (
+                          <option key={vehicle.id} value={vehicle.id}>
+                            {vehicle.make} {vehicle.model} ({vehicle.year})
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
                     </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-gray-900">Service Type</h2>
-                      <p className="text-gray-500 text-xs sm:text-sm mt-1">Choose the type of service you need</p>
+                  </div>
+                </div>
+
+                {/* Service Type */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-lg bg-indigo-100 text-indigo-600">
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
                     </div>
+                    <h2 className="ml-3 text-xl font-bold text-gray-900">Service Type</h2>
                   </div>
                   
-                  <div className="mt-5 sm:mt-6">
+                  <div>
                     <label htmlFor="serviceType" className="block text-sm font-medium text-gray-700 mb-2">
                       Service
                     </label>
-                    <select
-                      id="serviceType"
-                      name="serviceType"
-                      value={formData.serviceType}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-900 text-base shadow-sm"
-                      required
-                    >
-                      <option value="">Select service type</option>
-                      {serviceTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Appointment Card */}
-                <div className="border border-gray-200 rounded-2xl p-5 sm:p-6 hover:border-blue-300 transition-all duration-300">
-                  <div className="flex items-start mb-4 sm:mb-5">
-                    <div className="flex-shrink-0 mt-0.5 mr-3 sm:mr-4">
-                      <div className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-amber-100">
-                        <svg className="h-5 w-5 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <div className="relative">
+                      <select
+                        id="serviceType"
+                        name="serviceType"
+                        value={formData.serviceType}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-900 shadow-sm appearance-none"
+                        required
+                      >
+                        <option value="">Select service type</option>
+                        {serviceTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {getServiceIcon(type)}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
                     </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-gray-900">Appointment</h2>
-                      <p className="text-gray-500 text-xs sm:text-sm mt-1">Select your preferred date and time</p>
+                  </div>
+                </div>
+
+                {/* Appointment Details */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-lg bg-amber-100 text-amber-600">
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
                     </div>
+                    <h2 className="ml-3 text-xl font-bold text-gray-900">Appointment Details</h2>
                   </div>
                   
-                  <div className="mt-5 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="preferredDate" className="block text-sm font-medium text-gray-700 mb-2">
-                        Date
+                        Preferred Date
                       </label>
                       <div className="relative">
                         <input
@@ -447,11 +444,11 @@ const BookServicePage = () => {
                           value={formData.preferredDate}
                           onChange={handleInputChange}
                           min={new Date().toISOString().split('T')[0]}
-                          className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm"
+                          className="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 shadow-sm"
                           required
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                          <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                         </div>
@@ -460,7 +457,7 @@ const BookServicePage = () => {
                     
                     <div>
                       <label htmlFor="preferredTime" className="block text-sm font-medium text-gray-700 mb-2">
-                        Time
+                        Preferred Time
                       </label>
                       <div className="relative">
                         <input
@@ -469,11 +466,11 @@ const BookServicePage = () => {
                           id="preferredTime"
                           value={formData.preferredTime}
                           onChange={handleInputChange}
-                          className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm"
+                          className="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 shadow-sm"
                           required
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                          <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
@@ -482,23 +479,18 @@ const BookServicePage = () => {
                   </div>
                 </div>
 
-                {/* Description Card */}
-                <div className="border border-gray-200 rounded-2xl p-5 sm:p-6 hover:border-blue-300 transition-all duration-300">
-                  <div className="flex items-start mb-4 sm:mb-5">
-                    <div className="flex-shrink-0 mt-0.5 mr-3 sm:mr-4">
-                      <div className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-emerald-100">
-                        <svg className="h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                        </svg>
-                      </div>
+                {/* Additional Details */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-lg bg-emerald-100 text-emerald-600">
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
                     </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-gray-900">Additional Details</h2>
-                      <p className="text-gray-500 text-xs sm:text-sm mt-1">Any specific issues or requests?</p>
-                    </div>
+                    <h2 className="ml-3 text-xl font-bold text-gray-900">Additional Details</h2>
                   </div>
                   
-                  <div className="mt-5 sm:mt-6">
+                  <div>
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
                       Description
                     </label>
@@ -508,79 +500,65 @@ const BookServicePage = () => {
                       rows={4}
                       value={formData.description}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm"
+                      className="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 shadow-sm"
                       placeholder="Describe any specific issues with your vehicle or special requests..."
                     />
                   </div>
                 </div>
 
                 {/* Submit Button */}
-                <div className="pt-2 sm:pt-4">
-                  <Button 
+                <div className="pt-4">
+                  <button 
                     type="submit" 
-                    className="w-full py-3.5 sm:py-4 px-5 sm:px-6 rounded-xl text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                    className="w-full py-3.5 px-6 rounded-lg text-base font-bold shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white cursor-pointer"
                   >
                     Confirm Booking
-                  </Button>
+                  </button>
                 </div>
               </form>
             </div>
 
-            {/* Sidebar - Takes 1 column on large screens */}
-            <div className="bg-gradient-to-b from-blue-50 to-indigo-50 p-5 sm:p-6 border-t lg:border-t-0 lg:border-l border-gray-200 lg:sticky lg:top-8">
-              <div className="space-y-6 sm:space-y-7">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Booking Information</h3>
-                
-                {/* Service Info */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                  <div className="flex items-center mb-4">
-                    <div className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                      <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+            {/* Sidebar */}
+            <div className="md:w-1/3 bg-gradient-to-b from-blue-50 to-indigo-50 p-6 border-t md:border-t-0 md:border-l border-gray-200">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Booking Information</h3>
+                  
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-center mb-4">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                        <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h4 className="ml-3 text-lg font-semibold text-gray-900">What to Expect</h4>
                     </div>
-                    <h4 className="ml-3 font-semibold text-gray-900">What to Expect</h4>
-                  </div>
-                  <ul className="space-y-3">
-                    <li className="flex items-start">
-                      <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-sm text-gray-600">Confirmation within 24 hours</span>
-                    </li>
-                    <li className="flex items-start">
-                      <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-sm text-gray-600">Free pickup and delivery available</span>
-                    </li>
-                    <li className="flex items-start">
-                      <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-sm text-gray-600">Loaner vehicles for major repairs</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                {/* Contact Info */}
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-5 text-white">
-                  <div className="flex items-center mb-4">
-                    <div className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-white bg-opacity-20 flex items-center justify-center">
-                      <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                    </div>
-                    <h4 className="ml-3 font-semibold">Need Help?</h4>
-                  </div>
-                  <p className="text-sm mb-4 leading-relaxed">
-                    Our service advisors are available 24/7 to assist you with your booking.
-                  </p>
-                  <div className="flex items-center text-sm font-medium">
-                    <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    <span>+91 9665484038</span>
+                    <ul className="space-y-3">
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-gray-600">Confirmation within 24 hours</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-gray-600">Free pickup and delivery available</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-gray-600">Loaner vehicles for major repairs</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-gray-600">Complimentary vehicle inspection</span>
+                      </li>
+                    </ul>
                   </div>
                 </div>
               </div>
