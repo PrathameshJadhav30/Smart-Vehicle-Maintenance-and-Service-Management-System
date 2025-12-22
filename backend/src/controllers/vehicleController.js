@@ -206,7 +206,7 @@ export const getVehicleById = async (req, res) => {
 
 export const updateVehicle = async (req, res) => {
   try {
-    const { model, year, engine_type, make, registration_number, mileage } = req.body;
+    const { model, year, engine_type, make, registration_number, mileage, vin } = req.body;
     
     const result = await query(
       `UPDATE vehicles 
@@ -216,10 +216,11 @@ export const updateVehicle = async (req, res) => {
            make = COALESCE($4, make),
            registration_number = COALESCE($5, registration_number),
            mileage = COALESCE($6, mileage),
+           vin = COALESCE($7, vin),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7 
+       WHERE id = $8 
        RETURNING *`,
-      [model, year, engine_type, make, registration_number, mileage, req.params.id]
+      [model, year, engine_type, make, registration_number, mileage, vin, req.params.id]
     );
     
     if (result.rows.length === 0) {

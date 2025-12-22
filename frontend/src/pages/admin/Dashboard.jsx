@@ -5,6 +5,7 @@ import analyticsService from '../../services/analyticsService';
 import jobcardService from '../../services/jobcardService';
 import authService from '../../services/authService';
 import { formatCurrency } from '../../utils/currencyFormatter';
+import DashboardLayout from '../../layouts/DashboardLayout';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
@@ -148,7 +149,7 @@ const AdminDashboard = () => {
             <div className="mt-6">
               <button
                 onClick={() => window.location.reload()}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
               >
                 Retry
               </button>
@@ -159,37 +160,18 @@ const AdminDashboard = () => {
     );
   }
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <DashboardLayout role="admin" title="Admin Dashboard">
         {/* Welcome Header */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Welcome, {user?.name || 'Admin'}!</h1>
-            <p className="mt-2 text-lg text-gray-600">Here's what's happening with your system today.</p>
-          </div>
-          <div className="mt-4 sm:mt-0">
-            <button 
-              onClick={handleLogout}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
-              </svg>
-              Logout
-            </button>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Welcome, {user?.name || 'Admin'}!</h1>
+          <p className="mt-2 text-lg text-gray-600">Here's what's happening with your system today.</p>
         </div>
         
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        {/* Stats Cards - Enhanced Responsive Grid */}
+        <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           {/* Total Vehicles Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
             <div className="flex items-center">
               <div className="p-3 rounded-lg bg-blue-100">
                 <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,7 +186,7 @@ const AdminDashboard = () => {
           </div>
           
           {/* Pending Bookings Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
             <div className="flex items-center">
               <div className="p-3 rounded-lg bg-amber-100">
                 <svg className="h-6 w-6 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -219,7 +201,7 @@ const AdminDashboard = () => {
           </div>
           
           {/* Active Jobs Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
             <div className="flex items-center">
               <div className="p-3 rounded-lg bg-green-100">
                 <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -234,7 +216,7 @@ const AdminDashboard = () => {
           </div>
           
           {/* Low Stock Parts Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
             <div className="flex items-center">
               <div className="p-3 rounded-lg bg-red-100">
                 <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -249,14 +231,14 @@ const AdminDashboard = () => {
           </div>
         </div>
         
-        {/* System Overview */}
+        {/* System Overview - Enhanced Responsive Layout */}
         <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
           <div className="px-6 py-5 border-b border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900">System Overview</h3>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-              <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200">
+            <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3">
+              <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-blue-100 rounded-lg p-3">
                     <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -264,13 +246,13 @@ const AdminDashboard = () => {
                     </svg>
                   </div>
                   <div className="ml-4">
-                    <h4 className="text-md font-medium text-gray-900">Users</h4>
+                    <h4 className="text-md font-medium text-gray-500">Users</h4>
                     <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardStats.totalUsers}</p>
                     <p className="text-sm text-gray-500">Total registered users</p>
                   </div>
                 </div>
               </div>
-              <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200">
+              <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-green-100 rounded-lg p-3">
                     <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -278,13 +260,13 @@ const AdminDashboard = () => {
                     </svg>
                   </div>
                   <div className="ml-4">
-                    <h4 className="text-md font-medium text-gray-900">Revenue</h4>
+                    <h4 className="text-md font-medium text-gray-500">Revenue</h4>
                     <p className="mt-1 text-3xl font-bold text-gray-900">{formatCurrency(typeof dashboardStats.revenue === 'number' ? dashboardStats.revenue : 0)}</p>
                     <p className="text-sm text-gray-500">This month</p>
                   </div>
                 </div>
               </div>
-              <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200">
+              <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-purple-100 rounded-lg p-3">
                     <svg className="h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -292,7 +274,7 @@ const AdminDashboard = () => {
                     </svg>
                   </div>
                   <div className="ml-4">
-                    <h4 className="text-md font-medium text-gray-900">Mechanics</h4>
+                    <h4 className="text-md font-medium text-gray-500">Mechanics</h4>
                     <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardStats.mechanics}</p>
                     <p className="text-sm text-gray-500">Active mechanics</p>
                   </div>
@@ -302,7 +284,7 @@ const AdminDashboard = () => {
           </div>
         </div>
         
-        {/* Performance Sections */}
+        {/* Performance Sections - Simplified Layout */}
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Top Performing Mechanics */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
@@ -311,39 +293,34 @@ const AdminDashboard = () => {
             </div>
             <div className="p-6">
               {mechanicStats.length > 0 ? (
-                <div className="overflow-hidden">
+                <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">
                           Mechanic
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Jobs Completed
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">
                           Revenue Generated
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {mechanicStats.map((mechanic) => (
-                        <tr key={mechanic.id} className="hover:bg-gray-50 transition-colors duration-150">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {mechanic.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {mechanicStats.slice(0, 5).map((mechanic) => (
+                        <tr key={mechanic.id} className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sm:px-6">
                             <div className="flex items-center">
-                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                                <div 
-                                  className="bg-blue-600 h-2 rounded-full" 
-                                  style={{ width: `${mechanic.jobs_completed > 0 ? Math.min(100, (mechanic.jobs_completed / Math.max(...mechanicStats.map(m => m.jobs_completed))) * 100) : 0}%` }}
-                                ></div>
+                              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span className="text-blue-800 text-xs font-medium">
+                                  {mechanic.name.charAt(0).toUpperCase()}
+                                </span>
                               </div>
-                              <span>{mechanic.jobs_completed}</span>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-gray-900">{mechanic.name}</div>
+                              </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 sm:px-6 font-medium">
                             {formatCurrency(typeof mechanic.total_revenue === 'number' ? mechanic.total_revenue : 0)}
                           </td>
                         </tr>
@@ -370,40 +347,35 @@ const AdminDashboard = () => {
             </div>
             <div className="p-6">
               {jobAssignments.length > 0 ? (
-                <div className="overflow-hidden">
+                <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">
                           Mechanic
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">
                           Assigned Jobs
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Workload
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {jobAssignments.map((assignment) => (
-                        <tr key={assignment.mechanicId} className="hover:bg-gray-50 transition-colors duration-150">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {assignment.mechanicName}
+                        <tr key={assignment.mechanicId} className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sm:px-6">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                <span className="text-indigo-800 text-xs font-medium">
+                                  {assignment.mechanicName.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-gray-900">{assignment.mechanicName}</div>
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 sm:px-6 font-medium">
                             {assignment.assignedJobs}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-indigo-600 h-2 rounded-full" 
-                                style={{ width: `${Math.min(100, assignment.assignedJobs > 0 ? (assignment.assignedJobs * 20) : 0)}%` }}
-                              ></div>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {assignment.assignedJobs} jobs ({assignment.completedJobs} completed)
-                            </div>
                           </td>
                         </tr>
                       ))}
@@ -413,7 +385,7 @@ const AdminDashboard = () => {
               ) : (
                 <div className="text-center py-8">
                   <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002-2h2a2 2 0 002 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                   </svg>
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No assignment data</h3>
                   <p className="mt-1 text-sm text-gray-500">No job assignment data available.</p>
@@ -423,88 +395,88 @@ const AdminDashboard = () => {
           </div>
         </div>
         
-        {/* Quick Actions */}
+        {/* Quick Actions - Enhanced Responsive Grid */}
         <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
           <div className="px-6 py-5 border-b border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
               <button 
                 onClick={() => navigate('/admin/users')}
-                className="flex flex-col items-center justify-center p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group"
+                className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
               >
                 <div className="flex-shrink-0 bg-blue-100 rounded-full p-3 group-hover:bg-blue-200 transition-colors duration-200">
                   <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 </div>
-                <span className="mt-3 text-sm font-medium text-gray-900">Manage Users</span>
+                <span className="mt-3 text-sm font-medium text-gray-900 text-center">Manage Users</span>
               </button>
               
               <button 
                 onClick={() => navigate('/admin/bookings')}
-                className="flex flex-col items-center justify-center p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group"
+                className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
               >
                 <div className="flex-shrink-0 bg-amber-100 rounded-full p-3 group-hover:bg-amber-200 transition-colors duration-200">
                   <svg className="h-6 w-6 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <span className="mt-3 text-sm font-medium text-gray-900">Bookings</span>
+                <span className="mt-3 text-sm font-medium text-gray-900 text-center">Bookings</span>
               </button>
               
               <button 
                 onClick={() => navigate('/admin/parts')}
-                className="flex flex-col items-center justify-center p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group"
+                className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
               >
                 <div className="flex-shrink-0 bg-green-100 rounded-full p-3 group-hover:bg-green-200 transition-colors duration-200">
                   <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
-                <span className="mt-3 text-sm font-medium text-gray-900">Parts Inventory</span>
+                <span className="mt-3 text-sm font-medium text-gray-900 text-center">Parts Inventory</span>
               </button>
               
               <button 
                 onClick={() => navigate('/admin/analytics')}
-                className="flex flex-col items-center justify-center p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group"
+                className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
               >
                 <div className="flex-shrink-0 bg-purple-100 rounded-full p-3 group-hover:bg-purple-200 transition-colors duration-200">
                   <svg className="h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
-                <span className="mt-3 text-sm font-medium text-gray-900">Analytics</span>
+                <span className="mt-3 text-sm font-medium text-gray-900 text-center">Analytics</span>
               </button>
               
               <button 
                 onClick={() => navigate('/admin/vehicles')}
-                className="flex flex-col items-center justify-center p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group"
+                className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
               >
                 <div className="flex-shrink-0 bg-indigo-100 rounded-full p-3 group-hover:bg-indigo-200 transition-colors duration-200">
                   <svg className="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <span className="mt-3 text-sm font-medium text-gray-900">Vehicles</span>
+                <span className="mt-3 text-sm font-medium text-gray-900 text-center">Vehicles</span>
               </button>
               
               <button 
                 onClick={() => navigate('/admin/invoices')}
-                className="flex flex-col items-center justify-center p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group"
+                className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
               >
                 <div className="flex-shrink-0 bg-teal-100 rounded-full p-3 group-hover:bg-teal-200 transition-colors duration-200">
                   <svg className="h-6 w-6 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
-                <span className="mt-3 text-sm font-medium text-gray-900">Invoices</span>
+                <span className="mt-3 text-sm font-medium text-gray-900 text-center">Invoices</span>
               </button>
             </div>
           </div>
-        </div>      </div>
-    </div>
+        </div>
+    </DashboardLayout>
   );
 };
 

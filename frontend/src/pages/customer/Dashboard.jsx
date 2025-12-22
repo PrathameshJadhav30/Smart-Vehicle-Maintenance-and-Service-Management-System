@@ -8,7 +8,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorDisplay from '../../components/ErrorDisplay';
 import { formatBookingDateShort, formatCreatedDateShort } from '../../utils/dateFormatter';
 import { formatCurrency } from '../../utils/currencyFormatter';
-
+import DashboardLayout from '../../layouts/DashboardLayout';
 const CustomerDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -338,25 +338,12 @@ const CustomerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <DashboardLayout role="customer" title="Customer Dashboard">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Welcome Section */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
-            <p className="mt-2 text-lg text-gray-600">Here's what's happening with your vehicles and services today.</p>
-          </div>
-          <div className="mt-4 sm:mt-0">
-            <button 
-              onClick={handleLogout}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
-              </svg>
-              Logout
-            </button>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
+          <p className="mt-2 text-lg text-gray-600">Here's what's happening with your vehicles and services today.</p>
         </div>
         
         {/* Stats Cards */}
@@ -432,7 +419,7 @@ const CustomerDashboard = () => {
                 <div className="space-y-4">
                   <button 
                     onClick={() => navigate('/customer/vehicles')}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-sm hover:from-blue-600 hover:to-blue-700 transition-all duration-300 text-white group"
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-sm hover:from-blue-600 hover:to-blue-700 transition-all duration-300 text-white group cursor-pointer"
                   >
                     <div className="flex items-center">
                       <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -447,7 +434,7 @@ const CustomerDashboard = () => {
                   
                   <button 
                     onClick={() => navigate('/customer/book-service')}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg shadow-sm hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 text-white group"
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg shadow-sm hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 text-white group cursor-pointer"
                   >
                     <div className="flex items-center">
                       <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -462,7 +449,7 @@ const CustomerDashboard = () => {
                   
                   <button 
                     onClick={() => navigate('/customer/bookings')}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg shadow-sm hover:from-indigo-600 hover:to-indigo-700 transition-all duration-300 text-white group"
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg shadow-sm hover:from-indigo-600 hover:to-indigo-700 transition-all duration-300 text-white group cursor-pointer"
                   >
                     <div className="flex items-center">
                       <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -477,7 +464,7 @@ const CustomerDashboard = () => {
                   
                   <button 
                     onClick={() => navigate('/customer/invoices')}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow-sm hover:from-purple-600 hover:to-purple-700 transition-all duration-300 text-white group"
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow-sm hover:from-purple-600 hover:to-purple-700 transition-all duration-300 text-white group cursor-pointer"
                   >
                     <div className="flex items-center">
                       <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -492,7 +479,7 @@ const CustomerDashboard = () => {
                   
                   <button 
                     onClick={() => navigate('/customer/profile')}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 rounded-lg shadow-sm hover:from-gray-700 hover:to-gray-800 transition-all duration-300 text-white group"
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 rounded-lg shadow-sm hover:from-gray-700 hover:to-gray-800 transition-all duration-300 text-white group cursor-pointer"
                   >
                     <div className="flex items-center">
                       <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -517,7 +504,7 @@ const CustomerDashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-900">Recent Bookings</h3>
                 <button 
                   onClick={() => navigate('/customer/bookings')}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center cursor-pointer"
                 >
                   View All
                   <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -538,7 +525,7 @@ const CustomerDashboard = () => {
                     <div className="mt-6">
                       <button
                         onClick={() => navigate('/customer/book-service')}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                       >
                         Book Service
                       </button>
@@ -592,7 +579,7 @@ const CustomerDashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-900">Recent Invoices</h3>
                 <button 
                   onClick={() => navigate('/customer/invoices')}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center cursor-pointer"
                 >
                   View All
                   <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -650,7 +637,7 @@ const CustomerDashboard = () => {
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
