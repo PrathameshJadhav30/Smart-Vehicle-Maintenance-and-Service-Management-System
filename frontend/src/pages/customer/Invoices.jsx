@@ -172,19 +172,19 @@ const InvoicesPage = () => {
             <div className="flex space-x-2">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'all' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${filter === 'all' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
               >
                 All Invoices
               </button>
               <button
                 onClick={() => setFilter('paid')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'paid' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${filter === 'paid' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
               >
                 Paid
               </button>
               <button
                 onClick={() => setFilter('unpaid')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'unpaid' ? 'bg-amber-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${filter === 'unpaid' ? 'bg-amber-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
               >
                 Unpaid
               </button>
