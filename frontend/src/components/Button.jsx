@@ -13,14 +13,14 @@ const Button = ({
 }) => {
   // Variant styles
   const variantStyles = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white border-transparent',
-    secondary: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50',
-    outline: 'bg-transparent border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white',
-    ghost: 'bg-transparent text-blue-600 hover:bg-gray-100',
-    danger: 'bg-red-500 hover:bg-red-600 text-white border-transparent',
-    success: 'bg-green-600 hover:bg-green-700 text-white border-transparent',
-    warning: 'bg-amber-500 hover:bg-amber-600 text-white border-transparent',
-    info: 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent',
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white border-transparent cursor-pointer',
+    secondary: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer',
+    outline: 'bg-transparent border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white cursor-pointer',
+    ghost: 'bg-transparent text-blue-600 hover:bg-gray-100 cursor-pointer',
+    danger: 'bg-red-500 hover:bg-red-600 text-white border-transparent cursor-pointer',
+    success: 'bg-green-600 hover:bg-green-700 text-white border-transparent cursor-pointer',
+    warning: 'bg-amber-500 hover:bg-amber-600 text-white border-transparent cursor-pointer',
+    info: 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent cursor-pointer',
   };
 
   // Size styles
@@ -49,6 +49,7 @@ const Button = ({
         font-medium rounded-md
         transition-all duration-200 ease-in-out
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+        cursor-pointer
         ${variantStyles[variant]}
         ${sizeStyles[size]}
         ${disabledStyles}

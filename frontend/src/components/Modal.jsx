@@ -124,7 +124,7 @@ const Modal = ({
               {showCloseButton && (
                 <button
                   type="button"
-                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                  className="text-gray-400 hover:text-gray-500 focus:outline-none cursor-pointer"
                   onClick={onClose}
                 >
                   <span className="sr-only">Close</span>
