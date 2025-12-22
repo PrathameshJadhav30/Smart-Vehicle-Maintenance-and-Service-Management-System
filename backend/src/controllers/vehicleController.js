@@ -144,8 +144,8 @@ export const getUserVehicles = async (req, res) => {
     
     // Add search condition if provided
     if (search) {
-      queryText += ` AND (v.make ILIKE $${params.length + 1} OR v.model ILIKE $${params.length + 1} OR v.vin ILIKE $${params.length + 1})`;
-      countQuery += ` AND (v.make ILIKE $${countParams.length + 1} OR v.model ILIKE $${countParams.length + 1} OR v.vin ILIKE $${countParams.length + 1})`;
+      queryText += ` AND (v.make ILIKE $2 OR v.model ILIKE $2 OR v.vin ILIKE $2)`;
+      countQuery += ` AND (v.make ILIKE $2 OR v.model ILIKE $2 OR v.vin ILIKE $2)`;
       params.push(`%${search}%`);
       countParams.push(`%${search}%`);
     }

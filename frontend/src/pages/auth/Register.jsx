@@ -13,7 +13,7 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: '',
+    role: 'customer',
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -63,10 +63,6 @@ const Register = () => {
     
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-    
-    if (!formData.role) {
-      newErrors.role = 'Role is required';
     }
     
     setErrors(newErrors);
@@ -160,6 +156,15 @@ const Register = () => {
           required
         />
         
+        <Select
+          label="Role"
+          id="role"
+          name="role"
+          value={formData.role}
+          onChange={handleChange}
+          options={roleOptions}
+          error={errors.role}
+        />
         <Button
           type="submit"
           loading={loading}
@@ -168,7 +173,6 @@ const Register = () => {
           Create Account
         </Button>
       </form>
-      
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
           Already have an account?{' '}
