@@ -549,29 +549,29 @@ const CustomerDashboard = () => {
                     <ul className="divide-y divide-gray-100">
                       {bookings.map((booking) => (
                         <li key={booking.id} className="py-4 hover:bg-gray-50 rounded-lg px-2 transition-colors duration-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start min-w-0">
+                              <div className="flex-shrink-0 mt-0.5">
                                 {getBookingIcon(booking.service_type)}
                               </div>
-                              <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-900">
+                              <div className="ml-4 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
                                   {booking.service_type}
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 truncate">
                                   {booking.model || booking.vehicle?.model || 'Unknown Vehicle'}
                                 </p>
                                 <div className="mt-1 flex items-center text-xs text-gray-400">
                                   <svg className="flex-shrink-0 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                                   </svg>
-                                  <span>
+                                  <span className="truncate">
                                     {formatBookingDateShort(booking.booking_date)}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex flex-col items-end">
+                            <div className="flex flex-col items-start sm:items-end">
                               {getStatusBadge(booking.status)}
                               <p className="mt-1 text-xs text-gray-500">
                                 Booked: {formatCreatedDateShort(booking.created_at)}
@@ -616,24 +616,24 @@ const CustomerDashboard = () => {
                     <ul className="divide-y divide-gray-100">
                       {invoices.slice(0, 3).map((invoice) => (
                         <li key={invoice.id} className="py-4 hover:bg-gray-50 rounded-lg px-2 transition-colors duration-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start min-w-0">
+                              <div className="flex-shrink-0 mt-0.5">
                                 {getInvoiceIcon()}
                               </div>
-                              <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-900">
+                              <div className="ml-4 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
                                   Invoice #{String(invoice.id || invoice.invoice_id || '').substring(0, 8)}
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 truncate">
                                   {(invoice.vehicle?.make || invoice.model || '') + ' ' + (invoice.vehicle?.model || invoice.vin || '') || 'Vehicle Information Not Available'}
                                 </p>
-                                <p className="text-xs text-gray-400 mt-1">
+                                <p className="text-xs text-gray-400 mt-1 truncate">
                                   Due: {formatCreatedDateShort(invoice.dueDate ? new Date(invoice.dueDate) : new Date(invoice.created_at))}
                                 </p>
                               </div>
                             </div>
-                            <div className="flex flex-col items-end">
+                            <div className="flex flex-col items-start sm:items-end">
                               {getPaymentStatusBadge(invoice.status || invoice.paymentStatus)}
                               <p className="text-lg font-bold text-gray-900 mt-1">
                                 {formatCurrency(invoice.grand_total || invoice.totalAmount)}
