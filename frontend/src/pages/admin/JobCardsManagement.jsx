@@ -8,6 +8,7 @@ const JobCardsManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedJobCard, setSelectedJobCard] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
     loadJobCards();
@@ -68,7 +69,10 @@ const JobCardsManagementPage = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -94,85 +98,140 @@ const JobCardsManagementPage = () => {
 
   // Ensure jobCards is always an array
   const jobCardsArray = Array.isArray(jobCards) ? jobCards : [];
+  
+  // Filter job cards based on status
+  const filteredJobCards = jobCardsArray.filter(jobCard => {
+    if (filterStatus === 'all') return true;
+    return jobCard.status === filterStatus;
+  });
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" data-testid="loading-spinner"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Job Cards Management</h1>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Job Cards Management</h1>
+              <p className="mt-2 text-lg text-gray-600">Manage and track all job cards</p>
+            </div>
+          </div>
+          
+          {/* Filter Controls */}
+          <div className="mb-6 flex flex-wrap gap-3">
+            <div className="flex items-center">
+              <span className="mr-2 text-sm font-medium text-gray-700">Filter by Status:</span>
+              <select 
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="block border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
           </div>
 
-          {jobCardsArray.length === 0 ? (
-            <div className="bg-white shadow rounded-lg p-8 text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          {filteredJobCards.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+              <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <h3 className="mt-2 text-lg font-medium text-gray-900">No job cards found</h3>
-              <p className="mt-1 text-gray-500">There are no job cards in the system.</p>
+              <h3 className="mt-4 text-xl font-medium text-gray-900">No job cards found</h3>
+              <p className="mt-2 text-gray-500">
+                {filterStatus === 'all' 
+                  ? 'There are no job cards in the system.' 
+                  : `There are no job cards with status "${filterStatus === 'in_progress' ? 'In Progress' : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}".`}
+              </p>
             </div>
           ) : (
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
               <ul className="divide-y divide-gray-200">
-                {jobCardsArray.map((jobCard) => (
-                  <li key={jobCard.id}>
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-blue-600 truncate">
-                          Job Card #{String(jobCard.id || '').substring(0, 8)}
-                        </p>
-                        <div className="ml-2 flex-shrink-0 flex space-x-2">
+                {filteredJobCards.map((jobCard) => (
+                  <li key={jobCard.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    <div className="px-6 py-5">
+                      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">#{jobCard.id || 'N/A'}</span>
+                          </div>
+                          <div className="ml-4">
+                            <p className="text-lg font-bold text-gray-900">Job Card #{jobCard.id || 'N/A'}</p>
+                            <p className="text-sm text-gray-500 mt-1">Created: {jobCard.created_at ? formatDate(jobCard.created_at) : 'N/A'}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
                           {getStatusBadge(jobCard.status)}
                           {getPriorityBadge(jobCard.priority)}
                         </div>
                       </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <p className="flex items-center text-sm text-gray-500">
-                            <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                            </svg>
-                            Customer: {jobCard.booking?.customer?.name}
-                          </p>
-                          <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                            <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                            </svg>
-                            Vehicle: {jobCard.booking?.vehicle?.make} {jobCard.booking?.vehicle?.model}
-                          </p>
+                      
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Customer</h4>
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                              <span className="text-white text-xs font-medium">
+                                {jobCard.customer_name ? jobCard.customer_name.charAt(0).toUpperCase() : 'U'}
+                              </span>
+                            </div>
+                            <p className="ml-2 text-sm font-medium text-gray-900 truncate">
+                              {jobCard.customer_name || 'N/A'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                          </svg>
-                          <span>
-                            Created: {formatDate(jobCard.createdAt)}
-                          </span>
+                        
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Vehicle</h4>
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                            <p className="ml-2 text-sm font-medium text-gray-900 truncate">
+                              {jobCard.model || '(N/A)'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Assigned To</h4>
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+                              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                            <p className="ml-2 text-sm font-medium text-gray-900 truncate">
+                              {jobCard.mechanic_name || 'Unassigned'}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                      <div className="mt-2 flex justify-between items-center">
-                        <p className="text-sm text-gray-500">
-                          Assigned to: {jobCard.assignedMechanic?.name || 'Unassigned'}
-                        </p>
+                      
+                      <div className="mt-5 flex flex-col sm:flex-row sm:justify-end sm:items-center gap-3 pt-4 border-t border-gray-100">
                         <div className="flex space-x-2">
                           <Button 
-                            variant="secondary" 
-                            size="small"
+                            variant="info" 
+                            size="sm"
                             onClick={() => viewJobCardDetails(jobCard)}
                           >
                             View Details
                           </Button>
                           <Button 
                             variant="danger" 
-                            size="small"
+                            size="sm"
                             onClick={() => handleDelete(jobCard.id)}
                           >
                             Delete
@@ -190,45 +249,73 @@ const JobCardsManagementPage = () => {
 
       {/* Job Card Details Modal */}
       {selectedJobCard && (
-        <Modal isOpen={showDetailsModal} onClose={() => setShowDetailsModal(false)} title={`Job Card #${String(selectedJobCard.id || '').substring(0, 8)}`}>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Status</h3>
-              <p className="mt-1 text-sm text-gray-900">{getStatusBadge(selectedJobCard.status)}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Priority</h3>
-              <p className="mt-1 text-sm text-gray-900">{getPriorityBadge(selectedJobCard.priority)}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Description</h3>
-              <p className="mt-1 text-sm text-gray-900">{selectedJobCard.description}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Estimated Hours</h3>
-              <p className="mt-1 text-sm text-gray-900">{selectedJobCard.estimated_hours || selectedJobCard.estimatedHours || 'Not specified'}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Customer</h3>
-              <p className="mt-1 text-sm text-gray-900">{selectedJobCard.booking?.customer?.name}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Vehicle</h3>
-              <p className="mt-1 text-sm text-gray-900">
-                {selectedJobCard.booking?.vehicle?.make} {selectedJobCard.booking?.vehicle?.model} ({selectedJobCard.booking?.vehicle?.year})
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Assigned Mechanic</h3>
-              <p className="mt-1 text-sm text-gray-900">{selectedJobCard.assignedMechanic?.name || 'Unassigned'}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Created At</h3>
-              <p className="mt-1 text-sm text-gray-900">{formatDate(selectedJobCard.created_at || selectedJobCard.createdAt)}</p>
+        <Modal isOpen={showDetailsModal} onClose={() => setShowDetailsModal(false)} title={`Job Card #${selectedJobCard?.id || 'N/A'}`} size="lg">
+          <div className="space-y-6 py-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                <h3 className="text-base font-bold text-gray-900 mb-4">Job Card Information</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Status</span>
+                    <span className="text-sm font-medium">{getStatusBadge(selectedJobCard.status)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Priority</span>
+                    <span className="text-sm font-medium">{getPriorityBadge(selectedJobCard.priority)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Created At</span>
+                    <span className="text-sm font-medium text-gray-900">{selectedJobCard.created_at ? formatDate(selectedJobCard.created_at) : 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+                    
+              <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                <h3 className="text-base font-bold text-gray-900 mb-4">Assignment</h3>
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500 block mb-1">Customer</span>
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {selectedJobCard.customer_name ? selectedJobCard.customer_name.charAt(0).toUpperCase() : 'U'}
+                        </span>
+                      </div>
+                      <span className="ml-3 text-sm font-medium text-gray-900">{selectedJobCard.customer_name || 'N/A'}</span>
+                    </div>
+                  </div>
+                        
+                  <div>
+                    <span className="text-sm font-medium text-gray-500 block mb-1">Vehicle</span>
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="ml-3 text-sm font-medium text-gray-900">
+                        {selectedJobCard.model || '(N/A)'}
+                      </span>
+                    </div>
+                  </div>
+                        
+                  <div>
+                    <span className="text-sm font-medium text-gray-500 block mb-1">Assigned Mechanic</span>
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <span className="ml-3 text-sm font-medium text-gray-900">{selectedJobCard.mechanic_name || 'Unassigned'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="mt-6 flex justify-end">
-            <Button onClick={() => setShowDetailsModal(false)}>
+          <div className="mt-8 flex justify-end">
+            <Button variant="danger" onClick={() => setShowDetailsModal(false)}>
               Close
             </Button>
           </div>

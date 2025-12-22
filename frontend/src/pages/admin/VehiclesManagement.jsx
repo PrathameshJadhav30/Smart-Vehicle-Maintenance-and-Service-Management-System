@@ -20,6 +20,7 @@ const VehiclesManagementPage = () => {
     mileage: '',
     customer_id: ''
   });
+  const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
     loadVehicles();
@@ -188,6 +189,18 @@ const VehiclesManagementPage = () => {
 
   // Ensure vehicles is always an array
   const vehiclesArray = Array.isArray(vehicles) ? vehicles : [];
+  
+  // Filter vehicles based on status
+  const filteredVehicles = vehiclesArray.filter(vehicle => {
+    if (filterStatus === 'all') return true;
+    if (filterStatus === 'complete') {
+      return vehicle.make && vehicle.model && vehicle.year && vehicle.vin;
+    }
+    if (filterStatus === 'incomplete') {
+      return !(vehicle.make && vehicle.model && vehicle.year && vehicle.vin);
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -228,22 +241,42 @@ const VehiclesManagementPage = () => {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-2xl font-bold text-gray-900">{vehiclesArray.length}</h3>
-                  <p className="text-sm text-gray-500">Total Vehicles</p>
+                  <h3 className="text-2xl font-bold text-gray-900">{filteredVehicles.length}</h3>
+                  <p className="text-sm text-gray-500">{filterStatus === 'all' ? 'Total Vehicles' : filterStatus === 'complete' ? 'Complete Vehicles' : 'Incomplete Vehicles'}</p>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Filter Controls */}
+          <div className="mb-6 flex flex-wrap gap-3">
+            <div className="flex items-center">
+              <span className="mr-2 text-sm font-medium text-gray-700">Filter:</span>
+              <select 
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="block border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm"
+              >
+                <option value="all">All Vehicles</option>
+                <option value="complete">Complete Info</option>
+                <option value="incomplete">Incomplete Info</option>
+              </select>
+            </div>
+          </div>
+          
           {/* Vehicles Table */}
-          {vehiclesArray.length === 0 ? (
+          {filteredVehicles.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
               </svg>
               <h3 className="mt-4 text-xl font-medium text-gray-900">No vehicles found</h3>
               <p className="mt-2 text-gray-500">
-                There are no vehicles in the system.
+                {filterStatus === 'all' 
+                  ? 'There are no vehicles in the system.' 
+                  : filterStatus === 'complete' 
+                    ? 'There are no vehicles with complete information.' 
+                    : 'There are no vehicles with incomplete information.'}
               </p>
               <div className="mt-6">
                 <Button 
@@ -285,14 +318,14 @@ const VehiclesManagementPage = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {vehiclesArray.map((vehicle) => {
+                    {filteredVehicles.map((vehicle) => {
                       // Find the customer name for this vehicle
                       const customer = customers.find(c => c.id == vehicle.customer_id);
                       return (
                         <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
-                              {vehicle.make} {vehicle.model}
+                              {vehicle.model || '(N/A)'}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
