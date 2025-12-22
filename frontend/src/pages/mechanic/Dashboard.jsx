@@ -5,7 +5,7 @@ import bookingService from '../../services/bookingService';
 import jobcardService from '../../services/jobcardService';
 
 const MechanicDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [assignedBookings, setAssignedBookings] = useState([]);
   const [activeJobCards, setActiveJobCards] = useState([]);
@@ -250,13 +250,31 @@ const MechanicDashboard = () => {
     );
   }
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.name || 'Mechanic'}!</h1>
-            <p className="mt-2 text-lg text-gray-600">Here's what's happening with your work today.</p>
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.name || 'Mechanic'}!</h1>
+              <p className="mt-2 text-lg text-gray-600">Here's what's happening with your work today.</p>
+            </div>
+            <div className="mt-4 sm:mt-0">
+              <button 
+                onClick={handleLogout}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+                </svg>
+                Logout
+              </button>
+            </div>
           </div>
           
           {/* Stats Grid */}
