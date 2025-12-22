@@ -144,6 +144,22 @@ export const deleteUser = async (userId) => {
 };
 
 /**
+ * Create User (Admin only)
+ * @param {Object} userData - User data
+ * @param {string} userData.name - User's name
+ * @param {string} userData.email - User's email
+ * @param {string} userData.password - User's password
+ * @param {string} userData.role - User's role
+ * @param {string} [userData.phone] - User's phone number
+ * @param {string} [userData.address] - User's address
+ * @returns {Promise<Object>} Created user data
+ */
+export const createUser = async (userData) => {
+  const response = await api.post('/auth/create-user', userData);
+  return response.data;
+};
+
+/**
  * Get All Mechanics (Admin only)
  * @returns {Promise<Array>} List of mechanics
  */
@@ -240,6 +256,7 @@ export default {
   getAllUsers,
   updateUserRole,
   deleteUser,
+  createUser,
   getAllMechanics,
   refreshAccessToken
 };

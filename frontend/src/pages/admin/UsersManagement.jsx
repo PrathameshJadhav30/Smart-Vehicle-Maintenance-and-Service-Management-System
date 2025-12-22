@@ -2,18 +2,28 @@ import React, { useState, useEffect } from 'react';
 import authService from '../../services/authService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import Input from '../../components/Input';
+import Select from '../../components/Select';
 import Table, { TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../../components/Table';
-
 const UsersManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     role: 'customer'
+  });
+  const [createUserData, setCreateUserData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'customer',
+    phone: '',
+    address: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -89,6 +99,33 @@ const UsersManagementPage = () => {
     }
   };
 
+  const handleCreateUserInputChange = (e) => {
+    setCreateUserData({
+      ...createUserData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleCreateUserSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await authService.createUser(createUserData);
+      setShowCreateModal(false);
+      setCreateUserData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'customer',
+        phone: '',
+        address: ''
+      });
+      loadUsers();
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Failed to create user. Please try again.');
+    }
+  };
+
   const handleEdit = (user) => {
     setSelectedUser(user);
     setFormData({
@@ -159,6 +196,9 @@ const UsersManagementPage = () => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <Button onClick={() => setShowCreateModal(true)}>
+                Create User
+              </Button>
               <div className="relative rounded-lg shadow-sm w-full md:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -185,7 +225,6 @@ const UsersManagementPage = () => {
               </select>
             </div>
           </div>
-
           {usersArray.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
               <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -330,8 +369,108 @@ const UsersManagementPage = () => {
           </form>
         </Modal>
       )}
+
+      {/* Create User Modal */}
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Create New User" size="md">
+        <form onSubmit={handleCreateUserSubmit}>
+          <div className="space-y-5 py-2">
+            <div>
+              <label htmlFor="create-name" className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <input
+                type="text"
+                id="create-name"
+                name="name"
+                value={createUserData.name}
+                onChange={handleCreateUserInputChange}
+                required
+                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+              />
+            </div>
+            <div>
+              <label htmlFor="create-email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                id="create-email"
+                name="email"
+                value={createUserData.email}
+                onChange={handleCreateUserInputChange}
+                required
+                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+              />
+            </div>
+            <div>
+              <label htmlFor="create-password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                id="create-password"
+                name="password"
+                value={createUserData.password}
+                onChange={handleCreateUserInputChange}
+                required
+                minLength="6"
+                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+              />
+            </div>
+            <div>
+              <label htmlFor="create-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                Phone
+              </label>
+              <input
+                type="text"
+                id="create-phone"
+                name="phone"
+                value={createUserData.phone}
+                onChange={handleCreateUserInputChange}
+                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+              />
+            </div>
+            <div>
+              <label htmlFor="create-address" className="block text-sm font-medium text-gray-700 mb-1">
+                Address
+              </label>
+              <input
+                type="text"
+                id="create-address"
+                name="address"
+                value={createUserData.address}
+                onChange={handleCreateUserInputChange}
+                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+              />
+            </div>
+            <div>
+              <label htmlFor="create-role" className="block text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
+              <select
+                id="create-role"
+                name="role"
+                value={createUserData.role}
+                onChange={handleCreateUserInputChange}
+                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white transition-all duration-200"
+              >
+                <option value="customer">Customer</option>
+                <option value="mechanic">Mechanic</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-8 flex justify-end space-x-3">
+            <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              Create User
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
-
 export default UsersManagementPage;

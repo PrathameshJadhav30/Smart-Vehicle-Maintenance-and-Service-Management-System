@@ -3,6 +3,55 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { query } from '../config/database.js';
 
+/**
+ * Create a new user (Admin only)
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const createUser = async (req, res) => {
+  try {
+    const { name, email, password, role, phone, address } = req.body;
+    
+    // Check if user already exists
+    const existingUser = await query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+    
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+    
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    // Create user
+    const result = await query(
+      `INSERT INTO users (name, email, password_hash, role, phone, address) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING id, name, email, role, phone, address, created_at`,
+      [name, email, passwordHash, role, phone, address]
+    );
+    
+    const user = result.rows[0];
+    
+    res.status(201).json({
+      message: 'User created successfully',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        address: user.address
+      }
+    });
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ message: 'Server error during user creation' });
+  }
+};
+
 export const register = async (req, res) => {
   try {
     const { name, email, password, role, phone, address } = req.body;
@@ -68,7 +117,6 @@ export const register = async (req, res) => {
     res.status(500).json({ message: 'Server error during registration' });
   }
 };
-
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
