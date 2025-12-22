@@ -25,7 +25,6 @@ const Register = () => {
   const roleOptions = [
     { value: 'customer', label: 'Customer - Book services and manage vehicles' },
     { value: 'mechanic', label: 'Mechanic - Manage job cards and service vehicles' },
-    { value: 'admin', label: 'Admin - Full system access and user management' },
   ];
 
   const handleChange = (e) => {
@@ -95,8 +94,7 @@ const Register = () => {
         // Show role-specific success message
         const roleMessages = {
           customer: "You can now book services and manage your vehicles.",
-          mechanic: "You can now manage job cards and service vehicles.",
-          admin: "You have full access to the system administration panel."
+          mechanic: "You can now manage job cards and service vehicles."
         };
         
         const roleMessage = roleMessages[formData.role] || "You can now log in to the system.";
@@ -127,7 +125,7 @@ const Register = () => {
           id="name"
           name="name"
           type="text"
-          placeholder="John Doe"
+          placeholder="Enter your name"
           value={formData.name}
           onChange={handleChange}
           error={errors.name}
@@ -139,7 +137,7 @@ const Register = () => {
           id="email"
           name="email"
           type="email"
-          placeholder="you@example.com"
+          placeholder="Enter your email"
           value={formData.email}
           onChange={handleChange}
           error={errors.email}
@@ -151,7 +149,7 @@ const Register = () => {
           id="password"
           name="password"
           type="password"
-          placeholder="••••••••"
+          placeholder="Enter your password"
           value={formData.password}
           onChange={handleChange}
           error={errors.password}
@@ -163,7 +161,7 @@ const Register = () => {
           id="confirmPassword"
           name="confirmPassword"
           type="password"
-          placeholder="••••••••"
+          placeholder="Enter your confirm password"
           value={formData.confirmPassword}
           onChange={handleChange}
           error={errors.confirmPassword}
