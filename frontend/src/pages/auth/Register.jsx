@@ -23,8 +23,7 @@ const Register = () => {
   const navigate = useNavigate();
 
   const roleOptions = [
-    { value: 'customer', label: 'Customer - Book services and manage vehicles' },
-    { value: 'mechanic', label: 'Mechanic - Manage job cards and service vehicles' },
+    { value: 'customer', label: 'Customer - Book services and manage vehicles' }
   ];
 
   const handleChange = (e) => {
@@ -91,14 +90,7 @@ const Register = () => {
       if (result.success) {
         showToast.success('Registration successful!');
         
-        // Show role-specific success message
-        const roleMessages = {
-          customer: "You can now book services and manage your vehicles.",
-          mechanic: "You can now manage job cards and service vehicles."
-        };
-        
-        const roleMessage = roleMessages[formData.role] || "You can now log in to the system.";
-        showToast.info(`Account created as ${formData.role}. ${roleMessage}`);
+        showToast.info("Account created successfully. You can now book services and manage your vehicles.");
         
         navigate('/login');
       } else {
@@ -115,7 +107,7 @@ const Register = () => {
     <AuthLayout title="Create Account">
       <div className="mb-6 p-4 bg-blue-50 rounded-lg">
         <p className="text-sm text-blue-800">
-          <strong>Important:</strong> Select the appropriate role for your account. Each role has different permissions and access levels.
+          <strong>Welcome!</strong> Create a customer account to book services and manage your vehicles.
         </p>
       </div>
       
@@ -165,17 +157,6 @@ const Register = () => {
           value={formData.confirmPassword}
           onChange={handleChange}
           error={errors.confirmPassword}
-          required
-        />
-        
-        <Select
-          label="Role"
-          id="role"
-          name="role"
-          value={formData.role}
-          onChange={handleChange}
-          options={roleOptions}
-          error={errors.role}
           required
         />
         
