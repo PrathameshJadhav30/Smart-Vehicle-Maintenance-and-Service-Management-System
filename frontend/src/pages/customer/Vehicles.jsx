@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import vehicleService from '../../services/vehicleService';
 // Button component no longer needed as we're using native buttons
@@ -29,10 +29,22 @@ const VehiclesPage = () => {
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
   const itemsPerPage = 5;
+  
+  // Ref for search debounce
+  const searchDebounceRef = useRef(null);
 
   useEffect(() => {
     loadVehicles();
   }, [currentPage, searchTerm, sortBy, sortOrder]);
+  
+  // Clean up debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, []);
 
   const loadVehicles = async () => {
     try {
@@ -57,8 +69,19 @@ const VehiclesPage = () => {
   };
 
   const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    setSearchTerm(value);
     setCurrentPage(1); // Reset to first page when searching
+    
+    // Clear existing timeout
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    
+    // Set new timeout
+    searchDebounceRef.current = setTimeout(() => {
+      // This will trigger the useEffect to reload vehicles
+    }, 300); // 300ms debounce delay
   };
 
   const handleSort = (field) => {
