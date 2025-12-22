@@ -284,12 +284,12 @@ const MyBookingsPage = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {bookings.filter(booking => booking.id).map((booking) => (
               <div key={`booking-${booking.id}`} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col h-full">
-                <div className="p-6 flex-grow">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center">
+                <div className="p-5 flex-grow">
+                  <div className="flex flex-col xs:flex-row xs:justify-between xs:items-start gap-3">
+                    <div className="flex items-center min-w-0">
                       <div className="flex-shrink-0">
                         {getServiceIcon(booking.service_type) || (
                           <div className="bg-gray-100 rounded-lg p-2">
@@ -299,16 +299,16 @@ const MyBookingsPage = () => {
                           </div>
                         )}
                       </div>
-                      <div className="ml-4">
-                        <h3 className="text-xl font-bold text-gray-900">
+                      <div className="ml-3 min-w-0">
+                        <h3 className="text-lg font-bold text-gray-900 truncate">
                           {booking.model || booking.vehicle?.model || 'Unknown Vehicle'}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-gray-500 mt-1 truncate">
                           {(booking.year || booking.vehicle?.year ? `${booking.year || booking.vehicle?.year} • ` : '') + (booking.vin || booking.vehicle?.vin || 'No VIN')}
                         </p>
                       </div>
                     </div>
-                    <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
+                    <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)} self-start whitespace-nowrap`}>
                       <span className="mr-1">
                         {getStatusIcon(booking.status) || (
                           <div className="bg-gray-100 rounded-full p-1">
@@ -319,48 +319,48 @@ const MyBookingsPage = () => {
                           </div>
                         )}
                       </span>
-                      <span className="capitalize">
+                      <span className="capitalize truncate max-w-[80px]">
                         {booking.status ? booking.status.replace('_', ' ') : 'Unknown'}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg px-4 py-3 inline-block">
-                    <p className="text-base font-semibold text-blue-700">
+                  <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg px-4 py-2 inline-block max-w-full">
+                    <p className="text-sm font-semibold text-blue-700 truncate">
                       {booking.service_type}
                     </p>
                   </div>
                   
-                  <div className="mt-8 space-y-5">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <svg className="flex-shrink-0 mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <div className="mt-6 space-y-4">
+                    <div className="flex items-start text-sm text-gray-600">
+                      <svg className="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 100 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                       </svg>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Appointment Date</p>
-                        <p className="font-medium text-base">
+                        <p className="font-medium text-base truncate">
                           {formatBookingDateWithoutTime(booking.booking_date, booking.booking_time) || 'N/A'}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center text-sm text-gray-600">
-                      <svg className="flex-shrink-0 mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <div className="flex items-start text-sm text-gray-600">
+                      <svg className="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                       </svg>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Booked On</p>
-                        <p>
-                          <span className="font-medium text-base">{formatCreatedDateShort(booking.created_at) || 'N/A'}</span>
+                        <p className="font-medium text-base truncate">
+                          {formatCreatedDateShort(booking.created_at) || 'N/A'}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="px-6 pb-6">
+                <div className="px-5 pb-5">
                   {booking.status === 'pending' && (
-                    <div className="mt-6">
+                    <div className="mt-4">
                       <Button 
                         variant="danger" 
                         size="md"
@@ -373,10 +373,10 @@ const MyBookingsPage = () => {
                   )}
                   
                   {(booking.status === 'completed' || booking.status === 'approved' || booking.status === 'confirmed') && (
-                    <div className="mt-6 pt-4 border-t border-gray-100">
+                    <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-500">Booking ID:</span>
-                        <span className="text-sm font-mono font-semibold text-gray-700">#{String(booking.id).substring(0, 8)}</span>
+                        <span className="text-sm font-mono font-semibold text-gray-700 truncate ml-2">#{String(booking.id).substring(0, 8)}</span>
                       </div>
                     </div>
                   )}
