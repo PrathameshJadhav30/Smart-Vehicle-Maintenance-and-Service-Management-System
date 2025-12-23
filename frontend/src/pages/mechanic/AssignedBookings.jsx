@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import bookingService from '../../services/bookingService';
 import jobcardService from '../../services/jobcardService';
 import invoiceService from '../../services/invoiceService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import { formatBookingDateWithoutTime } from '../../utils/dateFormatter';
 import { formatCurrency } from '../../utils/currencyFormatter';
 
 const AssignedBookingsPage = () => {
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
+  const { showToast } = useToast();
 
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
@@ -54,7 +57,7 @@ const AssignedBookingsPage = () => {
       setBookings(data);
     } catch (error) {
       console.error('Error loading bookings:', error);
-      alert('Failed to load bookings.');
+      showToast.error('Failed to load bookings.');
     } finally {
       setLoading(false);
     }
@@ -137,7 +140,10 @@ const AssignedBookingsPage = () => {
 
   const handleViewDetails = (bookingId) => {
     const booking = filteredBookings.find(b => b.id === bookingId) || bookings.find(b => b.id === bookingId);
-    if (!booking) return alert('Booking not found');
+    if (!booking) {
+      showToast.error('Booking not found');
+      return;
+    }
     setSelectedBooking(booking);
     setShowBookingDetailsModal(true);
   };
@@ -149,11 +155,14 @@ const AssignedBookingsPage = () => {
   const handleViewInvoice = async (bookingId) => {
     try {
       const invoiceData = await invoiceService.getInvoiceByBookingId(bookingId);
-      if (!invoiceData?.invoice) return alert('No invoice found');
+      if (!invoiceData?.invoice) {
+        showToast.error('No invoice found');
+        return;
+      }
       setSelectedInvoice(invoiceData);
       setShowInvoiceModal(true);
     } catch {
-      alert('Failed to load invoice');
+      showToast.error('Failed to load invoice');
     }
   };
 
