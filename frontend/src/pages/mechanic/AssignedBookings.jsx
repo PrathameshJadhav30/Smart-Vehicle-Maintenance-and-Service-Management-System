@@ -27,6 +27,10 @@ const AssignedBookingsPage = () => {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Adjust as needed
 
   // Predefined service types matching the booking form
   const serviceTypes = [
@@ -121,6 +125,7 @@ const AssignedBookingsPage = () => {
     });
     
     setFilteredBookings(result);
+    setCurrentPage(1); // Reset to first page when filters change
   }, [bookings, filter, searchTerm, sortBy, sortOrder]);
   const getStatusColor = (status) => ({
     pending: 'bg-amber-100 text-amber-800',
@@ -179,6 +184,11 @@ const AssignedBookingsPage = () => {
     );
   }
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedBookings = filteredBookings.slice(startIndex, startIndex + itemsPerPage);
+  
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <h1 className="text-3xl font-bold mb-2">Service Bookings</h1>
@@ -261,7 +271,8 @@ const AssignedBookingsPage = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow overflow-x-auto">        <table className="min-w-full divide-y divide-gray-200">
+      <div className="bg-white rounded-xl shadow overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium">Customer</th>
@@ -273,8 +284,8 @@ const AssignedBookingsPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredBookings.length > 0 ? (
-              filteredBookings.map((booking) => (
+            {paginatedBookings.length > 0 ? (
+              paginatedBookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">{booking.customer_name}</td>
                   <td className="px-6 py-4">{booking.make} {booking.model}</td>
@@ -329,6 +340,91 @@ const AssignedBookingsPage = () => {
           </tbody>
         </table>
       </div>
+      
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-6">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                currentPage === 1 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+              }`}
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className={`relative ml-3 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                currentPage === totalPages 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+              }`}
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                <span className="font-medium">
+                  {Math.min(startIndex + itemsPerPage, filteredBookings.length)}
+                </span>{' '}
+                of <span className="font-medium">{filteredBookings.length}</span> results
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md text-sm font-semibold ${
+                    currentPage === 1
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                  }`}
+                >
+                  <span className="sr-only">Previous</span>
+                  &larr;
+                </button>
+                
+                {/* Page numbers */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNumber => (
+                  <button
+                    key={pageNumber}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                      currentPage === pageNumber
+                        ? 'z-10 bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50 cursor-pointer border'
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md text-sm font-semibold ${
+                    currentPage === totalPages
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                  }`}
+                >
+                  <span className="sr-only">Next</span>
+                  &rarr;
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Booking Details Modal */}
       {showBookingDetailsModal && selectedBooking && (
