@@ -6,6 +6,7 @@ import {
   getInvoiceByBookingId,
   getCustomerInvoices,
   getAllInvoices,
+  getMechanicInvoices,
   updatePaymentStatus,
   mockPayment
 } from '../controllers/invoiceController.js';
@@ -47,6 +48,12 @@ router.get('/booking/:bookingId',
 router.get('/customer/:id',
   roleMiddleware('admin', 'customer'),
   getCustomerInvoices
+);
+
+// Get mechanic invoices (mechanic/admin)
+router.get('/mechanic/:id',
+  roleMiddleware('admin', 'mechanic'),
+  getMechanicInvoices
 );
 
 // Get all invoices (admin)

@@ -16,13 +16,13 @@ const MechanicInvoicesPage = () => {
 
   useEffect(() => {
     loadInvoices();
-  }, [filter]);
+  }, [filter, user.id]);
 
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      // Get all invoices (mechanics can view all invoices)
-      let data = await invoiceService.getAllInvoices();
+      // Get only invoices related to the mechanic's job cards
+      let data = await invoiceService.getMechanicInvoices(user.id);
       
       // Filter by payment status if needed
       if (filter !== 'all') {
@@ -119,16 +119,19 @@ const MechanicInvoicesPage = () => {
   const invoicesArray = Array.isArray(invoices) ? invoices : [];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-            <div className="flex space-x-2">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Invoices</h1>
+              <p className="mt-1 text-base sm:text-lg text-gray-600">Manage and track service invoices</p>
+            </div>
+            <div className="w-full sm:w-auto">
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                className="w-full block pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg bg-white shadow-sm"
               >
                 <option value="all">All Invoices</option>
                 <option value="paid">Paid</option>
@@ -137,84 +140,106 @@ const MechanicInvoicesPage = () => {
               </select>
             </div>
           </div>
+        </div>
 
-          {invoicesArray.length === 0 ? (
-            <div className="bg-white shadow rounded-lg p-8 text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 className="mt-2 text-lg font-medium text-gray-900">No invoices found</h3>
-              <p className="mt-1 text-gray-500">There are no invoices matching your current filter.</p>
+        {invoicesArray.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="flex justify-center mb-6">
+              <div className="bg-gray-100 rounded-full p-4 inline-flex">
+                <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
             </div>
-          ) : (
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <ul className="divide-y divide-gray-200">
-                {invoicesArray.map((invoice) => (
-                  <li key={invoice.id}>
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-blue-600 truncate">
+            <h3 className="text-xl font-medium text-gray-900 mb-2">No invoices found</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              {filter === 'all' 
+                ? "You don't have any invoices right now. Invoices will appear here once job cards are completed."
+                : `You don't have any ${filter} invoices. Try changing the filter.`}
+            </p>
+            <div className="flex justify-center">
+              <Button
+                variant="primary"
+                onClick={loadInvoices}
+                className="inline-flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh Data
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {invoicesArray.map((invoice) => (
+              <div key={invoice.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+                <div className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">#{String(invoice.id || '').substring(0, 3)}</span>
+                      </div>
+                      <div className="ml-3 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
                           Invoice #{String(invoice.id || '').substring(0, 8)}
                         </p>
-                        <div className="ml-2 flex-shrink-0 flex">
-                          {getStatusBadge(invoice.status)}
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <p className="flex items-center text-sm text-gray-500">
-                            <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                            </svg>
-                            Customer: {invoice.customer?.name || 'N/A'}
-                          </p>
-                          <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                            <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                            </svg>
-                            Vehicle: {invoice.jobCard?.vehicle?.make} {invoice.jobCard?.vehicle?.model}
-                          </p>
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                          </svg>
-                          <span>
-                            Created: {formatDate(invoice.created_at)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex justify-between items-center">
-                        <p className="text-lg font-bold text-gray-900">
-                          {formatCurrency(invoice.grand_total)}
+                        <p className="text-xs text-gray-500">
+                          {formatDate(invoice.created_at)}
                         </p>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="secondary" 
-                            size="small"
-                            onClick={() => viewInvoiceDetails(invoice)}
-                          >
-                            View Details
-                          </Button>
-                          {invoice.status !== 'paid' && (
-                            <Button 
-                              variant="success" 
-                              size="small"
-                              onClick={() => handlePaymentStatusUpdate(invoice.id, 'paid')}
-                            >
-                              Mark as Paid
-                            </Button>
-                          )}
-                        </div>
                       </div>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
+                    <div className="flex-shrink-0">
+                      {getStatusBadge(invoice.status)}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-start text-sm text-gray-600">
+                      <svg className="flex-shrink-0 mr-2 mt-0.5 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                      <span className="truncate">{invoice.customer_name || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-start text-sm text-gray-600">
+                      <svg className="flex-shrink-0 mr-2 mt-0.5 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="truncate">{invoice.model || ''} {invoice.vin ? `(${invoice.vin})` : ''}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(invoice.grand_total)}
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button 
+                      variant="primary" 
+                      size="small"
+                      onClick={() => viewInvoiceDetails(invoice)}
+                      className="flex-1"
+                    >
+                      View Details
+                    </Button>
+                    {invoice.status !== 'paid' && (
+                      <Button 
+                        variant="success" 
+                        size="small"
+                        onClick={() => handlePaymentStatusUpdate(invoice.id, 'paid')}
+                        className="flex-1"
+                      >
+                        Mark as Paid
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
       {/* Invoice Details Modal */}
       {showDetailsModal && selectedInvoice && (
@@ -223,108 +248,142 @@ const MechanicInvoicesPage = () => {
           onClose={() => setShowDetailsModal(false)} 
           title={`Invoice #${String(selectedInvoice.id || '').substring(0, 8)}`}
         >
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Payment Status</h3>
-              <p className="mt-1 text-sm text-gray-900">{getStatusBadge(selectedInvoice.status)}</p>
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Payment Status</h3>
+                  <div className="mt-1">
+                    {getStatusBadge(selectedInvoice.status)}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Created At</h3>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{formatDate(selectedInvoice.created_at)}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Total Amount</h3>
+                  <p className="mt-1 text-xl sm:text-2xl font-bold text-gray-900">
+                    {formatCurrency(selectedInvoice.grand_total)}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Job Card</h3>
+                  <p className="mt-1 text-sm font-medium text-gray-900">#{String(selectedInvoice.jobcard_id || '').substring(0, 8)}</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Total Amount</h3>
-              <p className="mt-1 text-sm text-gray-900 text-lg font-bold">
-                {formatCurrency(selectedInvoice.grand_total)}
-              </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-500">Labor Cost</h3>
+                <p className="mt-1 text-base sm:text-lg font-medium text-gray-900">
+                  {formatCurrency(selectedInvoice.labor_total)}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-500">Parts Cost</h3>
+                <p className="mt-1 text-base sm:text-lg font-medium text-gray-900">
+                  {formatCurrency(selectedInvoice.parts_total)}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Labor Cost</h3>
-              <p className="mt-1 text-sm text-gray-900">
-                {formatCurrency(selectedInvoice.labor_total)}
-              </p>
+            
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="text-base font-medium text-gray-900 mb-3">Customer Information</h3>
+              <div className="flex flex-col sm:flex-row items-start">
+                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
+                  <span className="text-gray-700 font-bold">
+                    {selectedInvoice.customer_name ? selectedInvoice.customer_name.charAt(0).toUpperCase() : 'U'}
+                  </span>
+                </div>
+                <div className="mt-2 sm:mt-0 sm:ml-4">
+                  <p className="text-sm font-medium text-gray-900">
+                    {selectedInvoice.customer_name || 'N/A'}
+                  </p>
+                  {selectedInvoice.customer_email && (
+                    <p className="mt-1 text-sm text-gray-500">{selectedInvoice.customer_email}</p>
+                  )}
+                  {selectedInvoice.customer_phone && (
+                    <p className="mt-1 text-sm text-gray-500">{selectedInvoice.customer_phone}</p>
+                  )}
+                </div>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Parts Cost</h3>
-              <p className="mt-1 text-sm text-gray-900">
-                {formatCurrency(selectedInvoice.parts_total)}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Customer</h3>
-              <p className="mt-1 text-sm text-gray-900">{selectedInvoice.customer?.name || 'N/A'}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Customer Email</h3>
-              <p className="mt-1 text-sm text-gray-900">{selectedInvoice.customer?.email || 'N/A'}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Customer Phone</h3>
-              <p className="mt-1 text-sm text-gray-900">{selectedInvoice.customer?.phone || 'N/A'}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Vehicle</h3>
-              <p className="mt-1 text-sm text-gray-900">
-                {selectedInvoice.jobCard?.vehicle?.make} {selectedInvoice.jobCard?.vehicle?.model} ({selectedInvoice.jobCard?.vehicle?.year})
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Job Card</h3>
-              <p className="mt-1 text-sm text-gray-900">#{String(selectedInvoice.jobcard_id || '').substring(0, 8)}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Created At</h3>
-              <p className="mt-1 text-sm text-gray-900">{formatDate(selectedInvoice.created_at)}</p>
+            
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="text-base font-medium text-gray-900 mb-3">Vehicle Information</h3>
+              <div className="flex flex-col sm:flex-row items-start">
+                <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-gradient-to-r from-emerald-100 to-teal-100 flex items-center justify-center">
+                  <svg className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="mt-2 sm:mt-0 sm:ml-4">
+                  <p className="text-sm font-medium text-gray-900">
+                    {selectedInvoice.model} {selectedInvoice.year ? `(${selectedInvoice.year})` : ''}
+                  </p>
+                </div>
+              </div>
             </div>
             
             {/* Job Card Details */}
             {jobCardDetails[selectedInvoice.jobcard_id] && (
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-sm font-medium text-gray-500">Job Card Details</h3>
-                <div className="mt-2 space-y-2">
-                  <p className="text-sm">
-                    <span className="font-medium">Mechanic:</span> {jobCardDetails[selectedInvoice.jobcard_id].jobcard?.mechanic_name || 'N/A'}
-                  </p>
-                  <p className="text-sm">
-                    <span className="font-medium">Status:</span> {jobCardDetails[selectedInvoice.jobcard_id].jobcard?.status || 'N/A'}
-                  </p>
-                  {jobCardDetails[selectedInvoice.jobcard_id].jobcard?.percent_complete && (
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100">
+                <h3 className="text-lg font-semibold text-purple-800 mb-4">Job Card Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                     <p className="text-sm">
-                      <span className="font-medium">Progress:</span> {jobCardDetails[selectedInvoice.jobcard_id].jobcard.percent_complete}%
+                      <span className="font-medium text-gray-700">Mechanic:</span> <span className="text-gray-900">{jobCardDetails[selectedInvoice.jobcard_id].jobcard?.mechanic_name || 'N/A'}</span>
                     </p>
-                  )}
-                  
-                  {/* Tasks */}
-                  {jobCardDetails[selectedInvoice.jobcard_id].tasks?.length > 0 && (
-                    <div className="mt-3">
-                      <h4 className="text-sm font-medium text-gray-500">Tasks</h4>
-                      <ul className="mt-1 space-y-1">
-                        {jobCardDetails[selectedInvoice.jobcard_id].tasks.map(task => (
-                          <li key={task.id} className="text-sm flex justify-between">
-                            <span>{task.task_name}</span>
-                            <span>{formatCurrency(task.task_cost)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {/* Parts */}
-                  {jobCardDetails[selectedInvoice.jobcard_id].parts?.length > 0 && (
-                    <div className="mt-3">
-                      <h4 className="text-sm font-medium text-gray-500">Parts Used</h4>
-                      <ul className="mt-1 space-y-1">
-                        {jobCardDetails[selectedInvoice.jobcard_id].parts.map(part => (
-                          <li key={part.id} className="text-sm flex justify-between">
-                            <span>{part.part_name} ({part.part_number}) x {part.quantity}</span>
-                            <span>{formatCurrency(part.total_price)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  </div>
+                  <div>
+                    <p className="text-sm">
+                      <span className="font-medium text-gray-700">Status:</span> <span className="text-gray-900">{jobCardDetails[selectedInvoice.jobcard_id].jobcard?.status || 'N/A'}</span>
+                    </p>
+                  </div>
                 </div>
+                
+                {/* Tasks */}
+                {jobCardDetails[selectedInvoice.jobcard_id].tasks?.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-purple-100">
+                    <h4 className="text-md font-medium text-purple-700 mb-2">Tasks</h4>
+                    <div className="space-y-2">
+                      {jobCardDetails[selectedInvoice.jobcard_id].tasks.map(task => (
+                        <div key={task.id} className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
+                          <span className="text-sm text-gray-700">{task.task_name}</span>
+                          <span className="text-sm font-medium text-gray-900">{formatCurrency(task.task_cost)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Parts */}
+                {jobCardDetails[selectedInvoice.jobcard_id].parts?.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-purple-100">
+                    <h4 className="text-md font-medium text-purple-700 mb-2">Parts Used</h4>
+                    <div className="space-y-2">
+                      {jobCardDetails[selectedInvoice.jobcard_id].parts.map(part => (
+                        <div key={part.id} className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
+                          <span className="text-sm text-gray-700">{part.part_name} ({part.part_number}) x {part.quantity}</span>
+                          <span className="text-sm font-medium text-gray-900">{formatCurrency(part.total_price)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
           
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 gap-2">
+            <Button 
+              onClick={() => setShowDetailsModal(false)}
+              className="px-6 py-2"
+            >
+              Close
+            </Button>
             {selectedInvoice.status !== 'paid' && (
               <Button 
                 variant="success"
@@ -332,16 +391,15 @@ const MechanicInvoicesPage = () => {
                   handlePaymentStatusUpdate(selectedInvoice.id, 'paid');
                   setShowDetailsModal(false);
                 }}
+                className="px-6 py-2"
               >
                 Mark as Paid
               </Button>
             )}
-            <Button onClick={() => setShowDetailsModal(false)}>
-              Close
-            </Button>
           </div>
         </Modal>
       )}
+      </div>
     </div>
   );
 };

@@ -207,6 +207,29 @@ export const updatePaymentStatus = async (req, res) => {
   }
 };
 
+export const getMechanicInvoices = async (req, res) => {
+  try {
+    const mechanicId = req.params.id;
+    
+    const result = await query(
+      `SELECT i.*, u.name as customer_name, u.email as customer_email, u.phone as customer_phone,
+              v.model, v.vin, j.completed_at
+       FROM invoices i
+       JOIN jobcards j ON i.jobcard_id = j.id
+       JOIN users u ON i.customer_id = u.id
+       JOIN vehicles v ON j.vehicle_id = v.id
+       WHERE j.mechanic_id = $1
+       ORDER BY i.created_at DESC`,
+      [mechanicId]
+    );
+    
+    res.json({ invoices: result.rows });
+  } catch (error) {
+    console.error('Get mechanic invoices error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const mockPayment = async (req, res) => {
   try {
     const { invoiceId, amount, method } = req.body;

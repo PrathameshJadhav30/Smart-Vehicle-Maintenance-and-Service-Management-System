@@ -68,6 +68,11 @@ export const getCustomerInvoices = async (customerId, options = {}) => {
  * Get all invoices (Mechanic/Admin only)
  * @returns {Promise<Array>} List of all invoices
  */
+export const getMechanicInvoices = async (mechanicId) => {
+  const response = await api.get(`/invoices/mechanic/${mechanicId}`);
+  return response.data.invoices;
+};
+
 export const getAllInvoices = async () => {
   const response = await api.get('/invoices');
   return response.data.invoices;
@@ -89,6 +94,7 @@ export default {
   getInvoiceById,
   getInvoiceByBookingId,
   getCustomerInvoices,
+  getMechanicInvoices,
   getAllInvoices,
   updatePaymentStatus,
 };
