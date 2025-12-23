@@ -376,17 +376,11 @@ const InvoicesPage = () => {
             
             <div className="bg-gray-50 rounded-xl p-4">
               <h3 className="text-sm font-medium text-gray-500">Vehicle Information</h3>
-              <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
                   <p className="text-xs text-gray-500">Model</p>
                   <p className="font-medium text-gray-900">
                     {selectedInvoice.invoice.model || selectedInvoice.invoice.vehicle?.model || 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Make</p>
-                  <p className="font-medium text-gray-900">
-                    {selectedInvoice.invoice.make || selectedInvoice.invoice.vehicle?.make || 'N/A'}
                   </p>
                 </div>
                 <div>
