@@ -147,7 +147,8 @@ const JobCardsPage = () => {
   const loadJobCards = async () => {
     try {
       setLoading(true);
-      const data = await jobcardService.getAllJobCards();
+      // Get job cards assigned to this specific mechanic
+      const data = await jobcardService.getMechanicJobCards(user.id);
       console.log('Loaded job cards:', data);
       setJobCards(data);
     } catch (error) {
@@ -529,7 +530,7 @@ const JobCardsPage = () => {
               <p className="mt-2 text-lg text-gray-600">Manage and track service job cards</p>
             </div>
             <div className="flex space-x-3">
-              <Button onClick={reloadData} variant="secondary" className="flex items-center">
+              <Button onClick={reloadData} variant="primary" className="flex items-center bg-blue-600 hover:bg-blue-700 text-white">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -586,7 +587,7 @@ const JobCardsPage = () => {
                 <Button
                   variant="primary"
                   onClick={reloadData}
-                  className="inline-flex items-center"
+                  className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -608,6 +609,9 @@ const JobCardsPage = () => {
                     </th>
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Vehicle
+                    </th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Service
                     </th>
                     {/* <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Description
@@ -678,6 +682,11 @@ const JobCardsPage = () => {
                           </div>
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {jobCard.service_type || 'No service type'}
+                        </div>
+                      </td>
                       {/* <td className="px-6 py-4">
                         <div className="text-sm text-gray-900 max-w-xs truncate">
                           {jobCard.description || jobCard.notes || 'No description'}
@@ -724,6 +733,7 @@ const JobCardsPage = () => {
                             size="sm"
                             onClick={() => openCostEstimationModal(jobCard)}
                             className="flex items-center"
+                            disabled={jobCard.status === 'completed'}
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -845,6 +855,46 @@ const JobCardsPage = () => {
                           <span className="block">VIN: {selectedJobCard.vin}</span>
                         )}
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {(selectedJobCard.service_type) && (
+              <div>
+                <h3 className="text-base font-medium text-gray-900 mb-3">Service Information</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      </svg>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedJobCard.service_type}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {(!selectedJobCard.service_type) && (
+              <div>
+                <h3 className="text-base font-medium text-gray-900 mb-3">Service Information</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      </svg>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-500">
+                        No service type specified
+                      </p>
                     </div>
                   </div>
                 </div>

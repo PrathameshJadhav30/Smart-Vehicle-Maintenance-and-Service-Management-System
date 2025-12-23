@@ -105,11 +105,12 @@ export const createJobCard = async (req, res) => {
 export const getJobCards = async (req, res) => {
   try {
     let queryText = `
-      SELECT j.*, v.model, v.vin, u.name as customer_name, u.email as customer_email, m.name as mechanic_name
+      SELECT j.*, v.model, v.vin, u.name as customer_name, u.email as customer_email, m.name as mechanic_name, b.service_type as service_type
       FROM jobcards j
       JOIN vehicles v ON j.vehicle_id = v.id
       JOIN users u ON j.customer_id = u.id
       LEFT JOIN users m ON j.mechanic_id = m.id
+      LEFT JOIN bookings b ON j.booking_id = b.id
     `;
     const params = [];
     const conditions = [];
