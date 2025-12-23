@@ -234,7 +234,7 @@ const AssignedBookingsPage = () => {
                 setFilter('all');
                 setSearchTerm('');
               }}
-              className="ml-4 inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              className="ml-4 inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
             >
               <svg className="-ml-0.5 mr-2 h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -279,10 +279,34 @@ const AssignedBookingsPage = () => {
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => handleViewDetails(booking.id)}
-                      className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
+                      className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer"
                     >
                       View
                     </button>
+                    {booking.status === 'assigned' && (
+                      <button
+                        onClick={() => navigate('/mechanic/assigned-jobs')}
+                        className="ml-2 px-3 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer"
+                      >
+                        Start Assigned Work
+                      </button>
+                    )}
+                    {booking.status === 'in_progress' && (
+                      <button
+                        onClick={() => navigate('/mechanic/assigned-jobs')}
+                        className="ml-2 px-3 py-1 text-xs rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200 cursor-pointer"
+                      >
+                        Continue Work
+                      </button>
+                    )}
+                    {booking.status === 'completed' && (
+                      <button
+                        disabled
+                        className="ml-2 px-3 py-1 text-xs rounded bg-gray-100 text-gray-500 cursor-not-allowed"
+                      >
+                        Work Completed
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
