@@ -314,10 +314,16 @@ const CustomerDashboard = () => {
     );
   }
 
-  // Calculate total due with proper error handling
+  // Calculate total due with proper error handling (only unpaid invoices)
   const calculateTotalDue = () => {
     try {
       const total = allInvoices.reduce((sum, invoice) => {
+        // Only include invoices that are not paid in total due
+        // Exclude 'paid' and 'cancelled' invoices, include 'unpaid' and 'overdue'
+        if (invoice.status === 'paid' || invoice.status === 'cancelled') {
+          return sum;
+        }
+        
         // Try different property names that might contain the amount
         const amount = invoice.grand_total || invoice.total_amount || invoice.totalAmount || invoice.amount || 0;
         const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
