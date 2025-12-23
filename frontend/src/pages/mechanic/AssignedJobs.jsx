@@ -13,22 +13,14 @@ const AssignedJobsPage = () => {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedJobCard, setSelectedJobCard] = useState(null);
-  const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-
-  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
-  const [taskData, setTaskData] = useState({ task_name: '', task_cost: '' });
-  const [showAddPartModal, setShowAddPartModal] = useState(false);
-  const [partData, setPartData] = useState({ part_id: '', quantity: '' });
-  // Added state for cost estimation modal
-  const [showCostEstimationModal, setShowCostEstimationModal] = useState(false);
-  const [costEstimationData, setCostEstimationData] = useState({
-    tasks: [{ task_name: '', task_cost: '' }],
-    parts: [{ part_id: '', quantity: '' }]
-  });
   // Added state for filtering and searching
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Adjust as needed
 
   useEffect(() => {
     loadJobCards();
@@ -87,10 +79,7 @@ const AssignedJobsPage = () => {
     });
   };
 
-  const openAcceptModal = (jobCard) => {
-    setSelectedJobCard(jobCard);
-    setShowAcceptModal(true);
-  };
+
 
   const openDetailsModal = (jobCard) => {
     setSelectedJobCard(jobCard);
@@ -98,41 +87,11 @@ const AssignedJobsPage = () => {
   };
 
 
-  const openAddTaskModal = (jobCard) => {
-    setSelectedJobCard(jobCard);
-    setTaskData({ task_name: '', task_cost: '' });
-    setShowAddTaskModal(true);
-  };
 
-  const openAddPartModal = (jobCard) => {
-    setSelectedJobCard(jobCard);
-    setPartData({ part_id: '', quantity: '' });
-    setShowAddPartModal(true);
-  };
 
-  // Added function to open cost estimation modal
-  const openCostEstimationModal = (jobCard) => {
-    setSelectedJobCard(jobCard);
-    setCostEstimationData({
-      tasks: [{ task_name: '', task_cost: '' }],
-      parts: [{ part_id: '', quantity: '' }]
-    });
-    setShowCostEstimationModal(true);
-  };
 
-  const handleAcceptJob = async () => {
-    try {
-      // Update job card status to "in_progress"
-      await jobcardService.updateJobCardStatus(selectedJobCard.id, { status: 'in_progress' });
-      
-      setShowAcceptModal(false);
-      loadJobCards(); // Refresh the list
-      alert('Job accepted successfully!');
-    } catch (error) {
-      console.error('Error accepting job:', error);
-      alert('Failed to accept job. Please try again.');
-    }
-  };
+
+
 
   const handleMarkAsCompleted = async (jobCardId) => {
     if (window.confirm('Are you sure you want to mark this job as completed?')) {
@@ -154,120 +113,6 @@ const AssignedJobsPage = () => {
   };
 
 
-  const handleAddTask = async () => {
-    try {
-      if (!taskData.task_name || !taskData.task_cost) {
-        alert('Please fill in all fields');
-        return;
-      }
-      
-      await jobcardService.addTaskToJobCard(selectedJobCard.id, taskData);
-      setShowAddTaskModal(false);
-      loadJobCards(); // Refresh the list
-      alert('Task added successfully!');
-    } catch (error) {
-      console.error('Error adding task:', error);
-      alert('Failed to add task. Please try again.');
-    }
-  };
-
-  const handleAddPart = async () => {
-    try {
-      if (!partData.part_id || !partData.quantity) {
-        alert('Please fill in all fields');
-        return;
-      }
-      
-      await jobcardService.addSparePartToJobCard(selectedJobCard.id, partData);
-      setShowAddPartModal(false);
-      loadJobCards(); // Refresh the list
-      alert('Part added successfully!');
-    } catch (error) {
-      console.error('Error adding part:', error);
-      alert('Failed to add part. Please try again.');
-    }
-  };
-
-  // Added functions for cost estimation
-  const addTaskField = () => {
-    setCostEstimationData(prev => ({
-      ...prev,
-      tasks: [...prev.tasks, { task_name: '', task_cost: '' }]
-    }));
-  };
-
-  const addPartField = () => {
-    setCostEstimationData(prev => ({
-      ...prev,
-      parts: [...prev.parts, { part_id: '', quantity: '' }]
-    }));
-  };
-
-  const updateTaskField = (index, field, value) => {
-    const updatedTasks = [...costEstimationData.tasks];
-    updatedTasks[index][field] = value;
-    setCostEstimationData(prev => ({
-      ...prev,
-      tasks: updatedTasks
-    }));
-  };
-
-  const updatePartField = (index, field, value) => {
-    const updatedParts = [...costEstimationData.parts];
-    updatedParts[index][field] = value;
-    setCostEstimationData(prev => ({
-      ...prev,
-      parts: updatedParts
-    }));
-  };
-
-  const removeTaskField = (index) => {
-    if (costEstimationData.tasks.length > 1) {
-      const updatedTasks = [...costEstimationData.tasks];
-      updatedTasks.splice(index, 1);
-      setCostEstimationData(prev => ({
-        ...prev,
-        tasks: updatedTasks
-      }));
-    }
-  };
-
-  const removePartField = (index) => {
-    if (costEstimationData.parts.length > 1) {
-      const updatedParts = [...costEstimationData.parts];
-      updatedParts.splice(index, 1);
-      setCostEstimationData(prev => ({
-        ...prev,
-        parts: updatedParts
-      }));
-    }
-  };
-
-  const handleSaveCostEstimation = async () => {
-    try {
-      // Add all tasks
-      for (const task of costEstimationData.tasks) {
-        if (task.task_name && task.task_cost) {
-          await jobcardService.addTaskToJobCard(selectedJobCard.id, task);
-        }
-      }
-      
-      // Add all parts
-      for (const part of costEstimationData.parts) {
-        if (part.part_id && part.quantity) {
-          await jobcardService.addSparePartToJobCard(selectedJobCard.id, part);
-        }
-      }
-      
-      setShowCostEstimationModal(false);
-      loadJobCards(); // Refresh the list
-      alert('Cost estimation saved successfully!');
-    } catch (error) {
-      console.error('Error saving cost estimation:', error);
-      alert('Failed to save cost estimation. Please try again.');
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -275,8 +120,26 @@ const AssignedJobsPage = () => {
       </div>
     );
   }
+  
+  // Filter and search logic
+  const filteredJobCards = jobCards
+    .filter(job => filter === 'all' || job.status === filter)
+    .filter(job => {
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      return (
+        (job.customer_name && job.customer_name.toLowerCase().includes(term)) ||
+        (job.model && job.model.toLowerCase().includes(term)) ||
+        (job.service_type && job.service_type.toLowerCase().includes(term))
+      );
+    });
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredJobCards.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedJobCards = filteredJobCards.slice(startIndex, startIndex + itemsPerPage);
 
-  // Filter job cards by status
+  // Filter job cards by status (for stats display)
   const pendingJobs = jobCards.filter(job => job.status === 'pending');
   const inProgressJobs = jobCards.filter(job => job.status === 'in_progress');
   const completedJobs = jobCards.filter(job => job.status === 'completed');
@@ -391,149 +254,189 @@ const AssignedJobsPage = () => {
               
               {/* Filtered Job Cards */}
               <div className="space-y-4">
-                {jobCards
-                  .filter(job => filter === 'all' || job.status === filter)
-                  .filter(job => {
-                    if (!searchTerm) return true;
-                    const term = searchTerm.toLowerCase();
-                    return (
-                      (job.customer_name && job.customer_name.toLowerCase().includes(term)) ||
-                      (job.model && job.model.toLowerCase().includes(term)) ||
-                      (job.service_type && job.service_type.toLowerCase().includes(term))
-                    );
-                  })
-                  .map((jobCard) => (
-                    <div key={jobCard.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-200 hover:shadow-md">
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">#{String(jobCard.id).substring(0, 4)}</span>
-                            </div>
-                            <div className="ml-4">
-                              <h3 className="text-lg font-semibold text-gray-900">Job #{String(jobCard.id).substring(0, 8)}</h3>
-                              <p className="text-sm text-gray-500 mt-1">{getStatusBadge(jobCard.status)}</p>
-                            </div>
+                {paginatedJobCards.map((jobCard) => (
+                  <div key={jobCard.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-200 hover:shadow-md">
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">#{String(jobCard.id).substring(0, 4)}</span>
                           </div>
-                          <div className="flex flex-col items-end">
-                            <div className="flex items-center text-sm text-gray-500 mb-1">
-                              <svg className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                              </svg>
-                              <span>
-                                {jobCard.status === 'completed' ? 'Completed' : jobCard.status === 'in_progress' ? 'Started' : 'Created'}: {formatDate(jobCard.status === 'completed' ? jobCard.completed_at : jobCard.status === 'in_progress' ? jobCard.started_at : jobCard.created_at)}
-                              </span>
-                            </div>
-                            {jobCard.status === 'in_progress' && jobCard.percent_complete && (
-                              <div className="text-xs text-blue-600 font-medium">
-                                {jobCard.percent_complete}% Complete
-                              </div>
-                            )}
+                          <div className="ml-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Job #{String(jobCard.id).substring(0, 8)}</h3>
+                            <p className="text-sm text-gray-500 mt-1">{getStatusBadge(jobCard.status)}</p>
                           </div>
                         </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
-                              <svg className="h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                            <div className="ml-3">
-                              <p className="text-xs text-gray-500">Customer</p>
-                              <p className="text-sm font-medium text-gray-900">{jobCard.customer_name || 'N/A'}</p>
-                            </div>
+                        <div className="flex flex-col items-end">
+                          <div className="flex items-center text-sm text-gray-500 mb-1">
+                            <svg className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                            </svg>
+                            <span>
+                              {jobCard.status === 'completed' ? 'Completed' : jobCard.status === 'in_progress' ? 'Started' : 'Created'}: {formatDate(jobCard.status === 'completed' ? jobCard.completed_at : jobCard.status === 'in_progress' ? jobCard.started_at : jobCard.created_at)}
+                            </span>
                           </div>
-                          
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-r from-emerald-100 to-teal-100 flex items-center justify-center">
-                              <svg className="h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                              </svg>
+                          {jobCard.status === 'in_progress' && jobCard.percent_complete && (
+                            <div className="text-xs text-blue-600 font-medium">
+                              {jobCard.percent_complete}% Complete
                             </div>
-                            <div className="ml-3">
-                              <p className="text-xs text-gray-500">Vehicle</p>
-                              <p className="text-sm font-medium text-gray-900">{jobCard.model} ({jobCard.year || 'N/A'})</p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
-                              <svg className="h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                              </svg>
-                            </div>
-                            <div className="ml-3">
-                              <p className="text-xs text-gray-500">Service</p>
-                              <p className="text-sm font-medium text-gray-900">{jobCard.service_type || 'N/A'}</p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        
-                        
-                        <div className="flex flex-wrap gap-3">
-                          <Button 
-                            variant="primary" 
-                            size="small"
-                            onClick={() => openDetailsModal(jobCard)}
-                            className="px-4 py-2"
-                          >
-                            View Details
-                          </Button>
-                          <Button 
-                            variant="primary" 
-                            size="small"
-                            onClick={() => navigate('/mechanic/job-cards')}
-                            className="px-4 py-2"
-                          >
-                            Job Card
-                          </Button>
+                          )}
                         </div>
                       </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
+                            <svg className="h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-xs text-gray-500">Customer</p>
+                            <p className="text-sm font-medium text-gray-900">{jobCard.customer_name || 'N/A'}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-r from-emerald-100 to-teal-100 flex items-center justify-center">
+                            <svg className="h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-xs text-gray-500">Vehicle</p>
+                            <p className="text-sm font-medium text-gray-900">{jobCard.model} ({jobCard.year || 'N/A'})</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
+                            <svg className="h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-xs text-gray-500">Service</p>
+                            <p className="text-sm font-medium text-gray-900">{jobCard.service_type || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      
+                      
+                      <div className="flex flex-wrap gap-3">
+                        <Button 
+                          variant="primary" 
+                          size="small"
+                          onClick={() => openDetailsModal(jobCard)}
+                          className="px-4 py-2"
+                        >
+                          View Details
+                        </Button>
+                        <Button 
+                          variant="primary" 
+                          size="small"
+                          onClick={() => navigate('/mechanic/job-cards')}
+                          className="px-4 py-2"
+                        >
+                          Job Card
+                        </Button>
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
               </div>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-6">
+                  <div className="flex flex-1 justify-between sm:hidden">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                        currentPage === 1 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className={`relative ml-3 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                        currentPage === totalPages 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                        <span className="font-medium">
+                          {Math.min(startIndex + itemsPerPage, filteredJobCards.length)}
+                        </span>{' '}
+                        of <span className="font-medium">{filteredJobCards.length}</span> results
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-l-md text-sm font-semibold ${
+                            currentPage === 1
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                          }`}
+                        >
+                          <span className="sr-only">Previous</span>
+                          &larr;
+                        </button>
+                        
+                        {/* Page numbers */}
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNumber => (
+                          <button
+                            key={pageNumber}
+                            onClick={() => setCurrentPage(pageNumber)}
+                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                              currentPage === pageNumber
+                                ? 'z-10 bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50 cursor-pointer border'
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        ))}
+                        
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-r-md text-sm font-semibold ${
+                            currentPage === totalPages
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                          }`}
+                        >
+                          <span className="sr-only">Next</span>
+                          &rarr;
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
       </div>
       
-      {/* Accept Job Modal */}
-      {showAcceptModal && (
-        <Modal 
-          isOpen={showAcceptModal} 
-          onClose={() => setShowAcceptModal(false)} 
-          title={`Accept Job #${String(selectedJobCard?.id || '').substring(0, 8)}`}
-        >
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-md">
-              <h4 className="text-sm font-medium text-blue-800">Job Details</h4>
-              <p className="mt-1 text-sm text-blue-700">
-                Customer: {selectedJobCard?.customer_name || 'N/A'}<br/>
-                Vehicle: {selectedJobCard?.model || 'N/A'} ({selectedJobCard?.year || 'N/A'})<br/>
-                Service: {selectedJobCard?.service_type || 'N/A'}
-              </p>
-            </div>
-            <p>Are you sure you want to accept this job and mark it as "In Progress"?</p>
-          </div>
-          
-          <div className="mt-6 flex justify-end space-x-3">
-            <Button 
-              variant="secondary" 
-              onClick={() => setShowAcceptModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="success" 
-              onClick={handleAcceptJob}
-            >
-              Accept Job
-            </Button>
-          </div>
-        </Modal>
-      )}
+
 
       {/* Job Details Modal */}
       {showDetailsModal && selectedJobCard && (
@@ -593,244 +496,11 @@ const AssignedJobsPage = () => {
 
 
 
-      {/* Add Task Modal */}
-      {showAddTaskModal && (
-        <Modal 
-          isOpen={showAddTaskModal} 
-          onClose={() => setShowAddTaskModal(false)} 
-          title={`Add Task to Job #${String(selectedJobCard?.id || '').substring(0, 8)}`}
-        >
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="task_name" className="block text-sm font-medium text-gray-700">
-                Task Name
-              </label>
-              <input
-                type="text"
-                id="task_name"
-                value={taskData.task_name}
-                onChange={(e) => setTaskData({...taskData, task_name: e.target.value})}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter task name"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="task_cost" className="block text-sm font-medium text-gray-700">
-                Task Cost ($)
-              </label>
-              <input
-                type="number"
-                id="task_cost"
-                value={taskData.task_cost}
-                onChange={(e) => setTaskData({...taskData, task_cost: e.target.value})}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter task cost"
-                min="0"
-                step="0.01"
-              />
-            </div>
-          </div>
-          
-          <div className="mt-6 flex justify-end space-x-3">
-            <Button 
-              variant="secondary" 
-              onClick={() => setShowAddTaskModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="primary" 
-              onClick={handleAddTask}
-            >
-              Add Task
-            </Button>
-          </div>
-        </Modal>
-      )}
 
-      {/* Add Part Modal */}
-      {showAddPartModal && (
-        <Modal 
-          isOpen={showAddPartModal} 
-          onClose={() => setShowAddPartModal(false)} 
-          title={`Add Part to Job #${String(selectedJobCard?.id || '').substring(0, 8)}`}
-        >
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="part_id" className="block text-sm font-medium text-gray-700">
-                Part
-              </label>
-              <select
-                id="part_id"
-                value={partData.part_id}
-                onChange={(e) => setPartData({...partData, part_id: e.target.value})}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select a part</option>
-                {parts.map((part) => (
-                  <option key={part.id} value={part.id}>
-                    {part.part_name} ({part.part_number}) - ${(typeof part.price === 'number' ? part.price : parseFloat(part.price || 0)).toFixed(2)} (Stock: {part.quantity})
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-                Quantity
-              </label>
-              <input
-                type="number"
-                id="quantity"
-                value={partData.quantity}
-                onChange={(e) => setPartData({...partData, quantity: e.target.value})}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter quantity"
-                min="1"
-              />
-            </div>
-          </div>
-          
-          <div className="mt-6 flex justify-end space-x-3">
-            <Button 
-              variant="secondary" 
-              onClick={() => setShowAddPartModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="primary" 
-              onClick={handleAddPart}
-            >
-              Add Part
-            </Button>
-          </div>
-        </Modal>
-      )}
 
-      {/* Cost Estimation Modal */}
-      {showCostEstimationModal && (
-        <Modal 
-          isOpen={showCostEstimationModal} 
-          onClose={() => setShowCostEstimationModal(false)} 
-          title={`Cost Estimation for Job #${String(selectedJobCard?.id || '').substring(0, 8)}`}
-          size="large"
-        >
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add Labor Costs</h3>
-              {costEstimationData.tasks.map((task, index) => (
-                <div key={index} className="grid grid-cols-12 gap-4 mb-3">
-                  <div className="col-span-5">
-                    <input
-                      type="text"
-                      value={task.task_name}
-                      onChange={(e) => updateTaskField(index, 'task_name', e.target.value)}
-                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Task name"
-                    />
-                  </div>
-                  <div className="col-span-5">
-                    <input
-                      type="number"
-                      value={task.task_cost}
-                      onChange={(e) => updateTaskField(index, 'task_cost', e.target.value)}
-                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Cost"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  <div className="col-span-2 flex space-x-2">
-                    {costEstimationData.tasks.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeTaskField(index)}
-                        className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addTaskField}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Add Another Task
-              </button>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add Parts Costs</h3>
-              {costEstimationData.parts.map((part, index) => (
-                <div key={index} className="grid grid-cols-12 gap-4 mb-3">
-                  <div className="col-span-5">
-                    <select
-                      value={part.part_id}
-                      onChange={(e) => updatePartField(index, 'part_id', e.target.value)}
-                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select a part</option>
-                      {parts.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.part_name} ({p.part_number}) - ${(typeof p.price === 'number' ? p.price : parseFloat(p.price || 0)).toFixed(2)} (Stock: {p.quantity})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-span-5">
-                    <input
-                      type="number"
-                      value={part.quantity}
-                      onChange={(e) => updatePartField(index, 'quantity', e.target.value)}
-                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Quantity"
-                      min="1"
-                    />
-                  </div>
-                  <div className="col-span-2 flex space-x-2">
-                    {costEstimationData.parts.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removePartField(index)}
-                        className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addPartField}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Add Another Part
-              </button>
-            </div>
-          </div>
-          
-          <div className="mt-6 flex justify-end space-x-3">
-            <Button 
-              variant="secondary" 
-              onClick={() => setShowCostEstimationModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="primary" 
-              onClick={handleSaveCostEstimation}
-            >
-              Save Cost Estimation
-            </Button>
-          </div>
-        </Modal>
-      )}
+
+
+
     </div>
   );
 };
