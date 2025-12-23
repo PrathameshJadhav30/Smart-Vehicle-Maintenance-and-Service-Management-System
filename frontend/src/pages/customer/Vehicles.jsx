@@ -24,6 +24,7 @@ const VehiclesPage = () => {
     registration_number: '',
     mileage: ''
   });
+  const [formError, setFormError] = useState('');
 
   // Pagination, search, and sort states
   const [currentPage, setCurrentPage] = useState(1);
@@ -32,7 +33,7 @@ const VehiclesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
-  const itemsPerPage = 5;
+  const itemsPerPage = 6;
 
   useEffect(() => {
     loadVehicles();
@@ -81,14 +82,22 @@ const VehiclesPage = () => {
   };
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Clear form error when user starts typing in potentially problematic fields
+    if (name === 'vin' || name === 'registration_number') {
+      setFormError('');
+    }
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError(''); // Clear any previous errors
     try {
       if (selectedVehicle) {
         // Edit vehicle
@@ -110,10 +119,24 @@ const VehiclesPage = () => {
         mileage: ''
       });
       setSelectedVehicle(null);
+      setFormError(''); // Clear error on success
       loadVehicles(); // Reload with current pagination settings
     } catch (error) {
       console.error('Error saving vehicle:', error);
-      showToast.error('Error saving vehicle. Please try again.');
+      let errorMessage = error.response?.data?.message || 'Error saving vehicle. Please try again.';
+      
+      // Handle specific duplicate VIN error
+      if (errorMessage.toLowerCase().includes('vin') && errorMessage.toLowerCase().includes('already')) {
+        errorMessage = 'A vehicle with this VIN already exists. Please check the VIN and try again.';
+      }
+      
+      // Handle specific duplicate registration number error
+      if (errorMessage.toLowerCase().includes('registration') && errorMessage.toLowerCase().includes('already')) {
+        errorMessage = 'A vehicle with this registration number already exists. Please check the registration number and try again.';
+      }
+      
+      setFormError(errorMessage);
+      showToast.error(errorMessage);
     }
   };
 
@@ -451,6 +474,20 @@ const VehiclesPage = () => {
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Vehicle">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {formError && (
+              <div className="rounded-md bg-red-50 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">{formError}</h3>
+                  </div>
+                </div>
+              </div>
+            )}
             <div>
               <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">Make</label>
               <input
@@ -548,6 +585,20 @@ const VehiclesPage = () => {
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Vehicle">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {formError && (
+              <div className="rounded-md bg-red-50 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">{formError}</h3>
+                  </div>
+                </div>
+              </div>
+            )}
             <div>
               <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">Make</label>
               <input
