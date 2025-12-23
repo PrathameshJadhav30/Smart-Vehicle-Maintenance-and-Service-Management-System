@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
+import Toast from './components/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/auth/Login';
@@ -38,6 +39,7 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <div className="min-h-screen bg-gray-50">
+            <Toast />
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
