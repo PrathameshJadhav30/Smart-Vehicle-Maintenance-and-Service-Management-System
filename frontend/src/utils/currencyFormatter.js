@@ -19,14 +19,9 @@ export const formatCurrency = (amount, currency = 'INR') => {
   }
   
   try {
-    // Format with maximumFractionDigits: 0 for whole numbers, but allow decimals when needed
-    const isWholeNumber = Number.isInteger(numericAmount);
-    
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: isWholeNumber ? 0 : 2,
     }).format(numericAmount);
   } catch (error) {
     console.error('Error formatting currency:', error);
