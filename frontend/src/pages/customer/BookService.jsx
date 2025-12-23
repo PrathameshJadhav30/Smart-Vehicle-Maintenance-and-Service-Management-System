@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { useNavigate } from 'react-router-dom';
 import bookingService from '../../services/bookingService';
 import vehicleService from '../../services/vehicleService';
 import Button from '../../components/Button';
 
 const BookServicePage = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -72,12 +76,12 @@ const BookServicePage = () => {
       
       // Check if user is authenticated and has customer role
       if (!user) {
-        alert('You must be logged in to book a service.');
+        showToast.error('You must be logged in to book a service.');
         return;
       }
       
       if (user.role !== 'customer') {
-        alert('Only customers can book services. Please log in with a customer account.');
+        showToast.error('Only customers can book services. Please log in with a customer account.');
         return;
       }
       
@@ -106,29 +110,34 @@ const BookServicePage = () => {
         description: ''
       });
       
-      alert('Service booking created successfully!');
+      showToast.success('Service booking created successfully! Redirecting to dashboard...');
+      
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        navigate('/customer/dashboard');
+      }, 1500);
     } catch (error) {
       console.error('Error creating booking:', error);
       console.error('Response data:', error.response?.data);
       
       // Handle specific error cases
       if (error.response?.status === 403) {
-        alert('Access denied. You do not have permission to create bookings. Please ensure you are logged in as a customer.');
+        showToast.error('Access denied. You do not have permission to create bookings. Please ensure you are logged in as a customer.');
       } else if (error.response?.status === 401) {
-        alert('Authentication required. Please log in to create a booking.');
+        showToast.error('Authentication required. Please log in to create a booking.');
       } else if (error.response?.data?.errors) {
         console.error('Validation errors:', error.response.data.errors);
         // Log each error individually for better visibility
         error.response.data.errors.forEach((err, index) => {
           console.error(`Validation error ${index + 1}:`, JSON.stringify(err, null, 2));
         });
-        // Show specific error messages in the alert
-        const errorMessages = error.response.data.errors.map(err => err.message || 'Unknown error').join('\n');
-        alert(`Failed to create booking. Validation errors:\n${errorMessages}`);
+        // Show specific error messages in the toast
+        const errorMessages = error.response.data.errors.map(err => err.message || 'Unknown error').join(', ');
+        showToast.error(`Failed to create booking: ${errorMessages}`);
       } else if (error.response?.data?.message) {
-        alert(`Failed to create booking: ${error.response.data.message}`);
+        showToast.error(`Failed to create booking: ${error.response.data.message}`);
       } else {
-        alert('Failed to create booking. Please try again.');
+        showToast.error('Failed to create booking. Please try again.');
       }
     }
   };
