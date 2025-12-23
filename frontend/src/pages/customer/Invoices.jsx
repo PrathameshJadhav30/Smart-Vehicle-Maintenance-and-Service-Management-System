@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import invoiceService from '../../services/invoiceService';
 import paymentService from '../../services/paymentService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const InvoicesPage = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentConfirmation, setPaymentConfirmation] = useState({ isOpen: false, invoice: null });
   const [filter, setFilter] = useState('all'); // all, paid, unpaid
 
   useEffect(() => {
@@ -116,38 +120,46 @@ const InvoicesPage = () => {
       setShowDetailsModal(true);
     } catch (error) {
       console.error('Error loading invoice details:', error);
-      alert('Failed to load invoice details. Please try again.');
+      showToast.error('Failed to load invoice details. Please try again.');
     }
   };
 
   const handlePayment = async (invoice) => {
-    if (window.confirm(`Are you sure you want to pay ${formatCurrency(invoice.grand_total || invoice.totalAmount)} for this invoice?`)) {
-      try {
-        setProcessingPayment(true);
-        
-        // Process payment using the mock payment service
-        const paymentData = {
-          invoiceId: invoice.id,
-          amount: invoice.grand_total || invoice.totalAmount,
-          method: 'card' // Default to card payment
-        };
-        
-        const result = await paymentService.mockPayment(paymentData);
-        
-        if (result.success) {
-          alert('Payment processed successfully!');
-          // Reload invoices to reflect the updated status
-          loadInvoices();
-        } else {
-          alert('Payment failed. Please try again.');
-        }
-      } catch (error) {
-        console.error('Payment error:', error);
-        alert('Payment failed. Please try again.');
-      } finally {
-        setProcessingPayment(false);
+    setPaymentConfirmation({ isOpen: true, invoice });
+  };
+
+  const confirmPayment = async () => {
+    const invoice = paymentConfirmation.invoice;
+    try {
+      setProcessingPayment(true);
+      
+      // Process payment using the mock payment service
+      const paymentData = {
+        invoiceId: invoice.id,
+        amount: invoice.grand_total || invoice.totalAmount,
+        method: 'card' // Default to card payment
+      };
+      
+      const result = await paymentService.mockPayment(paymentData);
+      
+      if (result.success) {
+        showToast.success('Payment processed successfully!');
+        // Reload invoices to reflect the updated status
+        loadInvoices();
+      } else {
+        showToast.error('Payment failed. Please try again.');
       }
+    } catch (error) {
+      console.error('Payment error:', error);
+      showToast.error('Payment failed. Please try again.');
+    } finally {
+      setProcessingPayment(false);
+      setPaymentConfirmation({ isOpen: false, invoice: null });
     }
+  };
+
+  const cancelPayment = () => {
+    setPaymentConfirmation({ isOpen: false, invoice: null });
   };
 
   if (loading) {
@@ -478,6 +490,20 @@ const InvoicesPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Payment Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={paymentConfirmation.isOpen}
+        onClose={cancelPayment}
+        onConfirm={confirmPayment}
+        title="Confirm Payment"
+        message={`Are you sure you want to pay ${formatCurrency(paymentConfirmation.invoice?.grand_total || paymentConfirmation.invoice?.totalAmount)} for invoice #${String(paymentConfirmation.invoice?.id || '').substring(0, 8)}?`}
+        confirmText="Confirm Payment"
+        cancelText="Cancel"
+        processing={processingPayment}
+        confirmVariant="danger"
+        cancelVariant="secondary"
+      />
     </div>
   );
 };
