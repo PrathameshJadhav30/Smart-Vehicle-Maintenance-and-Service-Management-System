@@ -735,10 +735,11 @@ export const getMechanicJobCards = async (req, res) => {
     
     // First get the job cards
     const jobcardsResult = await query(
-      `SELECT j.*, v.model, v.vin, v.year, u.name as customer_name, u.email as customer_email, u.phone as customer_phone
+      `SELECT j.*, v.model, v.vin, v.year, u.name as customer_name, u.email as customer_email, u.phone as customer_phone, b.service_type as service_type
        FROM jobcards j
        JOIN vehicles v ON j.vehicle_id = v.id
        JOIN users u ON j.customer_id = u.id
+       LEFT JOIN bookings b ON j.booking_id = b.id
        WHERE j.mechanic_id = $1
        ORDER BY j.created_at DESC`,
       [mechanicId]
