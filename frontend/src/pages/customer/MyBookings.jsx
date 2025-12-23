@@ -17,18 +17,32 @@ const MyBookingsPage = () => {
   const [filter, setFilter] = useState('all');
   const [cancelConfirmation, setCancelConfirmation] = useState({ isOpen: false, bookingId: null });
   const [processingCancel, setProcessingCancel] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(6); // Show 6 bookings per page
 
   const loadBookings = useCallback(async () => {
     try {
       setLoading(true);
-      let data;
       
-      if (filter === 'all') {
-        data = await bookingService.getCustomerBookings(user.id);
-      } else {
-        // Filter on the frontend based on actual status values
-        data = await bookingService.getCustomerBookings(user.id);
-        data = data.filter(booking => booking.status === filter);
+      // Get bookings with pagination
+      const options = {
+        page: currentPage,
+        limit: itemsPerPage,
+        status: filter === 'all' ? '' : filter
+      };
+      
+      const response = await bookingService.getCustomerBookings(user.id, options);
+      const data = response.bookings || [];
+      
+      // Update pagination state
+      if (response.pagination) {
+        setTotalPages(response.pagination.totalPages || 1);
+        setTotalItems(response.pagination.totalItems || 0);
+        setItemsPerPage(response.pagination.itemsPerPage || 6);
       }
       
       // Ensure booking IDs are strings and valid
@@ -41,10 +55,36 @@ const MyBookingsPage = () => {
     } catch (error) {
       console.error('Error loading bookings:', error);
       console.error('Error response:', error.response?.data);
+      
+      // Fallback to non-paginated call if server doesn't support pagination
+      try {
+        let data;
+        if (filter === 'all') {
+          data = await bookingService.getCustomerBookings(user.id);
+        } else {
+          data = await bookingService.getCustomerBookings(user.id);
+          data = data.filter(booking => booking.status === filter);
+        }
+        
+        // Update pagination state to show all data on one page
+        setTotalPages(1);
+        setTotalItems(data.length);
+        setItemsPerPage(data.length);
+        
+        const processedData = data.map(booking => ({
+          ...booking,
+          id: String(booking.id || Math.random().toString(36).substr(2, 9))
+        })).filter(booking => booking.id);
+        
+        setBookings(processedData);
+      } catch (fallbackError) {
+        console.error('Fallback error loading bookings:', fallbackError);
+        setBookings([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, [filter, user.id]);
+  }, [filter, user.id, currentPage, itemsPerPage]);
 
   useEffect(() => {
     loadBookings();
@@ -230,6 +270,12 @@ const MyBookingsPage = () => {
   const cancelCancelBooking = () => {
     setCancelConfirmation({ isOpen: false, bookingId: null });
   };
+  
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   if (loading) {
     return (
@@ -251,7 +297,10 @@ const MyBookingsPage = () => {
             <div className="relative w-full sm:w-auto">
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={(e) => {
+                  setFilter(e.target.value);
+                  setCurrentPage(1); // Reset to first page when filter changes
+                }}
                 className="block w-full pl-4 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg shadow-sm transition duration-200 appearance-none bg-white"
               >
                 <option value="all">All Bookings</option>
@@ -302,105 +351,185 @@ const MyBookingsPage = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {bookings.filter(booking => booking.id).map((booking) => (
-              <div key={`booking-${booking.id}`} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col h-full">
-                <div className="p-5 flex-grow">
-                  <div className="flex flex-col xs:flex-row xs:justify-between xs:items-start gap-3">
-                    <div className="flex items-center min-w-0">
-                      <div className="flex-shrink-0">
-                        {getServiceIcon(booking.service_type) || (
-                          <div className="bg-gray-100 rounded-lg p-2">
-                            <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                            </svg>
-                          </div>
-                        )}
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {bookings.filter(booking => booking.id).map((booking) => (
+                <div key={`booking-${booking.id}`} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col h-full">
+                  <div className="p-5 flex-grow">
+                    <div className="flex flex-col xs:flex-row xs:justify-between xs:items-start gap-3">
+                      <div className="flex items-center min-w-0">
+                        <div className="flex-shrink-0">
+                          {getServiceIcon(booking.service_type) || (
+                            <div className="bg-gray-100 rounded-lg p-2">
+                              <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-3 min-w-0">
+                          <h3 className="text-lg font-bold text-gray-900 truncate">
+                            {booking.model || booking.vehicle?.model || 'Unknown Vehicle'}
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1 truncate">
+                            {(booking.year || booking.vehicle?.year ? `${booking.year || booking.vehicle?.year} • ` : '') + (booking.vin || booking.vehicle?.vin || 'No VIN')}
+                          </p>
+                        </div>
                       </div>
-                      <div className="ml-3 min-w-0">
-                        <h3 className="text-lg font-bold text-gray-900 truncate">
-                          {booking.model || booking.vehicle?.model || 'Unknown Vehicle'}
-                        </h3>
-                        <p className="text-sm text-gray-500 mt-1 truncate">
-                          {(booking.year || booking.vehicle?.year ? `${booking.year || booking.vehicle?.year} • ` : '') + (booking.vin || booking.vehicle?.vin || 'No VIN')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)} self-start whitespace-nowrap`}>
-                      <span className="mr-1">
-                        {getStatusIcon(booking.status) || (
-                          <div className="bg-gray-100 rounded-full p-1">
-                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                          </div>
-                        )}
-                      </span>
-                      <span className="capitalize truncate max-w-[80px]">
-                        {booking.status ? booking.status.replace('_', ' ') : 'Unknown'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg px-4 py-2 inline-block max-w-full">
-                    <p className="text-sm font-semibold text-blue-700 truncate">
-                      {booking.service_type}
-                    </p>
-                  </div>
-                  
-                  <div className="mt-6 space-y-4">
-                    <div className="flex items-start text-sm text-gray-600">
-                      <svg className="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 100 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                      </svg>
-                      <div className="min-w-0">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Appointment Date</p>
-                        <p className="font-medium text-base truncate">
-                          {formatBookingDateWithoutTime(booking.booking_date, booking.booking_time) || 'N/A'}
-                        </p>
+                      <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)} self-start whitespace-nowrap`}>
+                        <span className="mr-1">
+                          {getStatusIcon(booking.status) || (
+                            <div className="bg-gray-100 rounded-full p-1">
+                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </div>
+                          )}
+                        </span>
+                        <span className="capitalize truncate max-w-[80px]">
+                          {booking.status ? booking.status.replace('_', ' ') : 'Unknown'}
+                        </span>
                       </div>
                     </div>
                     
-                    <div className="flex items-start text-sm text-gray-600">
-                      <svg className="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                      </svg>
-                      <div className="min-w-0">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Booked On</p>
-                        <p className="font-medium text-base truncate">
-                          {formatCreatedDateShort(booking.created_at) || 'N/A'}
-                        </p>
+                    <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg px-4 py-2 inline-block max-w-full">
+                      <p className="text-sm font-semibold text-blue-700 truncate">
+                        {booking.service_type}
+                      </p>
+                    </div>
+                    
+                    <div className="mt-6 space-y-4">
+                      <div className="flex items-start text-sm text-gray-600">
+                        <svg className="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 100 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                        </svg>
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Appointment Date</p>
+                          <p className="font-medium text-base truncate">
+                            {formatBookingDateWithoutTime(booking.booking_date, booking.booking_time) || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start text-sm text-gray-600">
+                        <svg className="flex-shrink-0 mr-3 h-5 w-5 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                        </svg>
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Booked On</p>
+                          <p className="font-medium text-base truncate">
+                            {formatCreatedDateShort(booking.created_at) || 'N/A'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="px-5 pb-5">
-                  {booking.status === 'pending' && (
-                    <div className="mt-4">
-                      <Button 
-                        variant="danger" 
-                        size="md"
-                        onClick={() => handleCancelBooking(String(booking.id))}
-                        className="w-full px-4 py-2.5 rounded-lg transition-all duration-300 hover:shadow-md"
-                      >
-                        Cancel Booking
-                      </Button>
-                    </div>
-                  )}
                   
-                  {(booking.status === 'completed' || booking.status === 'approved' || booking.status === 'confirmed') && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Booking ID:</span>
-                        <span className="text-sm font-mono font-semibold text-gray-700 truncate ml-2">#{String(booking.id).substring(0, 8)}</span>
+                  <div className="px-5 pb-5">
+                    {booking.status === 'pending' && (
+                      <div className="mt-4">
+                        <Button 
+                          variant="danger" 
+                          size="md"
+                          onClick={() => handleCancelBooking(String(booking.id))}
+                          className="w-full px-4 py-2.5 rounded-lg transition-all duration-300 hover:shadow-md"
+                        >
+                          Cancel Booking
+                        </Button>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    
+                    {(booking.status === 'completed' || booking.status === 'approved' || booking.status === 'confirmed') && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-500">Booking ID:</span>
+                          <span className="text-sm font-mono font-semibold text-gray-700 truncate ml-2">#{String(booking.id).substring(0, 8)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-2xl shadow-sm">
+                <div className="flex flex-1 justify-between sm:hidden">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentPage === 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${currentPage === totalPages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+                      <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{' '}
+                      <span className="font-medium">{totalItems}</span> results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 cursor-pointer ${currentPage === 1 ? 'cursor-not-allowed' : ''}`}
+                      >
+                        <span className="sr-only">Previous</span>
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                                          
+                      {[...Array(totalPages)].map((_, i) => {
+                        const pageNum = i + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold cursor-pointer ${currentPage === pageNum
+                                ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
+                              }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                                          
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 cursor-pointer ${currentPage === totalPages ? 'cursor-not-allowed' : ''}`}
+                      >
+                        <span className="sr-only">Next</span>
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </nav>
+                  </div>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>

@@ -47,15 +47,22 @@ const CustomerDashboard = () => {
           Promise.race([displayInvoicesPromise, timeout(10000)])
         ]);
         
-        // Extract vehicles array from paginated response
+        // Extract arrays from paginated responses
         const vehiclesArray = vehiclesResponse.vehicles || vehiclesResponse || [];
+        const bookingsArray = displayBookingsData.bookings || displayBookingsData || [];
+        const invoicesArray = displayInvoices.invoices || displayInvoices || [];
+        
         setVehicles(vehiclesArray.slice(0, 3)); // Get only the first 3 for display
-        setBookings(displayBookingsData.slice(0, 3)); // Get only the first 3 for display
-        setInvoices(displayInvoices.slice(0, 3)); // Get only the first 3 for display
+        setBookings(bookingsArray.slice(0, 3)); // Get only the first 3 for display
+        setInvoices(invoicesArray.slice(0, 3)); // Get only the first 3 for display
         
         // Store all bookings and invoices for accurate count and total calculation
-        setAllBookings(allBookingsData);
-        setAllInvoices(allInvoices);
+        // Extract the actual arrays from the paginated responses
+        const allBookingsArray = allBookingsData.bookings || allBookingsData || [];
+        const allInvoicesArray = allInvoices.invoices || allInvoices || [];
+        
+        setAllBookings(allBookingsArray);
+        setAllInvoices(allInvoicesArray);
       } catch (error) {
         console.error('Error loading dashboard data:', error);
         // Redirect to home page immediately on error

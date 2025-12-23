@@ -70,11 +70,26 @@ export const getBookingById = async (bookingId) => {
 /**
  * Get bookings for a specific customer
  * @param {string} customerId - Customer ID
- * @returns {Promise<Array>} List of customer bookings
+ * @param {Object} options - Pagination, search, and sort options
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 10)
+ * @param {string} options.search - Search term
+ * @param {string} options.status - Filter by status
+ * @returns {Promise<Object>} Paginated customer bookings data
  */
-export const getCustomerBookings = async (customerId) => {
-  const response = await api.get(`/bookings/customer/${customerId}`);
-  return response.data.bookings;
+export const getCustomerBookings = async (customerId, options = {}) => {
+  const { page = 1, limit = 10, search = '', status = '' } = options;
+  
+  // Build query string
+  const queryParams = new URLSearchParams({
+    page,
+    limit,
+    ...(search && { search }),
+    ...(status && { status })
+  }).toString();
+  
+  const response = await api.get(`/bookings/customer/${customerId}?${queryParams}`);
+  return response.data;
 };
 
 /**

@@ -34,21 +34,86 @@ export const getCustomerBookings = async (req, res) => {
   try {
     const customerId = req.params.id || req.user.id;
     
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Extract search and status filter parameters
+    const search = req.query.search || '';
+    const status = req.query.status || '';
+    
     console.log('Fetching customer bookings for customer ID:', customerId);
-
-    const result = await query(
-      `SELECT b.id, b.customer_id, b.vehicle_id, b.service_type, b.booking_date, b.booking_time, b.status, b.notes, b.created_at, b.updated_at, b.mechanic_id, b.estimated_cost, v.model, v.vin, v.year, v.make, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
-       FROM bookings b
-       LEFT JOIN vehicles v ON b.vehicle_id = v.id
-       LEFT JOIN users u ON b.customer_id = u.id
-       WHERE b.customer_id = $1
-       ORDER BY b.booking_date DESC, b.booking_time DESC`,
-      [customerId]
-    );
+    
+    let queryText = `
+      SELECT b.id, b.customer_id, b.vehicle_id, b.service_type, b.booking_date, b.booking_time, b.status, b.notes, b.created_at, b.updated_at, b.mechanic_id, b.estimated_cost, v.model, v.vin, v.year, v.make, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
+      FROM bookings b
+      LEFT JOIN vehicles v ON b.vehicle_id = v.id
+      LEFT JOIN users u ON b.customer_id = u.id
+      WHERE b.customer_id = $1
+    `;
+    
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM bookings b
+      LEFT JOIN vehicles v ON b.vehicle_id = v.id
+      LEFT JOIN users u ON b.customer_id = u.id
+      WHERE b.customer_id = $1
+    `;
+    
+    const params = [customerId];
+    const countParams = [customerId];
+    const conditions = [];
+    
+    // Add search condition if provided
+    if (search) {
+      const searchParamIndex = params.length + 1;
+      conditions.push(`(u.name ILIKE $${searchParamIndex} OR v.model ILIKE $${searchParamIndex} OR v.vin ILIKE $${searchParamIndex} OR b.service_type ILIKE $${searchParamIndex})`);
+      params.push(`%${search}%`);
+      countParams.push(`%${search}%`);
+    }
+    
+    // Add status condition if provided
+    if (status) {
+      const statusParamIndex = params.length + 1;
+      conditions.push(`b.status = $${statusParamIndex}`);
+      params.push(status);
+      countParams.push(status);
+    }
+    
+    // Apply conditions to both queries
+    if (conditions.length > 0) {
+      const conditionString = conditions.join(' AND ');
+      queryText += ' AND ' + conditionString;
+      countQuery += ' AND ' + conditionString;
+    }
+    
+    // Add sorting and pagination
+    const limitParamIndex = params.length + 1;
+    const offsetParamIndex = params.length + 2;
+    queryText += ` ORDER BY b.booking_date DESC, b.booking_time DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
+    params.push(limit, offset);
+    
+    // Execute both queries
+    const [result, countResult] = await Promise.all([
+      query(queryText, params),
+      query(countQuery, countParams)
+    ]);
+    
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
     
     console.log('Customer bookings fetched successfully:', result.rows.length);
-
-    res.json({ bookings: result.rows });
+    
+    res.json({ 
+      bookings: result.rows,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit
+      }
+    });
 
   } catch (error) {
     console.error('Get customer bookings error:', error);
