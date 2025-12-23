@@ -1,22 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import invoiceService from '../../services/invoiceService';
 import jobcardService from '../../services/jobcardService';
+import partsService from '../../services/partsService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const MechanicInvoicesPage = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [filter, setFilter] = useState('all');
   const [jobCardDetails, setJobCardDetails] = useState({});
+  const [parts, setParts] = useState([]);
+  
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // Adjust as needed
+  
+  // Edit cost estimation modal state
+  const [showEditCostModal, setShowEditCostModal] = useState(false);
+  const [editingJobCardId, setEditingJobCardId] = useState(null);
+  const [costEstimationData, setCostEstimationData] = useState({
+    tasks: [{ task_name: '', task_cost: '' }],
+    parts: [{ part_id: '', quantity: '' }]
+  });
 
   useEffect(() => {
     loadInvoices();
+    loadParts();
   }, [filter, user.id]);
+  
+  const loadParts = async () => {
+    try {
+      const data = await partsService.getAllParts();
+      setParts(data);
+    } catch (error) {
+      console.error('Error loading parts:', error);
+    }
+  };
 
   const loadInvoices = async () => {
     try {
@@ -30,6 +61,7 @@ const MechanicInvoicesPage = () => {
       }
       
       setInvoices(data);
+      setCurrentPage(1); // Reset to first page when loading new data
     } catch (error) {
       console.error('Error loading invoices:', error);
     } finally {
@@ -47,6 +79,126 @@ const MechanicInvoicesPage = () => {
     } catch (error) {
       console.error('Error loading job card details:', error);
     }
+  };
+  
+  // Added functions for cost estimation
+  const addTaskField = () => {
+    setCostEstimationData(prev => ({
+      ...prev,
+      tasks: [...prev.tasks, { task_name: '', task_cost: '' }]
+    }));
+  };
+
+  const addPartField = () => {
+    setCostEstimationData(prev => ({
+      ...prev,
+      parts: [...prev.parts, { part_id: '', quantity: '' }]
+    }));
+  };
+
+  const updateTaskField = (index, field, value) => {
+    const updatedTasks = [...costEstimationData.tasks];
+    updatedTasks[index][field] = value;
+    setCostEstimationData(prev => ({
+      ...prev,
+      tasks: updatedTasks
+    }));
+  };
+
+  const updatePartField = (index, field, value) => {
+    const updatedParts = [...costEstimationData.parts];
+    updatedParts[index][field] = value;
+    setCostEstimationData(prev => ({
+      ...prev,
+      parts: updatedParts
+    }));
+  };
+
+  const removeTaskField = (index) => {
+    if (costEstimationData.tasks.length > 1) {
+      const updatedTasks = [...costEstimationData.tasks];
+      updatedTasks.splice(index, 1);
+      setCostEstimationData(prev => ({
+        ...prev,
+        tasks: updatedTasks
+      }));
+    }
+  };
+
+  const removePartField = (index) => {
+    if (costEstimationData.parts.length > 1) {
+      const updatedParts = [...costEstimationData.parts];
+      updatedParts.splice(index, 1);
+      setCostEstimationData(prev => ({
+        ...prev,
+        parts: updatedParts
+      }));
+    }
+  };
+
+  const handleSaveCostEstimation = async () => {
+    try {
+      // Add all tasks
+      for (const task of costEstimationData.tasks) {
+        if (task.task_name && task.task_cost) {
+          await jobcardService.addTaskToJobCard(editingJobCardId, task);
+        }
+      }
+      
+      // Add all parts
+      for (const part of costEstimationData.parts) {
+        if (part.part_id && part.quantity) {
+          // Create the part object with the correct structure
+          const partData = {
+            part_id: part.part_id,
+            quantity: parseInt(part.quantity)
+          };
+          await jobcardService.addSparePartToJobCard(editingJobCardId, partData);
+        }
+      }
+      
+      setShowEditCostModal(false);
+      loadInvoices(); // Refresh the list
+      loadJobCardDetails(editingJobCardId); // Refresh job card details
+      showToast.success('Cost estimation saved successfully!');
+    } catch (error) {
+      console.error('Error saving cost estimation:', error);
+      showToast.error('Failed to save cost estimation. Please try again.');
+    }
+  };
+  
+  const openEditCostModal = (jobCardId) => {
+    setEditingJobCardId(jobCardId);
+    
+    // Load existing tasks and parts if available
+    const jobCardData = jobCardDetails[jobCardId];
+    if (jobCardData) {
+      const tasks = jobCardData.tasks && jobCardData.tasks.length > 0 
+        ? jobCardData.tasks.map(task => ({
+            task_name: task.task_name,
+            task_cost: task.task_cost
+          }))
+        : [{ task_name: '', task_cost: '' }];
+          
+      const parts = jobCardData.parts && jobCardData.parts.length > 0 
+        ? jobCardData.parts.map(part => ({
+            part_id: part.part_id,
+            quantity: part.quantity
+          }))
+        : [{ part_id: '', quantity: '' }];
+          
+      setCostEstimationData({
+        tasks,
+        parts
+      });
+    } else {
+      setCostEstimationData({
+        tasks: [{ task_name: '', task_cost: '' }],
+        parts: [{ part_id: '', quantity: '' }]
+      });
+    }
+    
+    setShowEditCostModal(true);
   };
 
   const getStatusBadge = (status) => {
@@ -95,18 +247,27 @@ const MechanicInvoicesPage = () => {
   };
 
   const handlePaymentStatusUpdate = async (invoiceId, status) => {
-    if (window.confirm(`Are you sure you want to mark this invoice as ${status}?`)) {
+    setConfirmationAction(() => async () => {
       try {
         await invoiceService.updatePaymentStatus(invoiceId, { status, payment_method: 'cash' });
         loadInvoices();
-        alert(`Invoice marked as ${status} successfully!`);
+        showToast.success(`Invoice marked as ${status} successfully!`);
       } catch (error) {
         console.error('Error updating payment status:', error);
-        alert('Failed to update payment status. Please try again.');
+        showToast.error('Failed to update payment status. Please try again.');
       }
-    }
+    });
+    
+    setShowConfirmation(true);
   };
 
+  const handleConfirmationAction = () => {
+    if (confirmationAction) {
+      confirmationAction();
+    }
+    setShowConfirmation(false);
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -117,6 +278,11 @@ const MechanicInvoicesPage = () => {
 
   // Ensure invoices is always an array
   const invoicesArray = Array.isArray(invoices) ? invoices : [];
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(invoicesArray.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedInvoices = invoicesArray.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
@@ -171,8 +337,9 @@ const MechanicInvoicesPage = () => {
             </div>
           </div>
         ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {invoicesArray.map((invoice) => (
+            {paginatedInvoices.map((invoice) => (
               <div key={invoice.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
                 <div className="p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
@@ -239,6 +406,92 @@ const MechanicInvoicesPage = () => {
               </div>
             ))}
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-6">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                    currentPage === 1 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                  }`}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className={`relative ml-3 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                    currentPage === totalPages 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                    <span className="font-medium">
+                      {Math.min(startIndex + itemsPerPage, invoicesArray.length)}
+                    </span>{' '}
+                    of <span className="font-medium">{invoicesArray.length}</span> results
+                  </p>
+                </div>
+                <div>
+                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-l-md text-sm font-semibold ${
+                        currentPage === 1
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                      }`}
+                    >
+                      <span className="sr-only">Previous</span>
+                      &larr;
+                    </button>
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNumber => (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                          currentPage === pageNumber
+                            ? 'z-10 bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50 cursor-pointer border'
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    ))}
+                    
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-r-md text-sm font-semibold ${
+                        currentPage === totalPages
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                      }`}
+                    >
+                      <span className="sr-only">Next</span>
+                      &rarr;
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
 
       {/* Invoice Details Modal */}
@@ -330,7 +583,19 @@ const MechanicInvoicesPage = () => {
             {/* Job Card Details */}
             {jobCardDetails[selectedInvoice.jobcard_id] && (
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100">
-                <h3 className="text-lg font-semibold text-purple-800 mb-4">Job Card Details</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-purple-800">Job Card Details</h3>
+                  {selectedInvoice.status === 'unpaid' && (
+                    <Button 
+                      variant="primary"
+                      size="small"
+                      onClick={() => openEditCostModal(selectedInvoice.jobcard_id)}
+                      className="text-xs px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white"
+                    >
+                      Edit Cost Estimation
+                    </Button>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm">
@@ -360,20 +625,147 @@ const MechanicInvoicesPage = () => {
                 )}
                 
                 {/* Parts */}
-                {jobCardDetails[selectedInvoice.jobcard_id].parts?.length > 0 && (
+                {jobCardDetails[selectedInvoice.jobcard_id]?.parts?.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-purple-100">
                     <h4 className="text-md font-medium text-purple-700 mb-2">Parts Used</h4>
                     <div className="space-y-2">
-                      {jobCardDetails[selectedInvoice.jobcard_id].parts.map(part => (
-                        <div key={part.id} className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
-                          <span className="text-sm text-gray-700">{part.part_name} ({part.part_number}) x {part.quantity}</span>
-                          <span className="text-sm font-medium text-gray-900">{formatCurrency(part.total_price)}</span>
-                        </div>
-                      ))}
+                      {jobCardDetails[selectedInvoice.jobcard_id].parts.map(part => {
+                        // Find the part details from the parts list to get the name and number
+                        const partDetails = parts.find(p => p.id === part.part_id);
+                        return (
+                          <div key={part.id} className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
+                            <span className="text-sm text-gray-700">{partDetails?.part_name || 'N/A'} ({partDetails?.part_number || 'N/A'}) x {part.quantity}</span>
+                            <span className="text-sm font-medium text-gray-900">{formatCurrency(part.total_price)}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
               </div>
+            )}
+            
+            {/* Edit Cost Estimation Modal */}
+            {showEditCostModal && (
+              <Modal 
+                isOpen={showEditCostModal} 
+                onClose={() => setShowEditCostModal(false)} 
+                title={`Edit Cost Estimation for Job Card #${String(editingJobCardId || '').substring(0, 8)}`}
+                size="large"
+              >
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Labor Costs</h3>
+                    {costEstimationData.tasks.map((task, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-4 mb-3">
+                        <div className="col-span-5">
+                          <input
+                            type="text"
+                            value={task.task_name}
+                            onChange={(e) => updateTaskField(index, 'task_name', e.target.value)}
+                            className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Task name"
+                          />
+                        </div>
+                        <div className="col-span-5">
+                          <input
+                            type="number"
+                            value={task.task_cost}
+                            onChange={(e) => updateTaskField(index, 'task_cost', e.target.value)}
+                            className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Cost"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                        <div className="col-span-2 flex space-x-2">
+                          {costEstimationData.tasks.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeTaskField(index)}
+                              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addTaskField}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Add Another Task
+                    </button>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Parts Costs</h3>
+                    {costEstimationData.parts.map((part, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-4 mb-3">
+                        <div className="col-span-5">
+                          <select
+                            value={part.part_id}
+                            onChange={(e) => updatePartField(index, 'part_id', e.target.value)}
+                            className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="">Select a part</option>
+                            {parts.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.part_name} ({p.part_number}) - {(typeof p.price === 'number' ? p.price : parseFloat(p.price || 0)).toFixed(2)} (Stock: {p.quantity})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-5">
+                          <input
+                            type="number"
+                            value={part.quantity}
+                            onChange={(e) => updatePartField(index, 'quantity', e.target.value)}
+                            className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Quantity"
+                            min="1"
+                          />
+                        </div>
+                        <div className="col-span-2 flex space-x-2">
+                          {costEstimationData.parts.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removePartField(index)}
+                              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addPartField}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Add Another Part
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="mt-6 flex justify-end space-x-3">
+                  <Button 
+                    variant="secondary" 
+                    onClick={() => setShowEditCostModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="primary" 
+                    onClick={handleSaveCostEstimation}
+                  >
+                    Save Cost Estimation
+                  </Button>
+                </div>
+              </Modal>
             )}
           </div>
           
@@ -388,8 +780,19 @@ const MechanicInvoicesPage = () => {
               <Button 
                 variant="success"
                 onClick={() => {
-                  handlePaymentStatusUpdate(selectedInvoice.id, 'paid');
-                  setShowDetailsModal(false);
+                  setConfirmationAction(() => async () => {
+                    try {
+                      await invoiceService.updatePaymentStatus(selectedInvoice.id, { status: 'paid', payment_method: 'cash' });
+                      loadInvoices();
+                      showToast.success('Invoice marked as paid successfully!');
+                      setShowDetailsModal(false);
+                    } catch (error) {
+                      console.error('Error updating payment status:', error);
+                      showToast.error('Failed to update payment status. Please try again.');
+                    }
+                  });
+                                    
+                  setShowConfirmation(true);
                 }}
                 className="px-6 py-2"
               >
@@ -399,6 +802,16 @@ const MechanicInvoicesPage = () => {
           </div>
         </Modal>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        onConfirm={handleConfirmationAction}
+        title="Confirm Action"
+        message="Are you sure you want to mark this invoice as paid?"
+      />
+      
       </div>
     </div>
   );
