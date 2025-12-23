@@ -1,17 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import bookingService from '../../services/bookingService';
 import Button from '../../components/Button';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import { formatBookingDateWithoutTime, formatCreatedDateShort } from '../../utils/dateFormatter';
 
 const MyBookingsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [cancelConfirmation, setCancelConfirmation] = useState({ isOpen: false, bookingId: null });
+  const [processingCancel, setProcessingCancel] = useState(false);
 
   const loadBookings = useCallback(async () => {
     try {
@@ -195,22 +200,35 @@ const MyBookingsPage = () => {
   };
 
   const handleCancelBooking = async (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
-      try {
-        const result = await bookingService.cancelBooking(bookingId);
-        loadBookings(); // Refresh the list
-      } catch (error) {
-        console.error('Error cancelling booking:', error);
-        console.error('Error response:', error.response?.data);
-        
-        // Show a more user-friendly error message
-        if (error.response?.status === 500) {
-          alert('Failed to cancel booking due to a server error. Please try again later or contact support.');
-        } else {
-          alert('Failed to cancel booking. Please try again.');
-        }
+    setCancelConfirmation({ isOpen: true, bookingId });
+  };
+  
+  const confirmCancelBooking = async () => {
+    const bookingId = cancelConfirmation.bookingId;
+    
+    try {
+      setProcessingCancel(true);
+      const result = await bookingService.cancelBooking(bookingId);
+      loadBookings(); // Refresh the list
+      showToast.success('Booking cancelled successfully!');
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      console.error('Error response:', error.response?.data);
+      
+      // Show a more user-friendly error message
+      if (error.response?.status === 500) {
+        showToast.error('Failed to cancel booking due to a server error. Please try again later or contact support.');
+      } else {
+        showToast.error('Failed to cancel booking. Please try again.');
       }
+    } finally {
+      setCancelConfirmation({ isOpen: false, bookingId: null });
+      setProcessingCancel(false);
     }
+  };
+  
+  const cancelCancelBooking = () => {
+    setCancelConfirmation({ isOpen: false, bookingId: null });
   };
 
   if (loading) {
@@ -386,6 +404,20 @@ const MyBookingsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Cancel Booking Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={cancelConfirmation.isOpen}
+        onClose={cancelCancelBooking}
+        onConfirm={confirmCancelBooking}
+        title="Confirm Cancellation"
+        message="Are you sure you want to cancel this booking? This action cannot be undone."
+        confirmText="Cancel Booking"
+        cancelText="Keep Booking"
+        processing={processingCancel}
+        confirmVariant="danger"
+        cancelVariant="secondary"
+      />
     </div>
   );
 };
