@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import vehicleService from '../../services/vehicleService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const VehiclesPage = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, vehicleId: null });
   const [formData, setFormData] = useState({
     make: '',
     model: '',
@@ -89,9 +93,11 @@ const VehiclesPage = () => {
       if (selectedVehicle) {
         // Edit vehicle
         await vehicleService.updateVehicle(selectedVehicle.id, formData);
+        showToast.success('Vehicle details updated successfully!');
       } else {
         // Add new vehicle
         await vehicleService.createVehicle({ ...formData, userId: user.id });
+        showToast.success('Vehicle added successfully!');
       }
       setShowAddModal(false);
       setShowEditModal(false);
@@ -107,7 +113,7 @@ const VehiclesPage = () => {
       loadVehicles(); // Reload with current pagination settings
     } catch (error) {
       console.error('Error saving vehicle:', error);
-      alert('Error saving vehicle. Please try again.');
+      showToast.error('Error saving vehicle. Please try again.');
     }
   };
 
@@ -139,20 +145,31 @@ const VehiclesPage = () => {
   };
 
   const handleDelete = async (vehicleId) => {
-    if (window.confirm('Are you sure you want to delete this vehicle?')) {
-      try {
-        await vehicleService.deleteVehicle(vehicleId);
-        loadVehicles(); // Reload with current pagination settings
-      } catch (error) {
-        console.error('Error deleting vehicle:', error);
-        // Check if it's a 403 error and show appropriate message
-        if (error.response?.status === 403) {
-          alert('Access denied. You can only delete your own vehicles.');
-        } else {
-          alert('Error deleting vehicle. Please try again.');
-        }
+    setDeleteConfirmation({ isOpen: true, vehicleId });
+  };
+  
+  const confirmDelete = async () => {
+    const vehicleId = deleteConfirmation.vehicleId;
+    
+    try {
+      await vehicleService.deleteVehicle(vehicleId);
+      loadVehicles(); // Reload with current pagination settings
+      showToast.success('Vehicle deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting vehicle:', error);
+      // Check if it's a 403 error and show appropriate message
+      if (error.response?.status === 403) {
+        showToast.error('Access denied. You can only delete your own vehicles.');
+      } else {
+        showToast.error('Error deleting vehicle. Please try again.');
       }
+    } finally {
+      setDeleteConfirmation({ isOpen: false, vehicleId: null });
     }
+  };
+  
+  const cancelDelete = () => {
+    setDeleteConfirmation({ isOpen: false, vehicleId: null });
   };
 
   // Function to get vehicle icon based on make
@@ -623,6 +640,20 @@ const VehiclesPage = () => {
           </div>
         </form>
       </Modal>
+      
+      {/* Delete Vehicle Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Confirm Vehicle Deletion"
+        message="Are you sure you want to delete this vehicle? "
+        confirmText="Delete Vehicle"
+        cancelText="Keep Vehicle"
+        processing={false}
+        confirmVariant="danger"
+        cancelVariant="secondary"
+      />
     </div>
   );
 };
