@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import jobcardService from '../../services/jobcardService';
 import vehicleService from '../../services/vehicleService';
 import authService from '../../services/authService';
@@ -9,6 +10,7 @@ import partsService from '../../services/partsService';
 import { formatCurrency } from '../../utils/currencyFormatter';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const JobCardsPage = () => {
   const location = useLocation();
@@ -26,6 +28,10 @@ const JobCardsPage = () => {
   const [parts, setParts] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all'); // Add status filter state
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Adjust as needed
+  
   const [updateData, setUpdateData] = useState({
     status: '',
     notes: ''
@@ -36,6 +42,12 @@ const JobCardsPage = () => {
     tasks: [{ task_name: '', task_cost: '' }],
     parts: [{ part_id: '', quantity: '' }]
   });
+  
+  const { showToast } = useToast();
+  
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState(null);
 
   useEffect(() => {
     loadJobCards();
@@ -76,7 +88,7 @@ const JobCardsPage = () => {
       console.log('Booking data:', bookingData);
       
       if (!bookingData || !bookingData.booking) {
-        alert('Booking not found.');
+        showToast.error('Booking not found.');
         // Remove the query parameter from the URL
         window.history.replaceState({}, document.title, "/mechanic/job-cards");
         return;
@@ -109,13 +121,13 @@ const JobCardsPage = () => {
       // Remove the query parameter from the URL
       window.history.replaceState({}, document.title, "/mechanic/job-cards");
       
-      alert('Job card created successfully!');
+      showToast.success('Job card created successfully!');
     } catch (error) {
       console.error('Error creating job card from booking:', error);
       if (error.response && error.response.data && error.response.data.message) {
-        alert(`Failed to create job card: ${error.response.data.message}`);
+        showToast.error(`Failed to create job card: ${error.response.data.message}`);
       } else {
-        alert('Failed to create job card. Please try again.');
+        showToast.error('Failed to create job card. Please try again.');
       }
       // Remove the query parameter from the URL
       window.history.replaceState({}, document.title, "/mechanic/job-cards");
@@ -165,6 +177,9 @@ const JobCardsPage = () => {
     } else {
       setFilteredJobCards(jobCards.filter(card => card.status === filterStatus));
     }
+    
+    // Reset to first page when filters change
+    setCurrentPage(1);
   }, [jobCards, filterStatus]);
 
   const loadDropdownData = async () => {
@@ -267,16 +282,16 @@ const JobCardsPage = () => {
       
       // If job card was completed, show a success message
       if (isBeingCompleted) {
-        alert('Job card completed successfully! Invoice has been automatically generated with all cost estimations.');
+        showToast.success('Job card completed successfully! Invoice has been automatically generated with all cost estimations.');
       }
     } catch (error) {
       console.error('Error updating job card:', error);
       console.error('Request data:', { jobId: selectedJobCard.id, updateData });
       // Show more detailed error message
       if (error.response && error.response.data && error.response.data.message) {
-        alert(`Failed to update job card: ${error.response.data.message}`);
+        showToast.error(`Failed to update job card: ${error.response.data.message}`);
       } else {
-        alert('Failed to update job card. Please try again.');
+        showToast.error('Failed to update job card. Please try again.');
       }
     }
   };
@@ -359,26 +374,30 @@ const JobCardsPage = () => {
 
   // Function to start working on a job (set status to in_progress)
   const startJob = async (jobCard) => {
-    try {
-      // Update job card status to 'in_progress'
-      await jobcardService.updateJobCardStatus(jobCard.id, { status: 'in_progress' });
-      
-      // Refresh the job cards list
-      await loadJobCards();
-      
-      // Show success message
-      alert('Job started successfully! Status updated to "In Progress".');
-      
-      // Optionally open the update modal for adding notes
-      // openUpdateModal(jobCard);
-    } catch (error) {
-      console.error('Error starting job:', error);
-      if (error.response && error.response.data && error.response.data.message) {
-        alert(`Failed to start job: ${error.response.data.message}`);
-      } else {
-        alert('Failed to start job. Please try again.');
+    setConfirmationAction(() => async () => {
+      try {
+        // Update job card status to 'in_progress'
+        await jobcardService.updateJobCardStatus(jobCard.id, { status: 'in_progress' });
+        
+        // Refresh the job cards list
+        await loadJobCards();
+        
+        // Show success message
+        showToast.success('Job started successfully! Status updated to "In Progress".');
+        
+        // Optionally open the update modal for adding notes
+        // openUpdateModal(jobCard);
+      } catch (error) {
+        console.error('Error starting job:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+          showToast.error(`Failed to start job: ${error.response.data.message}`);
+        } else {
+          showToast.error('Failed to start job. Please try again.');
+        }
       }
-    }
+    });
+    
+    setShowConfirmation(true);
   };
 
   // Added functions for cost estimation
@@ -498,16 +517,16 @@ const JobCardsPage = () => {
       
       setShowCostEstimationModal(false);
       loadJobCards(); // Refresh the list
-      alert('Cost estimation saved successfully!');
+      showToast.success('Cost estimation saved successfully!');
     } catch (error) {
       console.error('Error saving cost estimation:', error);
       // Show more detailed error message
       if (error.response && error.response.data && error.response.data.message) {
-        alert(`Failed to save cost estimation: ${error.response.data.message}`);
+        showToast.error(`Failed to save cost estimation: ${error.response.data.message}`);
       } else if (error.message) {
-        alert(`Failed to save cost estimation: ${error.message}`);
+        showToast.error(`Failed to save cost estimation: ${error.message}`);
       } else {
-        alert('Failed to save cost estimation. Please try again.');
+        showToast.error('Failed to save cost estimation. Please try again.');
       }
     }
   };
@@ -520,6 +539,18 @@ const JobCardsPage = () => {
     );
   }
 
+  const handleConfirmationAction = () => {
+    if (confirmationAction) {
+      confirmationAction();
+    }
+    setShowConfirmation(false);
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredJobCards.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedJobCards = filteredJobCards.slice(startIndex, startIndex + itemsPerPage);
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -597,62 +628,63 @@ const JobCardsPage = () => {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Job Card
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Vehicle
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Service
-                    </th>
-                    {/* <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Priority
-                    </th> */}
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredJobCards.map((jobCard) => (
-                    <tr key={jobCard.id} className="hover:bg-gray-50 transition-colors duration-150">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">#{String(jobCard.id).substring(0, 3)}</span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              #{String(jobCard.id).substring(0, 8)}
+            <div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Job Card
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Vehicle
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Service
+                      </th>
+                      {/* <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Priority
+                      </th> */}
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paginatedJobCards.map((jobCard) => (
+                      <tr key={jobCard.id} className="hover:bg-gray-50 transition-colors duration-150">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                              <span className="text-white font-bold text-sm">#{String(jobCard.id).substring(0, 3)}</span>
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {jobCard.booking_id ? `Booking #${String(jobCard.booking_id).substring(0, 8)}` : 'No booking'}
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                #{String(jobCard.id).substring(0, 8)}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {jobCard.booking_id ? `Booking #${String(jobCard.booking_id).substring(0, 8)}` : 'No booking'}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
-                            <span className="text-gray-700 font-medium">
-                              {jobCard.customer_name ? jobCard.customer_name.charAt(0).toUpperCase() : 'U'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
+                              <span className="text-gray-700 font-medium">
+                                {jobCard.customer_name ? jobCard.customer_name.charAt(0).toUpperCase() : 'U'}
                             </span>
                           </div>
                           <div className="ml-4">
@@ -665,87 +697,173 @@ const JobCardsPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {jobCard.model || 'N/A'} {jobCard.year || ''}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {jobCard.service_type || 'No service type'}
-                        </div>
-                      </td>
-                      {/* <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
-                          {jobCard.description || jobCard.notes || 'No description'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getPriorityBadge(jobCard.priority)}
-                      </td> */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(jobCard.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(jobCard.created_at || jobCard.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex flex-wrap justify-end gap-2">
-                          {jobCard.status === 'pending' && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {jobCard.model || 'N/A'} {jobCard.year || ''}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {jobCard.service_type || 'No service type'}
+                          </div>
+                        </td>
+                        {/* <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                            {jobCard.description || jobCard.notes || 'No description'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getPriorityBadge(jobCard.priority)}
+                        </td> */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(jobCard.status)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(jobCard.created_at || jobCard.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {jobCard.status === 'pending' && (
+                              <Button 
+                                variant="success" 
+                                size="sm"
+                                onClick={() => startJob(jobCard)}
+                                className="flex items-center"
+                              >
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Start Job
+                              </Button>
+                            )}
                             <Button 
-                              variant="success" 
+                              variant="primary" 
                               size="sm"
-                              onClick={() => startJob(jobCard)}
+                              onClick={() => viewJobCardDetails(jobCard)}
+                              className="flex items-center bg-blue-600 hover:bg-blue-700"
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              View
+                            </Button>
+                            <Button 
+                              variant="info" 
+                              size="sm"
+                              onClick={() => openCostEstimationModal(jobCard)}
+                              className="flex items-center"
+                              disabled={jobCard.status === 'completed'}
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Cost Estimation
+                            </Button>
+                            <Button 
+                              variant="primary" 
+                              size="sm"
+                              onClick={() => openUpdateModal(jobCard)}
+                              disabled={jobCard.status === 'completed'}
                               className="flex items-center"
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                               </svg>
-                              Start Job
+                              Update
                             </Button>
-                          )}
-                          <Button 
-                            variant="primary" 
-                            size="sm"
-                            onClick={() => viewJobCardDetails(jobCard)}
-                            className="flex items-center bg-blue-600 hover:bg-blue-700"
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-6">
+                  <div className="flex flex-1 justify-between sm:hidden">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                        currentPage === 1 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className={`relative ml-3 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                        currentPage === totalPages 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                        <span className="font-medium">
+                          {Math.min(startIndex + itemsPerPage, filteredJobCards.length)}
+                        </span>{' '}
+                        of <span className="font-medium">{filteredJobCards.length}</span> results
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-l-md text-sm font-semibold ${
+                            currentPage === 1
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                          }`}
+                        >
+                          <span className="sr-only">Previous</span>
+                          &larr;
+                        </button>
+                        
+                        {/* Page numbers */}
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNumber => (
+                          <button
+                            key={pageNumber}
+                            onClick={() => setCurrentPage(pageNumber)}
+                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                              currentPage === pageNumber
+                                ? 'z-10 bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50 cursor-pointer border'
+                            }`}
                           >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            View
-                          </Button>
-                          <Button 
-                            variant="info" 
-                            size="sm"
-                            onClick={() => openCostEstimationModal(jobCard)}
-                            className="flex items-center"
-                            disabled={jobCard.status === 'completed'}
-                          >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Cost Estimation
-                          </Button>
-                          <Button 
-                            variant="primary" 
-                            size="sm"
-                            onClick={() => openUpdateModal(jobCard)}
-                            disabled={jobCard.status === 'completed'}
-                            className="flex items-center"
-                          >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Update
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                            {pageNumber}
+                          </button>
+                        ))}
+                        
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                          className={`relative inline-flex items-center px-2 py-2 rounded-r-md text-sm font-semibold ${
+                            currentPage === totalPages
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                          }`}
+                        >
+                          <span className="sr-only">Next</span>
+                          &rarr;
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1117,6 +1235,16 @@ const JobCardsPage = () => {
           </div>
         </Modal>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        onConfirm={handleConfirmationAction}
+        title="Confirm Action"
+        message="Are you sure you want to perform this action?"
+      />
+      
     </div>
   );
 };
