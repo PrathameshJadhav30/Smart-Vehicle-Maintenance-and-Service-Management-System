@@ -119,7 +119,14 @@ export const getInvoiceByBookingId = async (req, res) => {
 export const getCustomerInvoices = async (req, res) => {
   try {
     const customerId = req.params.id || req.user.id;
-    const status = req.query.status;
+    
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Extract status filter parameter
+    const status = req.query.status || '';
     
     let queryText = `
       SELECT i.*, v.model, v.vin
@@ -129,19 +136,46 @@ export const getCustomerInvoices = async (req, res) => {
       WHERE i.customer_id = $1 AND j.customer_id = $1
     `;
     
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM invoices i
+      JOIN jobcards j ON i.jobcard_id = j.id
+      JOIN vehicles v ON j.vehicle_id = v.id
+      WHERE i.customer_id = $1 AND j.customer_id = $1
+    `;
+    
     const params = [customerId];
+    const countParams = [customerId];
     
     // Add status filter if provided
     if (status) {
-      queryText += ` AND i.status = $2`;
+      queryText += ` AND i.status = $${params.length + 1}`;
       params.push(status);
+      countQuery += ` AND i.status = $${countParams.length + 1}`;
+      countParams.push(status);
     }
     
-    queryText += ` ORDER BY i.created_at DESC`;
+    queryText += ` ORDER BY i.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
     
-    const result = await query(queryText, params);
+    // Execute both queries
+    const [result, countResult] = await Promise.all([
+      query(queryText, params),
+      query(countQuery, countParams)
+    ]);
     
-    res.json({ invoices: result.rows });
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
+    
+    res.json({ 
+      invoices: result.rows,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit
+      }
+    });
   } catch (error) {
     console.error('Get customer invoices error:', error);
     res.status(500).json({ message: 'Server error' });

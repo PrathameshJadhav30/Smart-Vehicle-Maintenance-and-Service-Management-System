@@ -17,28 +17,65 @@ const InvoicesPage = () => {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentConfirmation, setPaymentConfirmation] = useState({ isOpen: false, invoice: null });
   const [filter, setFilter] = useState('all'); // all, paid, unpaid
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(6); // Show 6 invoices per page
 
   useEffect(() => {
     loadInvoices();
-  }, [filter]);
+  }, [filter, currentPage]);
 
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      // Pass filter options to the service
-      const options = {};
-      if (filter === 'paid') {
-        options.status = 'paid';
-      } else if (filter === 'unpaid') {
-        options.status = 'unpaid';
+      
+      // Pass filter and pagination options to the service
+      const options = {
+        page: currentPage,
+        limit: itemsPerPage,
+        status: filter === 'all' ? '' : filter
+      };
+      
+      const response = await invoiceService.getCustomerInvoices(user.id, options);
+      const data = response.invoices || [];
+      
+      // Update pagination state
+      if (response.pagination) {
+        setTotalPages(response.pagination.totalPages || 1);
+        setTotalItems(response.pagination.totalItems || 0);
+        setItemsPerPage(response.pagination.itemsPerPage || 6);
       }
       
-      const data = await invoiceService.getCustomerInvoices(user.id, options);
-      // Ensure we're working with an array
-      const processedData = Array.isArray(data) ? data : [];
-      setInvoices(processedData);
+      setInvoices(data);
     } catch (error) {
       console.error('Error loading invoices:', error);
+      
+      // Fallback to non-paginated call if server doesn't support pagination
+      try {
+        const options = {};
+        if (filter === 'paid') {
+          options.status = 'paid';
+        } else if (filter === 'unpaid') {
+          options.status = 'unpaid';
+        }
+        
+        const data = await invoiceService.getCustomerInvoices(user.id, options);
+        // Ensure we're working with an array
+        const processedData = Array.isArray(data) ? data : [];
+        
+        // Update pagination state to show all data on one page
+        setTotalPages(1);
+        setTotalItems(processedData.length);
+        setItemsPerPage(processedData.length);
+        
+        setInvoices(processedData);
+      } catch (fallbackError) {
+        console.error('Fallback error loading invoices:', fallbackError);
+        setInvoices([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -160,6 +197,12 @@ const InvoicesPage = () => {
 
   const cancelPayment = () => {
     setPaymentConfirmation({ isOpen: false, invoice: null });
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
   };
 
   if (loading) {
@@ -341,6 +384,70 @@ const InvoicesPage = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {invoices.length > 0 && totalPages > 1 && (
+          <div className="mt-8 flex flex-col items-center">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-4 py-2 rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer'}`}
+                style={{ cursor: 'pointer' }}
+              >
+                Previous
+              </button>
+              
+              {/* Page numbers */}
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                const isCurrent = pageNumber === currentPage;
+                
+                // Show first page, last page, current page, and adjacent pages
+                if (
+                  pageNumber === 1 || 
+                  pageNumber === totalPages || 
+                  (pageNumber >= currentPage - 2 && pageNumber <= currentPage + 2)
+                ) {
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-4 py-2 rounded-lg border ${isCurrent ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} cursor-pointer`}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                }
+                
+                // Show ellipsis for skipped pages
+                if (pageNumber === currentPage - 3 || pageNumber === currentPage + 3) {
+                  return (
+                    <span key={`ellipsis-${pageNumber}`} className="px-2 text-gray-500">
+                      ...
+                    </span>
+                  );
+                }
+                
+                return null;
+              })}
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-4 py-2 rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer'}`}
+                style={{ cursor: 'pointer' }}
+              >
+                Next
+              </button>
+            </div>
+            
+            <div className="mt-4 text-sm text-gray-600">
+              Page {currentPage} of {totalPages} • {totalItems} total invoice{totalItems !== 1 ? 's' : ''}
+            </div>
           </div>
         )}
       </div>

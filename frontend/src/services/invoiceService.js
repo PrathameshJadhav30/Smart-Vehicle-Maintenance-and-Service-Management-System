@@ -44,24 +44,26 @@ export const getInvoiceByBookingId = async (bookingId) => {
  * @param {string} customerId - Customer ID
  * @param {Object} options - Filter options
  * @param {string} options.status - Filter by status (paid/unpaid)
- * @returns {Promise<Array>} List of customer invoices
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 10)
+ * @returns {Promise<Object>} Paginated customer invoices data
  */
 export const getCustomerInvoices = async (customerId, options = {}) => {
-  const { status } = options;
+  const { status, page = 1, limit = 10 } = options;
   
   // Build query string
-  const queryParams = new URLSearchParams();
-  if (status) {
-    queryParams.append('status', status);
-  }
+  const queryParams = new URLSearchParams({
+    page,
+    limit,
+    ...(status && { status })
+  }).toString();
   
-  const queryString = queryParams.toString();
-  const url = queryString 
-    ? `/invoices/customer/${customerId}?${queryString}`
+  const url = queryParams 
+    ? `/invoices/customer/${customerId}?${queryParams}`
     : `/invoices/customer/${customerId}`;
-    
+  
   const response = await api.get(url);
-  return response.data.invoices;
+  return response.data;
 };
 
 /**
