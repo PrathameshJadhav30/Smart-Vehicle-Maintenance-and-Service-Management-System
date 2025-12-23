@@ -666,20 +666,8 @@ const JobCardsPage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-r from-emerald-100 to-teal-100 flex items-center justify-center">
-                            <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {jobCard.model || 'N/A'}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {jobCard.year ? `${jobCard.year} • ` : ''}{jobCard.vin || ''}
-                            </div>
-                          </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {jobCard.model || 'N/A'} {jobCard.year || ''}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
