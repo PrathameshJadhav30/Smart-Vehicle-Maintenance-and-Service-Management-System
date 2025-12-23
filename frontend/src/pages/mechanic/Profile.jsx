@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import authService from '../../services/authService';
 import Button from '../../components/Button';
 
 const MechanicProfilePage = () => {
   const { user, updateUser } = useAuth();
+  const { showToast } = useToast();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -49,10 +51,10 @@ const MechanicProfilePage = () => {
       const response = await authService.updateProfile(user.id, formData);
       updateUser(response.user); // Pass the user object from the response
       setEditing(false);
-      alert('Profile updated successfully!');
+      showToast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Failed to update profile. Please try again.');
+      showToast.error('Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -61,12 +63,12 @@ const MechanicProfilePage = () => {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('New passwords do not match!');
+      showToast.error('New passwords do not match!');
       return;
     }
     
     if (passwordData.newPassword.length < 6) {
-      alert('Password must be at least 6 characters long!');
+      showToast.error('Password must be at least 6 characters long!');
       return;
     }
     
@@ -84,13 +86,13 @@ const MechanicProfilePage = () => {
         confirmPassword: ''
       });
       
-      alert('Password changed successfully!');
+      showToast.success('Password changed successfully!');
     } catch (error) {
       console.error('Error changing password:', error);
       if (error.response && error.response.data && error.response.data.message) {
-        alert(`Error: ${error.response.data.message}`);
+        showToast.error(`Error: ${error.response.data.message}`);
       } else {
-        alert('Failed to change password. Please try again.');
+        showToast.error('Failed to change password. Please try again.');
       }
     } finally {
       setLoading(false);
