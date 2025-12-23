@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import bookingService from '../../services/bookingService';
 import vehicleService from '../../services/vehicleService';
 import Button from '../../components/Button';
+import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const BookServicePage = () => {
   const { user } = useAuth();
@@ -38,6 +40,10 @@ const BookServicePage = () => {
     'General Maintenance': 2000
   };
   
+  // State for booking confirmation modal
+  const [bookingConfirmation, setBookingConfirmation] = useState({ isOpen: false, bookingData: null });
+  const [processingBooking, setProcessingBooking] = useState(false);
+  
   useEffect(() => {
     loadVehicles();
   }, []);
@@ -69,35 +75,41 @@ const BookServicePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check if user is authenticated and has customer role
+    if (!user) {
+      showToast.error('You must be logged in to book a service.');
+      return;
+    }
+    
+    if (user.role !== 'customer') {
+      showToast.error('Only customers can book services. Please log in with a customer account.');
+      return;
+    }
+    
+    // Get estimated cost based on service type
+    const estimatedCost = serviceTypeCosts[formData.serviceType] || 0;
+    
+    // Prepare the data in the correct format that matches the backend API
+    // Note: customer_id will be taken from the JWT token on the backend, not from the request body
+    const bookingData = {
+      vehicle_id: formData.vehicleId,
+      service_type: formData.serviceType,
+      booking_date: formData.preferredDate,
+      booking_time: formData.preferredTime,
+      description: formData.description,
+      estimated_cost: estimatedCost
+    };
+    
+    // Show confirmation modal before creating booking
+    setBookingConfirmation({ isOpen: true, bookingData });
+  };
+  
+  const confirmBooking = async () => {
+    const bookingData = bookingConfirmation.bookingData;
+    
     try {
-      // Debugging: Log user data
-      console.log('Current user data:', user);
-      console.log('User role:', user?.role);
-      
-      // Check if user is authenticated and has customer role
-      if (!user) {
-        showToast.error('You must be logged in to book a service.');
-        return;
-      }
-      
-      if (user.role !== 'customer') {
-        showToast.error('Only customers can book services. Please log in with a customer account.');
-        return;
-      }
-      
-      // Get estimated cost based on service type
-      const estimatedCost = serviceTypeCosts[formData.serviceType] || 0;
-      
-      // Prepare the data in the correct format that matches the backend API
-      // Note: customer_id will be taken from the JWT token on the backend, not from the request body
-      const bookingData = {
-        vehicle_id: formData.vehicleId,
-        service_type: formData.serviceType,
-        booking_date: formData.preferredDate,
-        booking_time: formData.preferredTime,
-        description: formData.description,
-        estimated_cost: estimatedCost
-      };
+      setProcessingBooking(true);
       
       await bookingService.createBooking(bookingData);
       
@@ -139,7 +151,15 @@ const BookServicePage = () => {
       } else {
         showToast.error('Failed to create booking. Please try again.');
       }
+    } finally {
+      // Close the confirmation modal
+      setBookingConfirmation({ isOpen: false, bookingData: null });
+      setProcessingBooking(false);
     }
+  };
+  
+  const cancelBooking = () => {
+    setBookingConfirmation({ isOpen: false, bookingData: null });
   };
 
   // Function to get vehicle icon based on make
@@ -597,6 +617,20 @@ const BookServicePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Booking Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={bookingConfirmation.isOpen}
+        onClose={cancelBooking}
+        onConfirm={confirmBooking}
+        title="Confirm Service Booking"
+        message={`Are you sure you want to book a ${bookingConfirmation.bookingData?.service_type || ''} service for your vehicle on ${bookingConfirmation.bookingData?.booking_date || ''} at ${bookingConfirmation.bookingData?.booking_time || ''}?`}
+        confirmText="Confirm Booking"
+        cancelText="Cancel"
+        processing={processingBooking}
+        confirmVariant="danger"
+        cancelVariant="secondary"
+      />
     </div>
   );
 };
