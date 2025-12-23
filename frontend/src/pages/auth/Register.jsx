@@ -156,14 +156,11 @@ const Register = () => {
           required
         />
         
-        <Select
-          label="Role"
-          id="role"
+        {/* Hidden role field - always set to customer */}
+        <input
+          type="hidden"
           name="role"
           value={formData.role}
-          onChange={handleChange}
-          options={roleOptions}
-          error={errors.role}
         />
         <Button
           type="submit"
