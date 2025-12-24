@@ -87,6 +87,12 @@ const BookServicePage = () => {
       return;
     }
     
+    // Check if there are vehicles available
+    if (vehicles.length === 0) {
+      showToast.error('You must add a vehicle first before booking a service.');
+      return;
+    }
+    
     // Get estimated cost based on service type
     const estimatedCost = serviceTypeCosts[formData.serviceType] || 0;
     
@@ -137,6 +143,8 @@ const BookServicePage = () => {
         showToast.error('Access denied. You do not have permission to create bookings. Please ensure you are logged in as a customer.');
       } else if (error.response?.status === 401) {
         showToast.error('Authentication required. Please log in to create a booking.');
+      } else if (error.response?.data?.message?.includes('No vehicles available')) {
+        showToast.error('You must add a vehicle first before booking a service.');
       } else if (error.response?.data?.errors) {
         console.error('Validation errors:', error.response.data.errors);
         // Log each error individually for better visibility
@@ -395,16 +403,29 @@ const BookServicePage = () => {
                       name="vehicleId"
                       value={formData.vehicleId}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-900 text-base shadow-sm"
+                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-900 text-base shadow-sm cursor-pointer"
                       required
                     >
-                      <option value="">Choose a vehicle</option>
-                      {vehicles.map((vehicle) => (
-                        <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.make} {vehicle.model} ({vehicle.year}) - {vehicle.registrationNumber}
+                      {vehicles.length === 0 ? (
+                        <option value="" disabled>
+                          No vehicles available - Add vehicle first
                         </option>
-                      ))}
+                      ) : (
+                        <>
+                          <option value="">Choose a vehicle</option>
+                          {vehicles.map((vehicle) => (
+                            <option key={vehicle.id} value={vehicle.id}>
+                              {vehicle.make} {vehicle.model} ({vehicle.year}) - {vehicle.registrationNumber}
+                            </option>
+                          ))}
+                        </>
+                      )}
                     </select>
+                    {vehicles.length === 0 && (
+                      <p className="mt-2 text-sm text-amber-600">
+                        You don't have any vehicles registered. Please add a vehicle first.
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -434,7 +455,7 @@ const BookServicePage = () => {
                       name="serviceType"
                       value={formData.serviceType}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-900 text-base shadow-sm"
+                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-900 text-base shadow-sm cursor-pointer"
                       required
                     >
                       <option value="">Select service type</option>
@@ -476,7 +497,7 @@ const BookServicePage = () => {
                           value={formData.preferredDate}
                           onChange={handleInputChange}
                           min={new Date().toISOString().split('T')[0]}
-                          className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm"
+                          className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm cursor-pointer"
                           required
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -498,7 +519,7 @@ const BookServicePage = () => {
                           id="preferredTime"
                           value={formData.preferredTime}
                           onChange={handleInputChange}
-                          className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm"
+                          className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm cursor-pointer"
                           required
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -537,7 +558,7 @@ const BookServicePage = () => {
                       rows={4}
                       value={formData.description}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm"
+                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm cursor-pointer"
                       placeholder="Describe any specific issues with your vehicle or special requests..."
                     />
                   </div>

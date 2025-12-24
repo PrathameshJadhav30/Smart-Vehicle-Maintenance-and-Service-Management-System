@@ -305,6 +305,7 @@ const MyBookingsPage = () => {
               >
                 <option value="all">All Bookings</option>
                 <option value="in_progress">In Progress</option>
+                <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="rejected">Rejected</option>
