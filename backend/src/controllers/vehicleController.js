@@ -32,8 +32,9 @@ export const getVehicles = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     
-    // Extract search and sort parameters
+    // Extract search, sort, and status parameters
     const search = req.query.search || '';
+    const status = req.query.status || '';
     const sortBy = req.query.sortBy || 'created_at';
     const sortOrder = req.query.sortOrder === 'asc' ? 'ASC' : 'DESC';
     
@@ -58,6 +59,13 @@ export const getVehicles = async (req, res) => {
       conditions.push(`(v.make ILIKE $${params.length + 1} OR v.model ILIKE $${params.length + 1} OR v.vin ILIKE $${params.length + 1})`);
       params.push(`%${search}%`);
       countParams.push(`%${search}%`);
+    }
+    
+    // Add status condition if provided
+    if (status === 'complete') {
+      conditions.push(`(v.make IS NOT NULL AND v.model IS NOT NULL AND v.year IS NOT NULL AND v.vin IS NOT NULL AND v.make != '' AND v.model != '' AND v.vin != '')`);
+    } else if (status === 'incomplete') {
+      conditions.push(`(v.make IS NULL OR v.model IS NULL OR v.year IS NULL OR v.vin IS NULL OR v.make = '' OR v.model = '' OR v.vin = '')`);
     }
     
     // Add role-based filtering
@@ -120,8 +128,9 @@ export const getUserVehicles = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     
-    // Extract search and sort parameters
+    // Extract search, sort, and status parameters
     const search = req.query.search || '';
+    const status = req.query.status || '';
     const sortBy = req.query.sortBy || 'created_at';
     const sortOrder = req.query.sortOrder === 'asc' ? 'ASC' : 'DESC';
     
@@ -148,6 +157,15 @@ export const getUserVehicles = async (req, res) => {
       countQuery += ` AND (v.make ILIKE $2 OR v.model ILIKE $2 OR v.vin ILIKE $2)`;
       params.push(`%${search}%`);
       countParams.push(`%${search}%`);
+    }
+    
+    // Add status condition if provided
+    if (status === 'complete') {
+      queryText += ` AND (v.make IS NOT NULL AND v.model IS NOT NULL AND v.year IS NOT NULL AND v.vin IS NOT NULL AND v.make != '' AND v.model != '' AND v.vin != '')`;
+      countQuery += ` AND (v.make IS NOT NULL AND v.model IS NOT NULL AND v.year IS NOT NULL AND v.vin IS NOT NULL AND v.make != '' AND v.model != '' AND v.vin != '')`;
+    } else if (status === 'incomplete') {
+      queryText += ` AND (v.make IS NULL OR v.model IS NULL OR v.year IS NULL OR v.vin IS NULL OR v.make = '' OR v.model = '' OR v.vin = '')`;
+      countQuery += ` AND (v.make IS NULL OR v.model IS NULL OR v.year IS NULL OR v.vin IS NULL OR v.make = '' OR v.model = '' OR v.vin = '')`;
     }
     
     // Add sorting

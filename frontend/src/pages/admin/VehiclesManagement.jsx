@@ -3,8 +3,11 @@ import vehicleService from '../../services/vehicleService';
 import authService from '../../services/authService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
+import { useToast } from '../../contexts/ToastContext';
 
 const VehiclesManagementPage = () => {
+  const { showToast } = useToast();
   const [vehicles, setVehicles] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,30 +24,125 @@ const VehiclesManagementPage = () => {
     customer_id: ''
   });
   const [filterStatus, setFilterStatus] = useState('all');
-
+  const [deleteVehicleId, setDeleteVehicleId] = useState(null);
+  const [totalVehiclesCount, setTotalVehiclesCount] = useState(0);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 1
+  });
+  
+  // Add state for search and filters
+  const [searchTerm, setSearchTerm] = useState('');
+  
   useEffect(() => {
-    loadVehicles();
+    // Initial load when component mounts
     loadCustomers();
   }, []);
+  
+  useEffect(() => {
+    // When filter status changes, reset to page 1 and reload
+    setPagination(prev => ({
+      ...prev,
+      page: 1
+    }));
+    // This will trigger the loadVehicles useEffect to reload with new filter
+  }, [filterStatus]);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true);
+      await loadCustomers();
+      // Load total count separately
+      await loadTotalVehiclesCount();
+      await loadVehicles();
+      setLoading(false);
+    };
+    
+    loadInitialData();
+  }, [pagination.page, pagination.limit, filterStatus]);
 
   const loadVehicles = async () => {
     try {
       setLoading(true);
-      // Pass noPagination: true to get all vehicles
-      const data = await vehicleService.getAllVehicles({ noPagination: true });
-      setVehicles(data);
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      
+      // Only add status filter if it's not 'all'
+      if (filterStatus !== 'all') {
+        params.status = filterStatus;
+      }
+      
+      const data = await vehicleService.getAllVehicles(params);
+      
+      // Handle different response formats
+      let vehiclesData = [];
+      let paginationData = null;
+      
+      if (Array.isArray(data)) {
+        // If data is an array (old format), no pagination
+        vehiclesData = data;
+        paginationData = null;
+      } else {
+        // If data is an object, expect vehicles and pagination
+        vehiclesData = data.vehicles || [];
+        paginationData = data.pagination || null;
+      }
+      
+      setVehicles(vehiclesData);
+      
+      if (paginationData) {
+        // Update pagination with filtered data counts
+        // If total is 0 but we have vehicles, use vehicles count as fallback
+        setPagination({
+          page: paginationData.currentPage || pagination.page,
+          limit: paginationData.itemsPerPage || pagination.limit,
+          total: paginationData.totalItems > 0 ? paginationData.totalItems : vehiclesData.length,
+          pages: paginationData.totalPages || Math.ceil(vehiclesData.length / pagination.limit)
+        });
+      } else {
+        // Fallback: if no pagination data, assume all data returned
+        // Set total to the number of vehicles returned
+        setPagination(prev => ({
+          ...prev,
+          total: vehiclesData.length,
+          pages: vehiclesData.length > 0 ? Math.ceil(vehiclesData.length / pagination.limit) : 1 // At least 1 page if there are vehicles
+        }));
+      }
     } catch (error) {
       console.error('Error loading vehicles:', error);
+      setVehicles([]);
+      setPagination({
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 1
+      });
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const loadTotalVehiclesCount = async () => {
+    try {
+      // Load total count without pagination or filters
+      const data = await vehicleService.getAllVehicles({ noPagination: true });
+      setTotalVehiclesCount(data.length || 0);
+    } catch (error) {
+      console.error('Error loading total vehicle count:', error);
+      setTotalVehiclesCount(0);
     }
   };
 
   const loadCustomers = async () => {
     try {
-      const data = await authService.getAllUsers();
+      const response = await authService.getAllUsers();
+      const users = Array.isArray(response) ? response : (response.users || []);
       // Filter only customers
-      const customerList = data.filter(user => user.role === 'customer');
+      const customerList = users.filter(user => user.role === 'customer');
       setCustomers(customerList);
     } catch (error) {
       console.error('Error loading customers:', error);
@@ -52,12 +150,23 @@ const VehiclesManagementPage = () => {
   };
 
   const handleDelete = async (vehicleId) => {
-    if (window.confirm('Are you sure you want to delete this vehicle?')) {
+    setDeleteVehicleId(vehicleId);
+  };
+  
+  const confirmDelete = async () => {
+    if (deleteVehicleId) {
       try {
-        await vehicleService.deleteVehicle(vehicleId);
-        loadVehicles();
+        await vehicleService.deleteVehicle(deleteVehicleId);
+        // Reload vehicles to reflect the deletion
+        await loadVehicles();
+        // Reload total count since we removed a vehicle
+        await loadTotalVehiclesCount();
+        showToast.success('Vehicle deleted successfully');
       } catch (error) {
         console.error('Error deleting vehicle:', error);
+        showToast.error('Error deleting vehicle');
+      } finally {
+        setDeleteVehicleId(null);
       }
     }
   };
@@ -67,13 +176,13 @@ const VehiclesManagementPage = () => {
     try {
       // Validate that customer is selected
       if (!formData.customer_id) {
-        alert('Please select a customer');
+        showToast.error('Please select a customer');
         return;
       }
       
       // Validate VIN length (should be max 17 characters)
       if (formData.vin && formData.vin.length > 17) {
-        alert('VIN must be 17 characters or less');
+        showToast.error('VIN must be 17 characters or less');
         return;
       }
       
@@ -99,7 +208,11 @@ const VehiclesManagementPage = () => {
         mileage: '',
         customer_id: ''
       });
-      loadVehicles();
+      // Reload vehicles to include the new vehicle
+      await loadVehicles();
+      // Reload total count since we added a new vehicle
+      await loadTotalVehiclesCount();
+      showToast.success('Vehicle added successfully');
     } catch (error) {
       let errorMessage = 'Unknown error occurred';
       if (error.response) {
@@ -113,7 +226,7 @@ const VehiclesManagementPage = () => {
         errorMessage = error.message;
       }
       
-      alert('Error creating vehicle: ' + errorMessage);
+      showToast.error('Error creating vehicle: ' + errorMessage);
     }
   };
 
@@ -122,7 +235,7 @@ const VehiclesManagementPage = () => {
     try {
       // Validate VIN length (should be max 17 characters)
       if (formData.vin && formData.vin.length > 17) {
-        alert('VIN must be 17 characters or less');
+        showToast.error('VIN must be 17 characters or less');
         return;
       }
       
@@ -148,7 +261,11 @@ const VehiclesManagementPage = () => {
         mileage: '',
         customer_id: ''
       });
-      loadVehicles();
+      // Reload vehicles to reflect the update
+      await loadVehicles();
+      // Reload total count in case the update affected counts
+      await loadTotalVehiclesCount();
+      showToast.success('Vehicle updated successfully');
     } catch (error) {
       let errorMessage = 'Unknown error occurred';
       if (error.response) {
@@ -162,7 +279,7 @@ const VehiclesManagementPage = () => {
         errorMessage = error.message;
       }
       
-      alert('Error updating vehicle: ' + errorMessage);
+      showToast.error('Error updating vehicle: ' + errorMessage);
     }
   };
 
@@ -187,20 +304,47 @@ const VehiclesManagementPage = () => {
     });
   };
 
-  // Ensure vehicles is always an array
-  const vehiclesArray = Array.isArray(vehicles) ? vehicles : [];
-  
-  // Filter vehicles based on status
-  const filteredVehicles = vehiclesArray.filter(vehicle => {
-    if (filterStatus === 'all') return true;
-    if (filterStatus === 'complete') {
-      return vehicle.make && vehicle.model && vehicle.year && vehicle.vin;
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.pages) {
+      setPagination(prev => ({
+        ...prev,
+        page: newPage
+      }));
     }
-    if (filterStatus === 'incomplete') {
-      return !(vehicle.make && vehicle.model && vehicle.year && vehicle.vin);
+  };
+
+  const getPageNumbers = () => {
+    const { page, pages } = pagination;
+    const delta = 2; // Number of pages to show around current page
+    
+    const range = [];
+    const rangeWithDots = [];
+    
+    for (let i = Math.max(1, page - delta); i <= Math.min(pages, page + delta); i++) {
+      range.push(i);
     }
-    return true;
-  });
+    
+    if (range[0] > 1) {
+      rangeWithDots.push(1);
+      if (range[0] > 2) {
+        rangeWithDots.push('...');
+      }
+    }
+    
+    rangeWithDots.push(...range);
+    
+    if (rangeWithDots[rangeWithDots.length - 1] < pages) {
+      if (rangeWithDots[rangeWithDots.length - 1] < pages - 1) {
+        rangeWithDots.push('...');
+      }
+      rangeWithDots.push(pages);
+    }
+    
+    return rangeWithDots;
+  };
+
+  // Use vehicles as is since filtering is done on the backend
+  const filteredVehicles = vehicles;
 
   if (loading) {
     return (
@@ -241,8 +385,8 @@ const VehiclesManagementPage = () => {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-2xl font-bold text-gray-900">{filteredVehicles.length}</h3>
-                  <p className="text-sm text-gray-500">{filterStatus === 'all' ? 'Total Vehicles' : filterStatus === 'complete' ? 'Complete Vehicles' : 'Incomplete Vehicles'}</p>
+                  <h3 className="text-2xl font-bold text-gray-900">{totalVehiclesCount}</h3>
+                  <p className="text-sm text-gray-500">Total Vehicles</p>
                 </div>
               </div>
             </div>
@@ -320,7 +464,7 @@ const VehiclesManagementPage = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredVehicles.map((vehicle) => {
                       // Find the customer name for this vehicle
-                      const customer = customers.find(c => c.id == vehicle.customer_id);
+                      const customer = customers.find(c => c.id === vehicle.customer_id);
                       return (
                         <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -378,6 +522,68 @@ const VehiclesManagementPage = () => {
                     })}
                   </tbody>
                 </table>
+              </div>
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                <div className="flex flex-1 justify-between sm:hidden">
+                  <button
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                    disabled={pagination.page <= 1}
+                    className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${pagination.page <= 1 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'}`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                    disabled={pagination.page >= pagination.pages}
+                    className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${pagination.page >= pagination.pages ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'}`}
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing <span className="font-medium">{pagination.total > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}</span> to <span className="font-medium">{pagination.total > 0 ? Math.min(pagination.page * pagination.limit, pagination.total) : 0}</span> of <span className="font-medium">{pagination.total || 0}</span> results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                      <button
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page <= 1}
+                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page <= 1 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                      >
+                        <span className="sr-only">Previous</span>
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      
+                      {/* Page numbers */}
+                      {getPageNumbers().map((pageNum) => (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${pagination.page === pageNum ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 cursor-pointer'}`}
+                        >
+                          {pageNum}
+                        </button>
+                      ))}
+                      
+                      <button
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page >= pagination.pages}
+                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page >= pagination.pages ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                      >
+                        <span className="sr-only">Next</span>
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </nav>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -592,7 +798,7 @@ const VehiclesManagementPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
               <div className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 bg-gray-50">
                 {(() => {
-                  const customer = customers.find(c => c.id == formData.customer_id);
+                  const customer = customers.find(c => c.id === formData.customer_id);
                   return customer ? `${customer.name} (${customer.email})` : 'Unknown Customer';
                 })()}
               </div>
@@ -616,6 +822,15 @@ const VehiclesManagementPage = () => {
           </div>
         </form>
       </Modal>
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!deleteVehicleId}
+        onClose={() => setDeleteVehicleId(null)}
+        onConfirm={confirmDelete}
+        title="Delete Vehicle"
+        message="Are you sure you want to delete this vehicle?"
+      />
     </div>
   );
 };

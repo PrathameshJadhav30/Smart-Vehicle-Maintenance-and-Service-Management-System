@@ -34,16 +34,17 @@ export const getAllVehicles = async (options = {}) => {
     const response = await api.get('/vehicles?limit=1000');
     return response.data.vehicles || [];
   }
-  
-  const { page = 1, limit = 10, search = '', sortBy = 'created_at', sortOrder = 'desc' } = options;
-  
+
+  const { page = 1, limit = 10, search = '', sortBy = 'created_at', sortOrder = 'desc', status = '' } = options;
+
   // Build query string
   const queryParams = new URLSearchParams({
     page,
     limit,
     ...(search && { search }),
     ...(sortBy && { sortBy }),
-    ...(sortOrder && { sortOrder })
+    ...(sortOrder && { sortOrder }),
+    ...(status && { status })
   }).toString();
   
   const response = await api.get(`/vehicles?${queryParams}`);
@@ -62,15 +63,16 @@ export const getAllVehicles = async (options = {}) => {
  * @returns {Promise<Object>} Paginated vehicles data
  */
 export const getVehiclesByUserId = async (userId, options = {}) => {
-  const { page = 1, limit = 10, search = '', sortBy = 'created_at', sortOrder = 'desc' } = options;
-  
+  const { page = 1, limit = 10, search = '', sortBy = 'created_at', sortOrder = 'desc', status = '' } = options;
+
   // Build query string
   const queryParams = new URLSearchParams({
     page,
     limit,
     ...(search && { search }),
     ...(sortBy && { sortBy }),
-    ...(sortOrder && { sortOrder })
+    ...(sortOrder && { sortOrder }),
+    ...(status && { status })
   }).toString();
   
   const response = await api.get(`/vehicles/user/${userId}?${queryParams}`);
