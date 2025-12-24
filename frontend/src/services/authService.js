@@ -108,16 +108,35 @@ export const resetPassword = async (resetData) => {
 
 /**
  * Get All Users (Admin only)
- * @returns {Promise<Array>} List of users
+ * @param {Object} params - Query parameters for pagination
+ * @param {number} params.page - Page number (default: 1)
+ * @param {number} params.limit - Items per page (default: 10)
+ * @param {string} params.search - Search term for name or email (optional)
+ * @param {string} params.role - Role to filter by (optional)
+ * @returns {Promise<Object>} Object containing users array and pagination info
  */
-export const getAllUsers = async () => {
+export const getAllUsers = async (params = {}) => {
   try {
-    const response = await api.get('/users');
-    // The backend returns { users: [...] }, so we need to extract the array
-    return response.data.users || [];
+    const queryParams = new URLSearchParams();
+    
+    // Add pagination parameters
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    
+    // Add search and filter parameters
+    if (params.search) queryParams.append('search', params.search);
+    if (params.role) queryParams.append('role', params.role);
+    
+    const response = await api.get(`/users?${queryParams}`);
+    
+    // The backend returns { users: [...], pagination: {...} }
+    return {
+      users: response.data.users || [],
+      pagination: response.data.pagination
+    };
   } catch (error) {
     console.error('Error fetching users:', error);
-    return []; // Return empty array on error to prevent crashes
+    return { users: [], pagination: null }; // Return empty array on error to prevent crashes
   }
 };
 

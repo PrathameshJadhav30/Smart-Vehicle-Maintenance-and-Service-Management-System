@@ -2,11 +2,59 @@ import { query } from '../config/database.js';
 
 export const getUsers = async (req, res) => {
   try {
+    // Get pagination parameters from query
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Get search and filter parameters
+    const search = req.query.search;
+    const role = req.query.role;
+    
+    // Build WHERE clause based on filters
+    let whereClause = '';
+    const whereParams = [];
+    
+    if (search || role) {
+      whereClause = 'WHERE';
+      let conditions = [];
+      
+      if (search) {
+        conditions.push("(name ILIKE $" + (whereParams.length + 1) + " OR email ILIKE $" + (whereParams.length + 2) + ")");
+        whereParams.push('%' + search + '%', '%' + search + '%');
+      }
+      
+      if (role) {
+        const roleCondition = conditions.length > 0 ? 'AND' : '';
+        conditions.push(roleCondition + " role = $" + (whereParams.length + 1));
+        whereParams.push(role);
+      }
+      
+      whereClause += ' ' + conditions.join(' ');
+    }
+    
+    // Get total count for pagination
+    const countResult = await query(
+      `SELECT COUNT(*) FROM users ${whereClause}`,
+      whereParams
+    );
+    const total = parseInt(countResult.rows[0].count);
+    
+    // Get paginated users
     const result = await query(
-      'SELECT id, name, email, role, phone, address, created_at FROM users ORDER BY created_at DESC'
+      `SELECT id, name, email, role, phone, address, created_at FROM users ${whereClause} ORDER BY created_at DESC LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}`,
+      [...whereParams, limit, offset]
     );
     
-    res.json({ users: result.rows });
+    res.json({
+      users: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({ message: 'Server error' });

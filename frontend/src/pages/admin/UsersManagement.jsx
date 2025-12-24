@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../contexts/ToastContext';
 import authService from '../../services/authService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import Table, { TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../../components/Table';
 const UsersManagementPage = () => {
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -25,49 +28,89 @@ const UsersManagementPage = () => {
     phone: '',
     address: ''
   });
+  const [createUserErrors, setCreateUserErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 1
+  });
+  
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   useEffect(() => {
+    // When search or filter changes, fetch filtered data
     filterUsers();
-  }, [users, searchTerm, filterRole]);
+  }, [searchTerm, filterRole]);
+
+
 
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const data = await authService.getAllUsers();
-      // The backend returns { users: [...] }, so we need to extract the array
-      setUsers(Array.isArray(data) ? data : (data.users || []));
+      const data = await authService.getAllUsers({
+        page: pagination.page,
+        limit: pagination.limit
+      });
+      
+      setUsers(data.users || []);
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
     } catch (error) {
       console.error('Error loading users:', error);
       // Set to empty array on error to prevent crashes
       setUsers([]);
+      setPagination({
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 1
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const filterUsers = () => {
-    let result = users;
+  const filterUsers = async () => {
+    // Reset to page 1 when search or filter changes
+    setPagination(prev => ({
+      ...prev,
+      page: 1
+    }));
     
-    // Apply search filter
-    if (searchTerm) {
-      result = result.filter(user => 
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    // Fetch fresh data based on search and filter
+    try {
+      setLoading(true);
+      const data = await authService.getAllUsers({
+        page: 1,
+        limit: pagination.limit,
+        search: searchTerm,
+        role: filterRole !== 'all' ? filterRole : undefined
+      });
+      
+      setUsers(data.users || []);
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
+    } catch (error) {
+      console.error('Error filtering users:', error);
+      setUsers([]);
+      setPagination({
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 1
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    // Apply role filter
-    if (filterRole !== 'all') {
-      result = result.filter(user => user.role === filterRole);
-    }
-    
-    setFilteredUsers(result);
   };
 
   const handleInputChange = (e) => {
@@ -92,25 +135,42 @@ const UsersManagementPage = () => {
         role: 'customer'
       });
       setSelectedUser(null);
-      loadUsers();
+      // Reload users to reflect the role change
+      await loadUsers();
+      showToast.success('User role updated successfully');
     } catch (error) {
       console.error('Error updating user:', error);
-      alert('Failed to update user. Please try again.');
+      showToast.error('Failed to update user. Please try again.');
     }
   };
 
   const handleCreateUserInputChange = (e) => {
+    const { name, value } = e.target;
+    
     setCreateUserData({
       ...createUserData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Clear error for this field when user starts typing
+    if (createUserErrors[name]) {
+      setCreateUserErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const handleCreateUserSubmit = async (e) => {
     e.preventDefault();
+    
     try {
       await authService.createUser(createUserData);
+      
+      // Close the modal after successful creation
       setShowCreateModal(false);
+      
+      // Reset form data
       setCreateUserData({
         name: '',
         email: '',
@@ -119,10 +179,49 @@ const UsersManagementPage = () => {
         phone: '',
         address: ''
       });
-      loadUsers();
+      
+      // Clear any previous errors
+      setCreateUserErrors({});
+      
+      // Reload users to include the new user
+      await loadUsers();
+      
+      // Show success message
+      showToast.success('User created successfully');
     } catch (error) {
       console.error('Error creating user:', error);
-      alert('Failed to create user. Please try again.');
+      
+      // Check if error response contains validation errors
+      if (error.response && error.response.data && error.response.data.errors) {
+        // Handle validation errors from backend
+        const errors = {};
+        error.response.data.errors.forEach(err => {
+          errors[err.field] = err.message;
+        });
+        setCreateUserErrors(errors);
+        // Keep modal open to show validation errors
+      } else {
+        // Close the modal for non-validation errors
+        setShowCreateModal(false);
+        
+        // Reset form data for non-validation errors
+        setCreateUserData({
+          name: '',
+          email: '',
+          password: '',
+          role: 'customer',
+          phone: '',
+          address: ''
+        });
+        
+        if (error.response && error.response.data && error.response.data.message) {
+          // Handle general error message
+          showToast.error(error.response.data.message);
+        } else {
+          // Handle generic error
+          showToast.error('Failed to create user. Please try again.');
+        }
+      }
     }
   };
 
@@ -136,14 +235,24 @@ const UsersManagementPage = () => {
     setShowEditModal(true);
   };
 
-  const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+  const handleDelete = (userId) => {
+    setUserToDelete(userId);
+    setShowConfirmModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (userToDelete) {
       try {
-        await authService.deleteUser(userId);
-        loadUsers();
+        await authService.deleteUser(userToDelete);
+        // Reload users to reflect the deletion
+        await loadUsers();
+        showToast.success('User deleted successfully');
       } catch (error) {
         console.error('Error deleting user:', error);
-        alert('Failed to delete user. Please try again.');
+        showToast.error('Failed to delete user. Please try again.');
+      } finally {
+        setShowConfirmModal(false);
+        setUserToDelete(null);
       }
     }
   };
@@ -173,6 +282,45 @@ const UsersManagementPage = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.pages) {
+      setPagination(prev => ({
+        ...prev,
+        page: newPage
+      }));
+    }
+  };
+
+  const getPageNumbers = () => {
+    const { page, pages } = pagination;
+    const delta = 2; // Number of pages to show around current page
+    
+    const range = [];
+    const rangeWithDots = [];
+    
+    for (let i = Math.max(1, page - delta); i <= Math.min(pages, page + delta); i++) {
+      range.push(i);
+    }
+    
+    if (range[0] > 1) {
+      rangeWithDots.push(1);
+      if (range[0] > 2) {
+        rangeWithDots.push('...');
+      }
+    }
+    
+    rangeWithDots.push(...range);
+    
+    if (rangeWithDots[rangeWithDots.length - 1] < pages) {
+      if (rangeWithDots[rangeWithDots.length - 1] < pages - 1) {
+        rangeWithDots.push('...');
+      }
+      rangeWithDots.push(pages);
+    }
+    
+    return rangeWithDots;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -181,7 +329,7 @@ const UsersManagementPage = () => {
     );
   }
 
-  // Ensure users is always an array
+  // Use the current users array
   const usersArray = Array.isArray(users) ? users : [];
 
   return (
@@ -196,7 +344,10 @@ const UsersManagementPage = () => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <Button onClick={() => setShowCreateModal(true)}>
+              <Button onClick={() => {
+                setShowCreateModal(true);
+                setCreateUserErrors({}); // Clear any previous errors when opening modal
+              }}>
                 Create User
               </Button>
               <div className="relative rounded-lg shadow-sm w-full md:w-64">
@@ -241,7 +392,7 @@ const UsersManagementPage = () => {
                     User Accounts
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Showing {filteredUsers.length} of {usersArray.length} users
+                    Showing {users.length} of {pagination.total} users
                   </p>
                 </div>
               </div>
@@ -256,7 +407,7 @@ const UsersManagementPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredUsers.map((user) => (
+                    {users.map((user) => (
                       <TableRow key={user.id} className="hover:bg-gray-50 transition-colors duration-150">
                         <TableCell className="px-6 py-4 font-medium text-gray-900">
                           <div className="flex items-center">
@@ -302,6 +453,68 @@ const UsersManagementPage = () => {
                     ))}
                   </TableBody>
                 </Table>
+                {/* Pagination Controls */}
+                <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                  <div className="flex flex-1 justify-between sm:hidden">
+                    <button
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page <= 1}
+                      className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${pagination.page <= 1 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'}`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={pagination.page >= pagination.pages}
+                      className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${pagination.page >= pagination.pages ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'}`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> results
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <button
+                          onClick={() => handlePageChange(pagination.page - 1)}
+                          disabled={pagination.page <= 1}
+                          className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page <= 1 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                        >
+                          <span className="sr-only">Previous</span>
+                          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        
+                        {/* Page numbers */}
+                        {getPageNumbers().map((pageNum) => (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${pagination.page === pageNum ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'}`}
+                          >
+                            {pageNum}
+                          </button>
+                        ))}
+                        
+                        <button
+                          onClick={() => handlePageChange(pagination.page + 1)}
+                          disabled={pagination.page >= pagination.pages}
+                          className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page >= pagination.pages ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                        >
+                          <span className="sr-only">Next</span>
+                          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -385,8 +598,11 @@ const UsersManagementPage = () => {
                 value={createUserData.name}
                 onChange={handleCreateUserInputChange}
                 required
-                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+                className={`block w-full border ${createUserErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200`}
               />
+              {createUserErrors.name && (
+                <p className="mt-1 text-sm text-red-600">{createUserErrors.name}</p>
+              )}
             </div>
             <div>
               <label htmlFor="create-email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -399,8 +615,11 @@ const UsersManagementPage = () => {
                 value={createUserData.email}
                 onChange={handleCreateUserInputChange}
                 required
-                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+                className={`block w-full border ${createUserErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200`}
               />
+              {createUserErrors.email && (
+                <p className="mt-1 text-sm text-red-600">{createUserErrors.email}</p>
+              )}
             </div>
             <div>
               <label htmlFor="create-password" className="block text-sm font-medium text-gray-700 mb-1">
@@ -414,8 +633,11 @@ const UsersManagementPage = () => {
                 onChange={handleCreateUserInputChange}
                 required
                 minLength="6"
-                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+                className={`block w-full border ${createUserErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200`}
               />
+              {createUserErrors.password && (
+                <p className="mt-1 text-sm text-red-600">{createUserErrors.password}</p>
+              )}
             </div>
             <div>
               <label htmlFor="create-phone" className="block text-sm font-medium text-gray-700 mb-1">
@@ -427,8 +649,11 @@ const UsersManagementPage = () => {
                 name="phone"
                 value={createUserData.phone}
                 onChange={handleCreateUserInputChange}
-                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+                className={`block w-full border ${createUserErrors.phone ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200`}
               />
+              {createUserErrors.phone && (
+                <p className="mt-1 text-sm text-red-600">{createUserErrors.phone}</p>
+              )}
             </div>
             <div>
               <label htmlFor="create-address" className="block text-sm font-medium text-gray-700 mb-1">
@@ -440,8 +665,11 @@ const UsersManagementPage = () => {
                 name="address"
                 value={createUserData.address}
                 onChange={handleCreateUserInputChange}
-                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+                className={`block w-full border ${createUserErrors.address ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200`}
               />
+              {createUserErrors.address && (
+                <p className="mt-1 text-sm text-red-600">{createUserErrors.address}</p>
+              )}
             </div>
             <div>
               <label htmlFor="create-role" className="block text-sm font-medium text-gray-700 mb-1">
@@ -452,16 +680,22 @@ const UsersManagementPage = () => {
                 name="role"
                 value={createUserData.role}
                 onChange={handleCreateUserInputChange}
-                className="block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white transition-all duration-200"
+                className={`block w-full border ${createUserErrors.role ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white transition-all duration-200`}
               >
                 <option value="customer">Customer</option>
                 <option value="mechanic">Mechanic</option>
                 <option value="admin">Admin</option>
               </select>
+              {createUserErrors.role && (
+                <p className="mt-1 text-sm text-red-600">{createUserErrors.role}</p>
+              )}
             </div>
           </div>
           <div className="mt-8 flex justify-end space-x-3">
-            <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
+            <Button type="button" variant="secondary" onClick={() => {
+              setShowCreateModal(false);
+              setCreateUserErrors({}); // Clear errors when closing modal
+            }}>
               Cancel
             </Button>
             <Button type="submit">
@@ -470,7 +704,23 @@ const UsersManagementPage = () => {
           </div>
         </form>
       </Modal>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setUserToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete User"
+        message="Are you sure you want to delete this user?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="danger"
+      />
     </div>
   );
 };
 export default UsersManagementPage;
+
