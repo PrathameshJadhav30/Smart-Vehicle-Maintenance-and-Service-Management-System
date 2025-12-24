@@ -8,6 +8,7 @@ import {
   getAllInvoices,
   getMechanicInvoices,
   updatePaymentStatus,
+  updateInvoice,
   mockPayment
 } from '../controllers/invoiceController.js';
 import { authMiddleware, roleMiddleware } from '../middleware/auth.js';
@@ -71,6 +72,18 @@ router.put('/:id/payment',
   ],
   validate,
   updatePaymentStatus
+);
+
+// Update invoice details (mechanic/admin)
+router.put('/:id',
+  roleMiddleware('mechanic', 'admin'),
+  [
+    body('parts_total').optional().isFloat({ min: 0 }).withMessage('Parts total must be a valid number'),
+    body('labor_total').optional().isFloat({ min: 0 }).withMessage('Labor total must be a valid number'),
+    body('grand_total').optional().isFloat({ min: 0 }).withMessage('Grand total must be a valid number')
+  ],
+  validate,
+  updateInvoice
 );
 
 // Mock payment processing

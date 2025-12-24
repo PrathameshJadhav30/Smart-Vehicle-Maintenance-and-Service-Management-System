@@ -75,9 +75,27 @@ export const getMechanicInvoices = async (mechanicId) => {
   return response.data.invoices;
 };
 
-export const getAllInvoices = async () => {
-  const response = await api.get('/invoices');
-  return response.data.invoices;
+export const getAllInvoices = async (options = {}) => {
+  // Extract options with defaults
+  const { page = 1, limit = 10, status = '' } = options;
+  
+  // Build query string
+  const queryParams = new URLSearchParams({
+    page,
+    limit,
+    ...(status && { status })
+  }).toString();
+  
+  const response = await api.get(`/invoices?${queryParams}`);
+  
+  // Check if response contains pagination data
+  if (response.data.invoices && response.data.pagination) {
+    // Return paginated response
+    return response.data;
+  } else {
+    // Return array response (backward compatibility)
+    return response.data.invoices || [];
+  }
 };
 
 /**
@@ -86,6 +104,11 @@ export const getAllInvoices = async () => {
  * @param {Object} paymentData - Payment status data
  * @returns {Promise<Object>} Updated invoice data
  */
+export const updateInvoice = async (invoiceId, invoiceData) => {
+  const response = await api.put(`/invoices/${invoiceId}`, invoiceData);
+  return response.data;
+};
+
 export const updatePaymentStatus = async (invoiceId, paymentData) => {
   const response = await api.put(`/invoices/${invoiceId}/payment`, paymentData);
   return response.data;
@@ -98,5 +121,6 @@ export default {
   getCustomerInvoices,
   getMechanicInvoices,
   getAllInvoices,
+  updateInvoice,
   updatePaymentStatus,
 };

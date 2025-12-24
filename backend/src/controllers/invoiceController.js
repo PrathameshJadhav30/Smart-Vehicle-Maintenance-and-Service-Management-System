@@ -184,16 +184,62 @@ export const getCustomerInvoices = async (req, res) => {
 
 export const getAllInvoices = async (req, res) => {
   try {
-    const result = await query(
-      `SELECT i.*, u.name as customer_name, v.model, v.vin
-       FROM invoices i
-       JOIN users u ON i.customer_id = u.id
-       JOIN jobcards j ON i.jobcard_id = j.id
-       JOIN vehicles v ON j.vehicle_id = v.id
-       ORDER BY i.created_at DESC`
-    );
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
     
-    res.json({ invoices: result.rows });
+    // Extract status filter parameter
+    const status = req.query.status || '';
+    
+    let queryText = `
+      SELECT i.*, u.name as customer_name, v.model, v.vin
+      FROM invoices i
+      JOIN users u ON i.customer_id = u.id
+      JOIN jobcards j ON i.jobcard_id = j.id
+      JOIN vehicles v ON j.vehicle_id = v.id
+    `;
+    
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM invoices i
+      JOIN users u ON i.customer_id = u.id
+      JOIN jobcards j ON i.jobcard_id = j.id
+      JOIN vehicles v ON j.vehicle_id = v.id
+    `;
+    
+    const params = [];
+    const countParams = [];
+    
+    // Add status filter if provided
+    if (status) {
+      queryText += ` WHERE i.status = $${params.length + 1}`;
+      params.push(status);
+      countQuery += ` WHERE i.status = $${countParams.length + 1}`;
+      countParams.push(status);
+    }
+    
+    queryText += ` ORDER BY i.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+    
+    // Execute both queries
+    const [result, countResult] = await Promise.all([
+      query(queryText, params),
+      query(countQuery, countParams)
+    ]);
+    
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
+    
+    res.json({ 
+      invoices: result.rows,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit
+      }
+    });
   } catch (error) {
     console.error('Get all invoices error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -261,6 +307,34 @@ export const getMechanicInvoices = async (req, res) => {
   } catch (error) {
     console.error('Get mechanic invoices error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateInvoice = async (req, res) => {
+  try {
+    const { parts_total, labor_total, grand_total } = req.body;
+    const invoiceId = req.params.id;
+    
+    // Update invoice with new cost estimation values
+    const result = await query(
+      `UPDATE invoices 
+       SET parts_total = $1, labor_total = $2, grand_total = $3, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4
+       RETURNING *`,
+      [parts_total, labor_total, grand_total, invoiceId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Invoice not found' });
+    }
+    
+    res.json({
+      message: 'Invoice updated successfully',
+      invoice: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update invoice error:', error);
+    res.status(500).json({ message: 'Server error during invoice update' });
   }
 };
 

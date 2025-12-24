@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import invoiceService from '../../services/invoiceService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import { useToast } from '../../contexts/ToastContext';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const InvoicesManagementPage = () => {
   const [invoices, setInvoices] = useState([]);
@@ -11,6 +13,31 @@ const InvoicesManagementPage = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [filter, setFilter] = useState('all');
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 1
+  });
+  
+  // Toast context
+  const { showToast } = useToast();
+  
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState(null);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  
+  // Edit invoice modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
+  const [invoiceFormData, setInvoiceFormData] = useState({
+    parts_total: '',
+    labor_total: '',
+    grand_total: ''
+  });
 
   useEffect(() => {
     loadInvoices();
@@ -28,16 +55,39 @@ const InvoicesManagementPage = () => {
     };
   }, []);
 
-  const loadInvoices = async () => {
+  const loadInvoices = async (page = 1, currentFilter = filter) => {
     try {
       setLoading(true);
-      const response = await invoiceService.getAllInvoices();
+      const response = await invoiceService.getAllInvoices({ page, limit: pagination.limit, status: currentFilter === 'all' ? '' : currentFilter });
       console.log('Invoices response:', response); // Debug log
-      let data = response;
       
       // Handle different response structures
-      if (response.invoices) {
+      let data = [];
+      let paginationData = null;
+      
+      if (response.invoices && response.pagination) {
+        // Paginated response
         data = response.invoices;
+        paginationData = response.pagination;
+      } else if (Array.isArray(response)) {
+        // Array response (backward compatibility)
+        data = response;
+        // Calculate pagination data from array
+        paginationData = {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: response.length,
+          itemsPerPage: response.length
+        };
+      } else {
+        // Fallback
+        data = response.invoices || [];
+        paginationData = {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: data.length,
+          itemsPerPage: data.length
+        };
       }
       
       // Debug log to see what data we have
@@ -45,30 +95,48 @@ const InvoicesManagementPage = () => {
         console.log('Sample invoice data:', data[0]); // Debug log
       }
       
-      setAllInvoices(data); // Store all invoices for KPI calculation
+      // Update pagination state
+      if (paginationData) {
+        setPagination({
+          page: paginationData.currentPage,
+          limit: paginationData.itemsPerPage,
+          total: paginationData.totalItems,
+          pages: paginationData.totalPages
+        });
+      }
+      
+      // Store all invoices for KPI calculation
+      setAllInvoices(data); 
       
       // Apply filter if not 'all'
-      if (filter !== 'all') {
-        data = data.filter(invoice => invoice.status === filter);
+      if (currentFilter !== 'all') {
+        data = data.filter(invoice => invoice.status === currentFilter);
       }
       
       setInvoices(data);
     } catch (error) {
       console.error('Error loading invoices:', error);
-      alert('Failed to load invoices. Please try again.');
+      showToast('Failed to load invoices. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
+  // Load invoices when pagination or filter changes
+  useEffect(() => {
+    loadInvoices(pagination.page, filter);
+  }, [pagination.page, filter]);
+
   // Recalculate filtered invoices when filter changes
   useEffect(() => {
     if (filter === 'all') {
-      setInvoices(allInvoices);
+      // Load all invoices with current pagination
+      loadInvoices(pagination.page, 'all');
     } else {
-      setInvoices(allInvoices.filter(invoice => invoice.status === filter));
+      // Load filtered invoices with current pagination
+      loadInvoices(pagination.page, filter);
     }
-  }, [filter, allInvoices]);
+  }, [filter]);
 
   const getStatusBadge = (status) => {
     const statusClasses = {
@@ -125,14 +193,83 @@ const InvoicesManagementPage = () => {
   };
 
   const handlePaymentStatusUpdate = async (invoiceId, status) => {
-    if (window.confirm(`Are you sure you want to mark this invoice as ${status}?`)) {
+    setConfirmationMessage(`Are you sure you want to mark this invoice as ${status}?`);
+    setConfirmationAction(() => async () => {
       try {
         await invoiceService.updatePaymentStatus(invoiceId, { status: status });
         loadInvoices(); // Reload all data to update KPIs
+        showToast(`Invoice marked as ${status} successfully.`, 'success');
       } catch (error) {
         console.error('Error updating payment status:', error);
-        alert('Failed to update payment status. Please try again.');
+        showToast('Failed to update payment status. Please try again.', 'error');
       }
+    });
+    setShowConfirmation(true);
+  };
+  
+  const openEditInvoiceModal = (invoice) => {
+    setEditingInvoice(invoice);
+    setInvoiceFormData({
+      parts_total: invoice.parts_total || invoice.partsTotal || 0,
+      labor_total: invoice.labor_total || invoice.laborTotal || 0,
+      grand_total: invoice.grand_total || invoice.grandTotal || 0
+    });
+    setShowEditModal(true);
+  };
+  
+  const handleEditInvoice = async () => {
+    if (!editingInvoice) return;
+    
+    try {
+      const updatedInvoice = await invoiceService.updateInvoice(editingInvoice.id, {
+        parts_total: parseFloat(invoiceFormData.parts_total) || 0,
+        labor_total: parseFloat(invoiceFormData.labor_total) || 0,
+        grand_total: parseFloat(invoiceFormData.grand_total) || 0
+      });
+      
+      if (typeof showToast === 'function') {
+        showToast('Invoice updated successfully.', 'success');
+      } else {
+        console.error('showToast function is not available in success case');
+      }
+      loadInvoices(); // Reload invoices to reflect changes
+      setShowEditModal(false);
+      setEditingInvoice(null);
+      setInvoiceFormData({
+        parts_total: '',
+        labor_total: '',
+        grand_total: ''
+      });
+    } catch (error) {
+      console.error('Error updating invoice:', error);
+      // Use a more robust error handling approach
+      if (typeof showToast === 'function') {
+        showToast('Failed to update invoice. Please try again.', 'error');
+      } else {
+        console.error('showToast function is not available');
+      }
+    }
+  };
+  
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === 'parts_total' || name === 'labor_total') {
+      // Auto-calculate grand total when parts or labor changes
+      const parts = name === 'parts_total' ? parseFloat(value) || 0 : parseFloat(invoiceFormData.parts_total) || 0;
+      const labor = name === 'labor_total' ? parseFloat(value) || 0 : parseFloat(invoiceFormData.labor_total) || 0;
+      
+      setInvoiceFormData(prev => ({
+        ...prev,
+        [name]: value,
+        grand_total: (parts + labor).toString()
+      }));
+    } else {
+      // For grand_total, just update the field
+      setInvoiceFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
     }
   };
 
@@ -243,7 +380,7 @@ const InvoicesManagementPage = () => {
               </svg>
               <h3 className="mt-4 text-xl font-medium text-gray-900">No invoices found</h3>
               <p className="mt-2 text-gray-500">
-                There are no invoices matching your current filter.
+                {filter !== 'all' ? `There are no ${filter} invoices.` : 'There are no invoices available.'}
               </p>
             </div>
           ) : (
@@ -317,6 +454,18 @@ const InvoicesManagementPage = () => {
                             </Button>
                             {invoice.status !== 'paid' && (
                               <Button 
+                                variant="warning" 
+                                size="sm"
+                                onClick={() => openEditInvoiceModal(invoice)}
+                              >
+                                <svg className="-ml-0.5 mr-1 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit
+                              </Button>
+                            )}
+                            {invoice.status !== 'paid' && (
+                              <Button 
                                 variant="success" 
                                 size="sm"
                                 onClick={() => handlePaymentStatusUpdate(invoice.id, 'paid')}
@@ -330,6 +479,90 @@ const InvoicesManagementPage = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                <div className="flex flex-1 justify-between sm:hidden">
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                    disabled={pagination.page <= 1}
+                    className={`relative inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium ${pagination.page <= 1 ? 'cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'} cursor-pointer`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
+                    disabled={pagination.page >= pagination.pages}
+                    className={`relative ml-3 inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium ${pagination.page >= pagination.pages ? 'cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'} cursor-pointer`}
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing <span className="font-medium">{Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)}</span> to{' '}
+                      <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
+                      <span className="font-medium">{pagination.total}</span> results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                      <button
+                        onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                        disabled={pagination.page <= 1}
+                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page <= 1 ? 'cursor-not-allowed bg-gray-100' : 'bg-white hover:text-gray-500'} cursor-pointer`}
+                      >
+                        <span className="sr-only">Previous</span>
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      
+                      {/* Page numbers */}
+                      {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                        // Calculate the page numbers to show
+                        let pageNum;
+                        if (pagination.pages <= 5) {
+                          // If total pages <= 5, show all pages
+                          pageNum = i + 1;
+                        } else if (pagination.page <= 3) {
+                          // If we're at the beginning, show 1, 2, 3, 4, 5
+                          pageNum = i + 1;
+                        } else if (pagination.page >= pagination.pages - 2) {
+                          // If we're at the end, show last 5 pages
+                          pageNum = pagination.pages - 4 + i;
+                        } else {
+                          // Show current page in the middle
+                          pageNum = pagination.page - 2 + i;
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                            aria-current={pagination.page === pageNum ? 'page' : undefined}
+                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${pagination.page === pageNum ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'} cursor-pointer`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                      
+                      <button
+                        onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
+                        disabled={pagination.page >= pagination.pages}
+                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page >= pagination.pages ? 'cursor-not-allowed bg-gray-100' : 'bg-white hover:text-gray-500'} cursor-pointer`}
+                      >
+                        <span className="sr-only">Next</span>
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </nav>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -419,6 +652,136 @@ const InvoicesManagementPage = () => {
           </div>
         </Modal>
       )}
+      
+      {/* Edit Invoice Modal */}
+      {editingInvoice && (
+        <Modal 
+          isOpen={showEditModal} 
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingInvoice(null);
+            setInvoiceFormData({
+              parts_total: '',
+              labor_total: '',
+              grand_total: ''
+            });
+          }}
+          title={`Edit Invoice #${String(editingInvoice.id || '').substring(0, 8)}`}
+          size="md"
+        >
+          <div className="space-y-6 py-4">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Invoice #{String(editingInvoice.id || '').substring(0, 8)}
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Customer: {editingInvoice.customer_name || 'N/A'}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Vehicle: {editingInvoice.model || 'N/A'}
+                  </p>
+                </div>
+                <div className="flex items-center">
+                  {getStatusBadge(editingInvoice.status)}
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Parts Total (₹)
+                </label>
+                <input
+                  type="number"
+                  name="parts_total"
+                  value={invoiceFormData.parts_total}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Labor Total (₹)
+                </label>
+                <input
+                  type="number"
+                  name="labor_total"
+                  value={invoiceFormData.labor_total}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Grand Total (₹)
+                </label>
+                <input
+                  type="number"
+                  name="grand_total"
+                  value={invoiceFormData.grand_total}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                />
+                <p className="mt-1 text-sm text-gray-500">Can be manually edited or auto-calculated</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-8 flex justify-end space-x-3">
+            <Button 
+              variant="secondary" 
+              onClick={() => {
+                setShowEditModal(false);
+                setEditingInvoice(null);
+                setInvoiceFormData({
+                  parts_total: '',
+                  labor_total: '',
+                  grand_total: ''
+                });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="primary" 
+              onClick={handleEditInvoice}
+            >
+              Update Invoice
+            </Button>
+          </div>
+        </Modal>
+      )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => {
+          setShowConfirmation(false);
+          setConfirmationAction(null);
+        }}
+        onConfirm={async () => {
+          if (confirmationAction) {
+            await confirmationAction();
+          }
+          setShowConfirmation(false);
+          setConfirmationAction(null);
+        }}
+        message={confirmationMessage}
+      />
     </div>
   );
 };
