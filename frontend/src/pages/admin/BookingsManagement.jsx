@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import bookingService from '../../services/bookingService';
 import authService from '../../services/authService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import { formatBookingDateWithoutTime } from '../../utils/dateFormatter';
 
 const BookingsManagementPage = () => {
   const { hasRole } = useAuth();
+  const { showToast } = useToast();
   const [bookings, setBookings] = useState([]);
   const [mechanics, setMechanics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,6 +20,19 @@ const BookingsManagementPage = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedMechanic, setSelectedMechanic] = useState('');
+  
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState(null);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 1
+  });
   const StatusBadge = ({ status }) => {
     const statusClasses = {
       pending: 'bg-amber-100 text-amber-800 border border-amber-200',
@@ -48,22 +64,67 @@ const BookingsManagementPage = () => {
   const loadBookings = async () => {
     try {
       setLoading(true);
-      let data;
       
-      if (filter === 'all') {
-        const response = await bookingService.getAllBookings({ page: 1, limit: 100 }); // Get more bookings
-        data = response?.bookings || [];
-      } else {
-        const response = await bookingService.getAllBookings({ page: 1, limit: 100, status: filter }); // Get more bookings
-        data = response?.bookings || [];
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      
+      // Only add status filter if it's not 'all'
+      if (filter !== 'all') {
+        params.status = filter;
       }
       
-      setBookings(data || []);
+      // Add search term if present
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
+      
+      const response = await bookingService.getAllBookings(params);
+      
+      // Handle different response formats
+      let bookingsData = [];
+      let paginationData = null;
+      
+      if (Array.isArray(response)) {
+        // If response is an array (old format), no pagination
+        bookingsData = response;
+        paginationData = null;
+      } else {
+        // If response is an object, expect bookings and pagination
+        bookingsData = response?.bookings || [];
+        paginationData = response?.pagination || null;
+      }
+      
+      setBookings(bookingsData);
+      
+      if (paginationData) {
+        // Update pagination with filtered data counts
+        setPagination({
+          page: paginationData.currentPage,
+          limit: paginationData.itemsPerPage,
+          total: paginationData.totalItems,
+          pages: paginationData.totalPages
+        });
+      } else {
+        // Fallback: if no pagination data, assume all data returned
+        setPagination(prev => ({
+          ...prev,
+          total: bookingsData.length,
+          pages: bookingsData.length > 0 ? 1 : 1 // At least 1 page if there are bookings
+        }));
+      }
     } catch (error) {
       console.error('Error loading bookings:', error);
       console.error('Error response:', error.response?.data); // More detailed error logging
-      alert('Failed to load bookings. Please try again.');
+      showToast.error('Failed to load bookings. Please try again.');
       setBookings([]); // Set to empty array on error
+      setPagination({
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 1
+      });
     } finally {
       setLoading(false);
     }
@@ -87,53 +148,80 @@ const BookingsManagementPage = () => {
         await Promise.all([loadBookings(), loadMechanics()]);
       } catch (error) {
         console.error('Error initializing data:', error);
-        alert('Failed to initialize data. Please try again.');
+        showToast.error('Failed to initialize data. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
     initialize();
-  }, [filter]);
-
+  }, [filter, pagination.page, pagination.limit]);
+  
+  // Reset to page 1 when filter or search changes and reload data
+  useEffect(() => {
+    // Only reset page and reload if not on page 1 already
+    if (pagination.page !== 1) {
+      setPagination(prev => ({
+        ...prev,
+        page: 1
+      }));
+    }
+    if (!loading) {  // Only reload if not already loading
+      loadBookings();
+    }
+  }, [filter, searchTerm]);
+  
   const refreshBookings = () => {
+    setPagination(prev => ({
+      ...prev,
+      page: 1
+    }));
     loadBookings();
   };
 
   const handleApprove = async (bookingId) => {
-    if (window.confirm('Are you sure you want to approve this booking?')) {
+    setConfirmationMessage('Are you sure you want to approve this booking?');
+    setConfirmationAction(() => async () => {
       try {
         await bookingService.approveBooking(bookingId);
         loadBookings(); // Refresh the list
+        showToast.success('Booking approved successfully!');
       } catch (error) {
         console.error('Error approving booking:', error);
-        alert('Failed to approve booking. Please try again.');
+        showToast.error('Failed to approve booking. Please try again.');
       }
-    }
+    });
+    setShowConfirmation(true);
   };
 
   const handleReject = async (bookingId) => {
-    if (window.confirm('Are you sure you want to reject this booking?')) {
+    setConfirmationMessage('Are you sure you want to reject this booking?');
+    setConfirmationAction(() => async () => {
       try {
         await bookingService.rejectBooking(bookingId);
         loadBookings(); // Refresh the list
+        showToast.success('Booking rejected successfully!');
       } catch (error) {
         console.error('Error rejecting booking:', error);
-        alert('Failed to reject booking. Please try again.');
+        showToast.error('Failed to reject booking. Please try again.');
       }
-    }
+    });
+    setShowConfirmation(true);
   };
 
   const handleCancel = async (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
+    setConfirmationMessage('Are you sure you want to cancel this booking?');
+    setConfirmationAction(() => async () => {
       try {
         await bookingService.cancelBooking(bookingId);
         loadBookings(); // Refresh the list
+        showToast.success('Booking cancelled successfully!');
       } catch (error) {
         console.error('Error cancelling booking:', error);
-        alert('Failed to cancel booking. Please try again.');
+        showToast.error('Failed to cancel booking. Please try again.');
       }
-    }
+    });
+    setShowConfirmation(true);
   };
 
   const openAssignModal = (booking) => {
@@ -148,7 +236,7 @@ const BookingsManagementPage = () => {
   };
   const handleAssignMechanic = async () => {
     if (!selectedMechanic) {
-      alert('Please select a mechanic');
+      showToast.error('Please select a mechanic');
       return;
     }
 
@@ -160,14 +248,14 @@ const BookingsManagementPage = () => {
 
       setShowAssignModal(false);
       loadBookings(); // Refresh the list
-      alert('Mechanic assigned successfully! The booking status is now "Assigned" and a job card has been created for the mechanic.');
+      showToast.success('Mechanic assigned successfully! The booking status is now "Assigned" and a job card has been created for the mechanic.');
     } catch (error) {
       console.error('Error assigning mechanic:', error);
       // Check if it's a job card creation error
       if (error.response && error.response.data && error.response.data.message) {
-        alert(`Failed to assign mechanic: ${error.response.data.message}`);
+        showToast.error(`Failed to assign mechanic: ${error.response.data.message}`);
       } else {
-        alert('Failed to assign mechanic. Please try again.');
+        showToast.error('Failed to assign mechanic. Please try again.');
       }
     }
   };
@@ -184,18 +272,8 @@ const BookingsManagementPage = () => {
   // Ensure bookings is always an array
   const bookingsArray = Array.isArray(bookings) ? bookings : [];
   
-  // Filter bookings based on search term
-  const filteredBookings = bookingsArray.filter(booking => {
-    if (!searchTerm) return true;
-    
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      (booking?.customer_name && booking.customer_name.toLowerCase().includes(searchTermLower)) ||
-      (booking?.model && booking.model.toLowerCase().includes(searchTermLower)) ||
-      (booking?.vin && booking.vin.toLowerCase().includes(searchTermLower)) ||
-      (booking?.service_type && booking.service_type.toLowerCase().includes(searchTermLower))
-    );
-  });
+  // Use the bookings as received from the backend since filtering is done server-side
+  const filteredBookings = bookingsArray;
 
   // Table cell component for consistent styling
   const TableCell = ({ children, className = '' }) => (
@@ -268,7 +346,7 @@ const BookingsManagementPage = () => {
               </svg>
               <h3 className="mt-4 text-xl font-medium text-gray-900">No bookings found</h3>
               <p className="mt-2 text-gray-500">
-                {searchTerm ? 'No bookings match your search.' : 'Get started by creating a new booking.'}
+                {searchTerm || filter !== 'all' ? 'No bookings match your search or filter criteria.' : 'Get started by creating a new booking.'}
               </p>
             </div>
           ) : (
@@ -377,6 +455,103 @@ const BookingsManagementPage = () => {
               </div>
             </div>
           )}
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+                disabled={pagination.page <= 1}
+                className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${pagination.page <= 1 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'}`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.page + 1, pagination.pages) }))}
+                disabled={pagination.page >= pagination.pages}
+                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${pagination.page >= pagination.pages ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'}`}
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{pagination.total > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}</span> to <span className="font-medium">{pagination.total > 0 ? Math.min(pagination.page * pagination.limit, pagination.total) : 0}</span> of <span className="font-medium">{pagination.total || 0}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+                    disabled={pagination.page <= 1}
+                    className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page <= 1 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  >
+                    <span className="sr-only">Previous</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  {/* Page numbers */}
+                  {(() => {
+                    const delta = 2;
+                    const range = [];
+                    const rangeWithDots = [];
+                    
+                    for (let i = Math.max(1, pagination.page - delta); i <= Math.min(pagination.pages, pagination.page + delta); i++) {
+                      range.push(i);
+                    }
+                    
+                    if (range[0] > 1) {
+                      rangeWithDots.push(1);
+                      if (range[0] > 2) {
+                        rangeWithDots.push('...');
+                      }
+                    }
+                    
+                    rangeWithDots.push(...range);
+                    
+                    if (rangeWithDots[rangeWithDots.length - 1] < pagination.pages) {
+                      if (rangeWithDots[rangeWithDots.length - 1] < pagination.pages - 1) {
+                        rangeWithDots.push('...');
+                      }
+                      rangeWithDots.push(pagination.pages);
+                    }
+                    
+                    return rangeWithDots.map((pageNum, index) => (
+                      typeof pageNum === 'number' ? (
+                        <button
+                          key={pageNum}
+                          onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${pagination.page === pageNum ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 cursor-pointer'}`}
+                        >
+                          {pageNum}
+                        </button>
+                      ) : (
+                        <span
+                          key={`dots-${index}`}
+                          className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700"
+                        >
+                          ...
+                        </span>
+                      )
+                    ));
+                  })()}
+                  
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.page + 1, pagination.pages) }))}
+                    disabled={pagination.page >= pagination.pages}
+                    className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page >= pagination.pages ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  >
+                    <span className="sr-only">Next</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -559,6 +734,23 @@ const BookingsManagementPage = () => {
           </div>
         </Modal>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => {
+          setShowConfirmation(false);
+          setConfirmationAction(null);
+        }}
+        onConfirm={async () => {
+          if (confirmationAction) {
+            await confirmationAction();
+          }
+          setShowConfirmation(false);
+          setConfirmationAction(null);
+        }}
+        message={confirmationMessage}
+      />
     </div>
   );
 };
