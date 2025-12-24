@@ -17,14 +17,35 @@ export const createPart = async (partData) => {
 
 /**
  * Get all parts
- * @returns {Promise<Array>} List of all parts
+ * @param {Object} options - Options for pagination and search
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 10)
+ * @param {string} options.search - Search term (optional)
+ * @returns {Promise<Object>} Response with parts and pagination info or just parts array (for backward compatibility)
  */
-export const getAllParts = async () => {
-  console.log('Making API request to /parts');
-  const response = await api.get('/parts');
+export const getAllParts = async (options = {}) => {
+  // Extract options with defaults
+  const { page = 1, limit = 10, search = '' } = options;
+  
+  // Build query string
+  const queryParams = new URLSearchParams({
+    page,
+    limit,
+    ...(search && { search })
+  }).toString();
+  
+  console.log('Making API request to /parts with params:', queryParams);
+  const response = await api.get(`/parts?${queryParams}`);
   console.log('API response for /parts:', response);
-  // The backend returns { parts: [...] }, so we need to extract the array
-  return response.data.parts || [];
+  
+  // Check if response contains pagination data
+  if (response.data.parts && response.data.pagination) {
+    // Return paginated response
+    return response.data;
+  } else {
+    // Return array response (backward compatibility)
+    return response.data.parts || [];
+  }
 };
 
 /**
@@ -60,14 +81,33 @@ export const deletePart = async (partId) => {
 
 /**
  * Get low stock parts (Mechanic/Admin only)
- * @returns {Promise<Array>} List of low stock parts
+ * @param {Object} options - Options for pagination
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 10)
+ * @returns {Promise<Object>} Response with parts and pagination info or just parts array (for backward compatibility)
  */
-export const getLowStockParts = async () => {
-  console.log('Making API request to /parts/low-stock');
-  const response = await api.get('/parts/low-stock');
+export const getLowStockParts = async (options = {}) => {
+  // Extract options with defaults
+  const { page = 1, limit = 10 } = options;
+  
+  // Build query string
+  const queryParams = new URLSearchParams({
+    page,
+    limit
+  }).toString();
+  
+  console.log('Making API request to /parts/low-stock with params:', queryParams);
+  const response = await api.get(`/parts/low-stock?${queryParams}`);
   console.log('API response for /parts/low-stock:', response);
-  // The backend returns { parts: [...] }, so we need to extract the array
-  return response.data.parts || [];
+  
+  // Check if response contains pagination data
+  if (response.data.parts && response.data.pagination) {
+    // Return paginated response
+    return response.data;
+  } else {
+    // Return array response (backward compatibility)
+    return response.data.parts || [];
+  }
 };
 
 /**
@@ -91,14 +131,35 @@ export const createSupplier = async (supplierData) => {
 
 /**
  * Get all suppliers
- * @returns {Promise<Array>} List of all suppliers
+ * @param {Object} options - Options for pagination and search
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 10)
+ * @param {string} options.search - Search term (optional)
+ * @returns {Promise<Object>} Response with suppliers and pagination info or just suppliers array (for backward compatibility)
  */
-export const getAllSuppliers = async () => {
-  console.log('Making API request to /parts/suppliers');
-  const response = await api.get('/parts/suppliers');
+export const getAllSuppliers = async (options = {}) => {
+  // Extract options with defaults
+  const { page = 1, limit = 10, search = '' } = options;
+  
+  // Build query string
+  const queryParams = new URLSearchParams({
+    page,
+    limit,
+    ...(search && { search })
+  }).toString();
+  
+  console.log('Making API request to /parts/suppliers with params:', queryParams);
+  const response = await api.get(`/parts/suppliers?${queryParams}`);
   console.log('API response for /parts/suppliers:', response);
-  // The backend returns { suppliers: [...] }, so we need to extract the array
-  return response.data.suppliers || [];
+  
+  // Check if response contains pagination data
+  if (response.data.suppliers && response.data.pagination) {
+    // Return paginated response
+    return response.data;
+  } else {
+    // Return array response (backward compatibility)
+    return response.data.suppliers || [];
+  }
 };
 
 /**

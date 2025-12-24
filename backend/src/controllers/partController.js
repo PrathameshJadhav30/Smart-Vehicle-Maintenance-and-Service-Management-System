@@ -34,30 +34,75 @@ export const createPart = async (req, res) => {
 
 export const getParts = async (req, res) => {
   try {
-    // Check cache first
-    const cacheKey = 'all_parts';
-    if (cache.has(cacheKey)) {
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Extract search parameter
+    const search = req.query.search || '';
+    
+    // Build query with search and pagination
+    let baseQuery = `
+      SELECT p.*, s.name as supplier_name 
+      FROM parts p 
+      LEFT JOIN suppliers s ON p.supplier_id = s.id 
+    `;
+    
+    let countQuery = `SELECT COUNT(*) as count FROM parts p LEFT JOIN suppliers s ON p.supplier_id = s.id `;
+    
+    let params = [];
+    let countParams = [];
+    
+    // Add search condition if provided
+    if (search) {
+      const searchCondition = `WHERE p.name ILIKE $1 OR p.part_number ILIKE $1 OR p.description ILIKE $1`;
+      baseQuery += searchCondition;
+      countQuery += searchCondition;
+      params = [`%${search}%`];
+      countParams = [`%${search}%`];
+    }
+    
+    baseQuery += ` ORDER BY p.name ASC LIMIT $${search ? '2' : '1'} OFFSET $${search ? '3' : '2'}`;
+    params.push(limit, offset);
+    
+    // Check cache first (only for default parameters)
+    const cacheKey = `all_parts_page_${page}_limit_${limit}_search_${search}`;
+    if (!search && page === 1 && limit === 10 && cache.has('all_parts')) {
       console.log('Returning cached parts data');
-      const cachedData = cache.get(cacheKey);
+      const cachedData = cache.get('all_parts');
       // Validate that cached data is not empty or stale
       if (cachedData && Array.isArray(cachedData.parts)) {
         return res.json(cachedData);
       } else {
         // Clear invalid cache entry
-        cache.delete(cacheKey);
+        cache.delete('all_parts');
       }
     }
 
-    const result = await query(`
-      SELECT p.*, s.name as supplier_name 
-      FROM parts p 
-      LEFT JOIN suppliers s ON p.supplier_id = s.id 
-      ORDER BY p.name ASC
-    `);
-    const responseData = { parts: result.rows || [] };
+    // Execute the queries
+    const [partsResult, countResult] = await Promise.all([
+      query(baseQuery, params),
+      query(countQuery, countParams)
+    ]);
     
-    // Cache the result for 1 minute
-    cache.set(cacheKey, responseData, 60000);
+    const totalItems = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalItems / limit);
+    
+    const responseData = {
+      parts: partsResult.rows || [],
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: totalItems,
+        totalPages: totalPages
+      }
+    };
+    
+    // Cache the result for 1 minute (only for default parameters)
+    if (!search && page === 1 && limit === 10) {
+      cache.set('all_parts', responseData, 60000);
+    }
     
     res.json(responseData);
   } catch (error) {
@@ -143,31 +188,60 @@ export const deletePart = async (req, res) => {
 
 export const getLowStockParts = async (req, res) => {
   try {
-    // Check cache first
-    const cacheKey = 'low_stock_parts';
-    if (cache.has(cacheKey)) {
-      console.log('Returning cached low stock parts data');
-      const cachedData = cache.get(cacheKey);
-      // Validate that cached data is not empty or stale
-      if (cachedData && Array.isArray(cachedData.parts)) {
-        return res.json(cachedData);
-      } else {
-        // Clear invalid cache entry
-        cache.delete(cacheKey);
-      }
-    }
-
-    const result = await query(`
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Build query with pagination
+    let baseQuery = `
       SELECT p.*, s.name as supplier_name 
       FROM parts p 
       LEFT JOIN suppliers s ON p.supplier_id = s.id 
       WHERE p.quantity <= p.reorder_level 
       ORDER BY p.quantity ASC
-    `);
-    const responseData = { parts: result.rows || [] };
+      LIMIT $1 OFFSET $2
+    `;
     
-    // Cache the result for 1 minute
-    cache.set(cacheKey, responseData, 60000);
+    let countQuery = `SELECT COUNT(*) as count FROM parts p WHERE p.quantity <= p.reorder_level`;
+    
+    // Check cache first (only for default parameters)
+    const cacheKey = `low_stock_parts_page_${page}_limit_${limit}`;
+    if (page === 1 && limit === 10 && cache.has('low_stock_parts')) {
+      console.log('Returning cached low stock parts data');
+      const cachedData = cache.get('low_stock_parts');
+      // Validate that cached data is not empty or stale
+      if (cachedData && Array.isArray(cachedData.parts)) {
+        return res.json(cachedData);
+      } else {
+        // Clear invalid cache entry
+        cache.delete('low_stock_parts');
+      }
+    }
+
+    // Execute the queries
+    const [partsResult, countResult] = await Promise.all([
+      query(baseQuery, [limit, offset]),
+      query(countQuery)
+    ]);
+    
+    const totalItems = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalItems / limit);
+    
+    const responseData = {
+      parts: partsResult.rows || [],
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: totalItems,
+        totalPages: totalPages
+      }
+    };
+    
+    // Cache the result for 1 minute (only for default parameters)
+    if (page === 1 && limit === 10) {
+      cache.set('low_stock_parts', responseData, 60000);
+    }
     
     res.json(responseData);
   } catch (error) {
@@ -232,8 +306,53 @@ export const createSupplier = async (req, res) => {
 
 export const getSuppliers = async (req, res) => {
   try {
-    const result = await query('SELECT * FROM suppliers ORDER BY name ASC');
-    const responseData = { suppliers: result.rows || [] };
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Extract search parameter
+    const search = req.query.search || '';
+    
+    // Build query with search and pagination
+    let baseQuery = `SELECT * FROM suppliers `;
+    
+    let countQuery = `SELECT COUNT(*) as count FROM suppliers `;
+    
+    let params = [];
+    let countParams = [];
+    
+    // Add search condition if provided
+    if (search) {
+      const searchCondition = `WHERE name ILIKE $1 OR contact_person ILIKE $1 OR email ILIKE $1 OR phone ILIKE $1 OR address ILIKE $1`;
+      baseQuery += searchCondition;
+      countQuery += searchCondition;
+      params = [`%${search}%`];
+      countParams = [`%${search}%`];
+    }
+    
+    baseQuery += ` ORDER BY name ASC LIMIT $${search ? '2' : '1'} OFFSET $${search ? '3' : '2'}`;
+    params.push(limit, offset);
+    
+    // Execute the queries
+    const [suppliersResult, countResult] = await Promise.all([
+      query(baseQuery, params),
+      query(countQuery, countParams)
+    ]);
+    
+    const totalItems = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalItems / limit);
+    
+    const responseData = {
+      suppliers: suppliersResult.rows || [],
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: totalItems,
+        totalPages: totalPages
+      }
+    };
+    
     res.json(responseData);
   } catch (error) {
     console.error('Get suppliers error:', error);

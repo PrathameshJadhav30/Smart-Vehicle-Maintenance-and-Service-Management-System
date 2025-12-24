@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useToast } from '../../contexts/ToastContext';
 import partsService from '../../services/partsService';
 import adminService from '../../services/adminService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import { formatCurrency } from '../../utils/currencyFormatter';
 
 const PartsManagementPage = () => {
+  const { showToast } = useToast();
   const [parts, setParts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +18,50 @@ const PartsManagementPage = () => {
   const [editingPart, setEditingPart] = useState(null);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState(null);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5,
+    total: 0,
+    pages: 1
+  });
+  
+  // Supplier pagination state
+  const [supplierPagination, setSupplierPagination] = useState({
+    page: 1,
+    limit: 5,
+    total: 0,
+    pages: 1
+  });
+  
+  // Refs to store current state values for event handlers
+  const paginationRef = useRef();
+  const supplierPaginationRef = useRef();
+  const showLowStockRef = useRef();
+  const searchTermRef = useRef();
+  
+  // Update refs when state changes
+  useEffect(() => {
+    paginationRef.current = pagination;
+  }, [pagination]);
+  
+  useEffect(() => {
+    supplierPaginationRef.current = supplierPagination;
+  }, [supplierPagination]);
+  
+  useEffect(() => {
+    showLowStockRef.current = showLowStock;
+  }, [showLowStock]);
+  
+  useEffect(() => {
+    searchTermRef.current = searchTerm;
+  }, [searchTerm]);
   
   const [partFormData, setPartFormData] = useState({
     name: '',
@@ -36,8 +83,22 @@ const PartsManagementPage = () => {
 
   useEffect(() => {
     loadPartsData();
+  }, [showLowStock, pagination.page, pagination.limit]);
+  
+  useEffect(() => {
     loadSuppliers();
-  }, [showLowStock]);
+  }, [showLowStock, supplierPagination.page, supplierPagination.limit]);
+  
+  // Reset to page 1 when search term changes and reload data
+  useEffect(() => {
+    setPagination(prev => ({
+      ...prev,
+      page: 1
+    }));
+    if (!loading) {  // Only reload if not already loading
+      loadPartsData();
+    }
+  }, [searchTerm]);
 
   // Add event listener for real-time updates
   useEffect(() => {
@@ -57,10 +118,25 @@ const PartsManagementPage = () => {
       loadPartsData();
     };
 
+    const handleSupplierAdded = () => {
+      loadSuppliers();
+    };
+
+    const handleSupplierUpdated = () => {
+      loadSuppliers();
+    };
+
+    const handleSupplierDeleted = () => {
+      loadSuppliers();
+    };
+
     window.addEventListener('partUpdated', handlePartUpdated);
     window.addEventListener('partAdded', handlePartAdded);
     window.addEventListener('partDeleted', handlePartDeleted);
     window.addEventListener('sparePartAdded', handleSparePartAdded);
+    window.addEventListener('supplierAdded', handleSupplierAdded);
+    window.addEventListener('supplierUpdated', handleSupplierUpdated);
+    window.addEventListener('supplierDeleted', handleSupplierDeleted);
 
     // Cleanup event listeners
     return () => {
@@ -68,31 +144,52 @@ const PartsManagementPage = () => {
       window.removeEventListener('partAdded', handlePartAdded);
       window.removeEventListener('partDeleted', handlePartDeleted);
       window.removeEventListener('sparePartAdded', handleSparePartAdded);
+      window.removeEventListener('supplierAdded', handleSupplierAdded);
+      window.removeEventListener('supplierUpdated', handleSupplierUpdated);
+      window.removeEventListener('supplierDeleted', handleSupplierDeleted);
     };
   }, []);
 
-  const loadPartsData = async () => {
+  const loadPartsData = useCallback(async () => {
     try {
       setLoading(true);
-      let data;
+      let response;
       
-      if (showLowStock) {
-        console.log('Fetching low stock parts...');
-        data = await partsService.getLowStockParts();
-        console.log('Low stock parts data:', data);
+      if (showLowStockRef.current) {
+        console.log('Fetching low stock parts with pagination...');
+        response = await partsService.getLowStockParts({
+          page: paginationRef.current.page,
+          limit: paginationRef.current.limit
+        });
+        console.log('Low stock parts data:', response);
       } else {
-        console.log('Fetching all parts...');
-        data = await partsService.getAllParts();
-        console.log('All parts data:', data);
+        console.log('Fetching all parts with pagination...');
+        response = await partsService.getAllParts({
+          page: paginationRef.current.page,
+          limit: paginationRef.current.limit,
+          search: searchTermRef.current
+        });
+        console.log('All parts data:', response);
       }
       
-      console.log('Parts data received:', data);
+      console.log('Parts data received:', response);
       
-      // Ensure data is an array, handle undefined case
-      const dataArray = Array.isArray(data) ? data : (data && data.parts ? data.parts : []);
+      // Handle different response formats
+      let partsData = [];
+      let paginationData = null;
+      
+      if (Array.isArray(response)) {
+        // If response is an array (old format), no pagination
+        partsData = response;
+        paginationData = null;
+      } else {
+        // If response is an object, expect parts and pagination
+        partsData = response?.parts || [];
+        paginationData = response?.pagination || null;
+      }
       
       // Map backend field names to frontend expected names
-      const mappedData = dataArray.map(part => ({
+      const mappedData = partsData.map(part => ({
         ...part,
         partNumber: part.part_number || part.partNumber || '',
         stockLevel: part.quantity !== undefined ? part.quantity : (part.stockLevel || 0),
@@ -103,38 +200,86 @@ const PartsManagementPage = () => {
       
       console.log('Mapped parts data:', mappedData);
       setParts(mappedData);
+      
+      if (paginationData) {
+        // Update pagination with filtered data counts
+        setPagination({
+          page: paginationData.currentPage,
+          limit: paginationData.itemsPerPage,
+          total: paginationData.totalItems,
+          pages: paginationData.totalPages
+        });
+      } else {
+        // Fallback: if no pagination data, assume all data returned
+        setPagination(prev => ({
+          ...prev,
+          total: partsData.length,
+          pages: partsData.length > 0 ? 1 : 1 // At least 1 page if there are parts
+        }));
+      }
     } catch (error) {
       console.error('Error loading parts:', error);
-      alert('Failed to load parts. Please check the console for details.');
+      showToast.error('Failed to load parts. Please check the console for details.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [partsService, showToast]);
   
-  const loadSuppliers = async () => {
+  const loadSuppliers = useCallback(async () => {
     try {
-      console.log('Fetching all suppliers...');
-      const data = await partsService.getAllSuppliers();
-      console.log('Suppliers data:', data);
+      console.log('Fetching all suppliers with pagination...');
+      const response = await partsService.getAllSuppliers({
+        page: supplierPaginationRef.current.page,
+        limit: supplierPaginationRef.current.limit
+      });
+      console.log('Suppliers data:', response);
       
-      console.log('Suppliers data received:', data);
+      console.log('Suppliers data received:', response);
       
-      // Ensure data is an array, handle undefined case
-      const dataArray = Array.isArray(data) ? data : (data && data.suppliers ? data.suppliers : []);
+      // Handle different response formats
+      let suppliersData = [];
+      let paginationData = null;
+      
+      if (Array.isArray(response)) {
+        // If response is an array (old format), no pagination
+        suppliersData = response;
+        paginationData = null;
+      } else {
+        // If response is an object, expect suppliers and pagination
+        suppliersData = response?.suppliers || [];
+        paginationData = response?.pagination || null;
+      }
       
       // Map backend field names to frontend expected names if needed
-      const mappedData = dataArray.map(supplier => ({
+      const mappedData = suppliersData.map(supplier => ({
         ...supplier,
         contactPerson: supplier.contact_person || supplier.contactPerson || ''
       }));
       
       console.log('Mapped suppliers data:', mappedData);
       setSuppliers(mappedData);
+      
+      if (paginationData) {
+        // Update pagination with filtered data counts
+        setSupplierPagination({
+          page: paginationData.currentPage,
+          limit: paginationData.itemsPerPage,
+          total: paginationData.totalItems,
+          pages: paginationData.totalPages
+        });
+      } else {
+        // Fallback: if no pagination data, assume all data returned
+        setSupplierPagination(prev => ({
+          ...prev,
+          total: suppliersData.length,
+          pages: suppliersData.length > 0 ? 1 : 1 // At least 1 page if there are suppliers
+        }));
+      }
     } catch (error) {
       console.error('Error loading suppliers:', error);
-      alert('Failed to load suppliers. Please check the console for details.');
+      showToast.error('Failed to load suppliers. Please check the console for details.');
     }
-  };
+  }, [partsService, showToast]);
 
   const handlePartInputChange = (e) => {
     setPartFormData({
@@ -150,15 +295,8 @@ const PartsManagementPage = () => {
     });
   };
 
-  const filteredParts = parts.filter(part => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      part.name?.toLowerCase().includes(term) ||
-      part.partNumber?.toLowerCase().includes(term) ||
-      part.description?.toLowerCase().includes(term)
-    );
-  });
+  // Use the parts as received from the backend since filtering is done server-side
+  const filteredParts = parts;
 
   const handlePartSubmit = async (e) => {
     e.preventDefault();
@@ -191,7 +329,7 @@ const PartsManagementPage = () => {
       loadPartsData();
     } catch (error) {
       console.error('Error saving part:', error);
-      alert('Failed to save part. Please try again.');
+      showToast.error('Failed to save part. Please try again.');
     }
   };
 
@@ -210,9 +348,13 @@ const PartsManagementPage = () => {
       if (editingSupplier) {
         // Update supplier
         await partsService.updateSupplier(editingSupplier.id, supplierData);
+        // Dispatch event for real-time updates
+        window.dispatchEvent(new CustomEvent('supplierUpdated'));
       } else {
         // Create new supplier
         await partsService.createSupplier(supplierData);
+        // Dispatch event for real-time updates
+        window.dispatchEvent(new CustomEvent('supplierAdded'));
       }
       
       setShowSupplierModal(false);
@@ -220,7 +362,7 @@ const PartsManagementPage = () => {
       loadSuppliers();
     } catch (error) {
       console.error('Error saving supplier:', error);
-      alert('Failed to save supplier. Please try again.');
+      showToast.error('Failed to save supplier. Please try again.');
     }
   };
 
@@ -275,29 +417,37 @@ const PartsManagementPage = () => {
   };
 
   const handleDeletePart = async (partId) => {
-    if (window.confirm('Are you sure you want to delete this part? This action cannot be undone.')) {
+    setConfirmationMessage('Are you sure you want to delete this part? This action cannot be undone.');
+    setConfirmationAction(() => async () => {
       try {
         await partsService.deletePart(partId);
         // Dispatch event for real-time updates
         window.dispatchEvent(new CustomEvent('partDeleted'));
         loadPartsData();
+        showToast.success('Part deleted successfully!');
       } catch (error) {
         console.error('Error deleting part:', error);
-        alert('Failed to delete part. Please try again.');
+        showToast.error('Failed to delete part. Please try again.');
       }
-    }
+    });
+    setShowConfirmation(true);
   };
 
   const handleDeleteSupplier = async (supplierId) => {
-    if (window.confirm('Are you sure you want to delete this supplier? This action cannot be undone.')) {
+    setConfirmationMessage('Are you sure you want to delete this supplier? This action cannot be undone.');
+    setConfirmationAction(() => async () => {
       try {
         await partsService.deleteSupplier(supplierId);
+        // Dispatch event for real-time updates
+        window.dispatchEvent(new CustomEvent('supplierDeleted'));
         loadSuppliers();
+        showToast.success('Supplier deleted successfully!');
       } catch (error) {
         console.error('Error deleting supplier:', error);
-        alert('Failed to delete supplier. Please try again.');
+        showToast.error('Failed to delete supplier. Please try again.');
       }
-    }
+    });
+    setShowConfirmation(true);
   };
 
   const getStatusBadge = (stockLevel, minStockLevel) => {
@@ -311,17 +461,19 @@ const PartsManagementPage = () => {
   };
 
   const handleClearCache = async () => {
-    if (window.confirm('Are you sure you want to clear the application cache? This will force reload all data from the database.')) {
+    setConfirmationMessage('Are you sure you want to clear the application cache? This will force reload all data from the database.');
+    setConfirmationAction(() => async () => {
       try {
         await adminService.clearCache();
-        alert('Cache cleared successfully! Reloading data...');
+        showToast.success('Cache cleared successfully! Reloading data...');
         loadPartsData();
         loadSuppliers();
       } catch (error) {
         console.error('Error clearing cache:', error);
-        alert('Failed to clear cache. Please try again.');
+        showToast.error('Failed to clear cache. Please try again.');
       }
-    }
+    });
+    setShowConfirmation(true);
   };
 
   if (loading) {
@@ -398,8 +550,8 @@ const PartsManagementPage = () => {
                 <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
-                <h3 className="mt-4 text-xl font-medium text-gray-900">No parts found</h3>
-                <p className="mt-2 text-gray-500">There are no parts in the inventory.</p>
+                <h3 className="mt-4 text-xl font-medium text-gray-900">{searchTerm ? 'No parts found' : 'No parts found'}</h3>
+                <p className="mt-2 text-gray-500">{searchTerm ? `No parts match your search for "${searchTerm}".` : 'There are no parts in the inventory.'}</p>
                 <div className="mt-6">
                   <Button onClick={() => { resetPartForm(); setShowPartModal(true); }}>
                     Add Part
@@ -486,6 +638,78 @@ const PartsManagementPage = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+            
+            {/* Pagination Controls for Parts */}
+            {partsArray.length > 0 && (
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-white border-t border-gray-200">
+                <div className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)}</span> to{' '}
+                  <span className="font-medium">
+                    {Math.min(pagination.page * pagination.limit, pagination.total)}
+                  </span> of{' '}
+                  <span className="font-medium">{pagination.total}</span> results
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={pagination.limit}
+                    onChange={(e) => {
+                      setPagination(prev => ({
+                        ...prev,
+                        page: 1,
+                        limit: parseInt(e.target.value)
+                      }));
+                    }}
+                    className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                    disabled={pagination.page <= 1}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${pagination.page <= 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`}
+                  >
+                    Previous
+                  </button>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.pages <= 5) {
+                      pageNum = i + 1;
+                    } else if (pagination.page <= 3) {
+                      pageNum = i + 1;
+                    } else if (pagination.page >= pagination.pages - 2) {
+                      pageNum = pagination.pages - 4 + i;
+                    } else {
+                      pageNum = pagination.page - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${pagination.page === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
+                    disabled={pagination.page >= pagination.pages}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${pagination.page >= pagination.pages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`}
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             )}
@@ -581,6 +805,78 @@ const PartsManagementPage = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+            
+            {/* Pagination Controls for Suppliers */}
+            {suppliersArray.length > 0 && (
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-white border-t border-gray-200">
+                <div className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{Math.min((supplierPagination.page - 1) * supplierPagination.limit + 1, supplierPagination.total)}</span> to{' '}
+                  <span className="font-medium">
+                    {Math.min(supplierPagination.page * supplierPagination.limit, supplierPagination.total)}
+                  </span> of{' '}
+                  <span className="font-medium">{supplierPagination.total}</span> results
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={supplierPagination.limit}
+                    onChange={(e) => {
+                      setSupplierPagination(prev => ({
+                        ...prev,
+                        page: 1,
+                        limit: parseInt(e.target.value)
+                      }));
+                    }}
+                    className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  
+                  <button
+                    onClick={() => setSupplierPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                    disabled={supplierPagination.page <= 1}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${supplierPagination.page <= 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`}
+                  >
+                    Previous
+                  </button>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, supplierPagination.pages) }, (_, i) => {
+                    let pageNum;
+                    if (supplierPagination.pages <= 5) {
+                      pageNum = i + 1;
+                    } else if (supplierPagination.page <= 3) {
+                      pageNum = i + 1;
+                    } else if (supplierPagination.page >= supplierPagination.pages - 2) {
+                      pageNum = supplierPagination.pages - 4 + i;
+                    } else {
+                      pageNum = supplierPagination.page - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setSupplierPagination(prev => ({ ...prev, page: pageNum }))}
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${supplierPagination.page === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => setSupplierPagination(prev => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
+                    disabled={supplierPagination.page >= supplierPagination.pages}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${supplierPagination.page >= supplierPagination.pages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`}
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             )}
@@ -788,6 +1084,23 @@ const PartsManagementPage = () => {
           </div>
         </form>
       </Modal>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => {
+          setShowConfirmation(false);
+          setConfirmationAction(null);
+        }}
+        onConfirm={async () => {
+          if (confirmationAction) {
+            await confirmationAction();
+          }
+          setShowConfirmation(false);
+          setConfirmationAction(null);
+        }}
+        message={confirmationMessage}
+      />
     </div>
   );
 };
