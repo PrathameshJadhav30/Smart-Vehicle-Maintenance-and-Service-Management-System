@@ -61,29 +61,55 @@ const AdminDashboard = () => {
           mechanics: rawMechStats.length
         }));
         
-        // Fetch all mechanics and job cards to calculate assignments
-        const [mechanics, jobCards] = await Promise.all([
-          authService.getAllMechanics(),
-          jobcardService.getAllJobCards()
-        ]);
+        // Fetch all mechanics to calculate assignments
+        const mechanics = await authService.getAllMechanics();
         
-        // Calculate job assignments distribution
-        if (Array.isArray(mechanics) && Array.isArray(jobCards)) {
-          const assignments = mechanics.map(mechanic => {
-            const assignedJobs = jobCards.filter(job => 
-              parseInt(job.mechanic_id) === parseInt(mechanic.id)
-            );
-            return {
-              mechanicId: mechanic.id,
-              mechanicName: mechanic.name,
-              assignedJobs: assignedJobs.length,
-              completedJobs: assignedJobs.filter(job => job.status === 'completed').length
-            };
-          });
+        // Calculate job assignments distribution by fetching job cards for each mechanic
+        if (Array.isArray(mechanics)) {
+          const assignments = [];
+          
+          for (const mechanic of mechanics) {
+            try {
+              // Get job cards for this specific mechanic
+              const mechanicJobCardsResponse = await jobcardService.getMechanicJobCards(mechanic.id, { page: 1, limit: 100 }); // Fetch up to 100 job cards
+              
+              // Handle different response formats
+              let mechanicJobCards = [];
+              if (Array.isArray(mechanicJobCardsResponse)) {
+                // If response is an array
+                mechanicJobCards = mechanicJobCardsResponse;
+              } else if (mechanicJobCardsResponse && mechanicJobCardsResponse.jobcards) {
+                // If response has jobcards property (paginated response)
+                mechanicJobCards = mechanicJobCardsResponse.jobcards;
+              } else {
+                // Fallback
+                mechanicJobCards = [];
+              }
+              
+              assignments.push({
+                mechanicId: mechanic.id,
+                mechanicName: mechanic.name,
+                assignedJobs: mechanicJobCards.length,
+                completedJobs: mechanicJobCards.filter(job => job.status === 'completed').length
+              });
+            } catch (error) {
+              console.error(`Error fetching job cards for mechanic ${mechanic.id}:`, error);
+              // Add the mechanic with 0 assignments if there's an error
+              assignments.push({
+                mechanicId: mechanic.id,
+                mechanicName: mechanic.name,
+                assignedJobs: 0,
+                completedJobs: 0
+              });
+            }
+          }
           
           // Sort by assigned jobs count
           assignments.sort((a, b) => b.assignedJobs - a.assignedJobs);
           setJobAssignments(assignments.slice(0, 5)); // Top 5 mechanics by assignments
+        } else {
+          // If mechanics array is not valid, set empty assignments
+          setJobAssignments([]);
         }
       } catch (error) {
         console.error('Error loading dashboard data:', error);
@@ -361,8 +387,8 @@ const AdminDashboard = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {jobAssignments.map((assignment) => (
-                        <tr key={assignment.mechanicId} className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer">
-                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sm:px-6">
+                        <tr key={assignment.mechanicId} className="hover:bg-gray-50 transition-colors duration-150">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sm:px-6 cursor-pointer">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
                                 <span className="text-indigo-800 text-xs font-medium">
@@ -374,7 +400,7 @@ const AdminDashboard = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 sm:px-6 font-medium">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 sm:px-6 font-medium cursor-pointer">
                             {assignment.assignedJobs}
                           </td>
                         </tr>
