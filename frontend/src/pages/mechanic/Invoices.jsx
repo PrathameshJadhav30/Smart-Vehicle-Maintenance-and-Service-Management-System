@@ -631,7 +631,8 @@ const MechanicInvoicesPage = () => {
                     <div className="space-y-2">
                       {jobCardDetails[selectedInvoice.jobcard_id].parts.map(part => {
                         // Find the part details from the parts list to get the name and number
-                        const partDetails = parts.find(p => p.id === part.part_id);
+                        // Only search if parts is an array
+                        const partDetails = Array.isArray(parts) ? parts.find(p => p.id === part.part_id) : null;
                         return (
                           <div key={part.id} className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
                             <span className="text-sm text-gray-700">{partDetails?.part_name || 'N/A'} ({partDetails?.part_number || 'N/A'}) x {part.quantity}</span>
