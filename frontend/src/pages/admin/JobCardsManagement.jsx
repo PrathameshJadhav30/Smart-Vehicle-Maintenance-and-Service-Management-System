@@ -1,24 +1,94 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../contexts/ToastContext';
 import jobcardService from '../../services/jobcardService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const JobCardsManagementPage = () => {
+  const { showToast } = useToast();
   const [jobCards, setJobCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedJobCard, setSelectedJobCard] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState(null);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5,
+    total: 0,
+    pages: 1
+  });
 
   useEffect(() => {
     loadJobCards();
-  }, []);
+  }, [pagination.page, pagination.limit]);
+  
+  // Reset to page 1 when filter changes and reload data
+  useEffect(() => {
+    setPagination(prev => ({
+      ...prev,
+      page: 1
+    }));
+    if (!loading) {  // Only reload if not already loading
+      loadJobCards();
+    }
+  }, [filterStatus]);
 
   const loadJobCards = async () => {
     try {
       setLoading(true);
-      const data = await jobcardService.getAllJobCards();
-      setJobCards(data);
+      
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      
+      // Only add status filter if it's not 'all'
+      if (filterStatus !== 'all') {
+        params.status = filterStatus;
+      }
+      
+      const response = await jobcardService.getAllJobCards(params);
+      
+      // Handle different response formats
+      let jobCardsData = [];
+      let paginationData = null;
+      
+      if (Array.isArray(response)) {
+        // If response is an array (old format), no pagination
+        jobCardsData = response;
+        paginationData = null;
+      } else {
+        // If response is an object, expect jobCards and pagination
+        jobCardsData = response?.jobCards || response?.jobcards || [];
+        paginationData = response?.pagination || null;
+      }
+      
+      setJobCards(jobCardsData);
+      
+      if (paginationData) {
+        // Update pagination with filtered data counts
+        setPagination({
+          page: paginationData.currentPage,
+          limit: paginationData.itemsPerPage,
+          total: paginationData.totalItems,
+          pages: paginationData.totalPages
+        });
+      } else {
+        // Fallback: if no pagination data, assume all data returned
+        setPagination(prev => ({
+          ...prev,
+          total: jobCardsData.length,
+          pages: jobCardsData.length > 0 ? 1 : 1 // At least 1 page if there are job cards
+        }));
+      }
     } catch (error) {
       console.error('Error loading job cards:', error);
     } finally {
@@ -85,25 +155,25 @@ const JobCardsManagementPage = () => {
   };
 
   const handleDelete = async (jobCardId) => {
-    if (window.confirm('Are you sure you want to delete this job card? This action cannot be undone.')) {
+    setConfirmationMessage('Are you sure you want to delete this job card? This action cannot be undone.');
+    setConfirmationAction(() => async () => {
       try {
         await jobcardService.deleteJobCard(jobCardId);
         loadJobCards();
+        showToast.success('Job card deleted successfully!');
       } catch (error) {
         console.error('Error deleting job card:', error);
-        alert('Failed to delete job card. Please try again.');
+        showToast.error('Failed to delete job card. Please try again.');
       }
-    }
+    });
+    setShowConfirmation(true);
   };
 
   // Ensure jobCards is always an array
   const jobCardsArray = Array.isArray(jobCards) ? jobCards : [];
   
-  // Filter job cards based on status
-  const filteredJobCards = jobCardsArray.filter(jobCard => {
-    if (filterStatus === 'all') return true;
-    return jobCard.status === filterStatus;
-  });
+  // Use the job cards as received from the backend since filtering is done server-side
+  const filteredJobCards = jobCardsArray;
 
   if (loading) {
     return (
@@ -149,9 +219,9 @@ const JobCardsManagementPage = () => {
               </svg>
               <h3 className="mt-4 text-xl font-medium text-gray-900">No job cards found</h3>
               <p className="mt-2 text-gray-500">
-                {filterStatus === 'all' 
-                  ? 'There are no job cards in the system.' 
-                  : `There are no job cards with status "${filterStatus === 'in_progress' ? 'In Progress' : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}".`}
+                {filterStatus !== 'all' 
+                  ? `There are no job cards with status "${filterStatus === 'in_progress' ? 'In Progress' : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}".`
+                  : 'There are no job cards in the system.'}
               </p>
             </div>
           ) : (
@@ -244,6 +314,103 @@ const JobCardsManagementPage = () => {
               </ul>
             </div>
           )}
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+                disabled={pagination.page <= 1}
+                className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${pagination.page <= 1 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'}`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.page + 1, pagination.pages) }))}
+                disabled={pagination.page >= pagination.pages}
+                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${pagination.page >= pagination.pages ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'}`}
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{pagination.total > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}</span> to <span className="font-medium">{pagination.total > 0 ? Math.min(pagination.page * pagination.limit, pagination.total) : 0}</span> of <span className="font-medium">{pagination.total || 0}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+                    disabled={pagination.page <= 1}
+                    className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page <= 1 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  >
+                    <span className="sr-only">Previous</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  {/* Page numbers */}
+                  {(() => {
+                    const delta = 2;
+                    const range = [];
+                    const rangeWithDots = [];
+                    
+                    for (let i = Math.max(1, pagination.page - delta); i <= Math.min(pagination.pages, pagination.page + delta); i++) {
+                      range.push(i);
+                    }
+                    
+                    if (range[0] > 1) {
+                      rangeWithDots.push(1);
+                      if (range[0] > 2) {
+                        rangeWithDots.push('...');
+                      }
+                    }
+                    
+                    rangeWithDots.push(...range);
+                    
+                    if (rangeWithDots[rangeWithDots.length - 1] < pagination.pages) {
+                      if (rangeWithDots[rangeWithDots.length - 1] < pagination.pages - 1) {
+                        rangeWithDots.push('...');
+                      }
+                      rangeWithDots.push(pagination.pages);
+                    }
+                    
+                    return rangeWithDots.map((pageNum, index) => (
+                      typeof pageNum === 'number' ? (
+                        <button
+                          key={pageNum}
+                          onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${pagination.page === pageNum ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 cursor-pointer'}`}
+                        >
+                          {pageNum}
+                        </button>
+                      ) : (
+                        <span
+                          key={`dots-${index}`}
+                          className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700"
+                        >
+                          ...
+                        </span>
+                      )
+                    ));
+                  })()}
+                  
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.page + 1, pagination.pages) }))}
+                    disabled={pagination.page >= pagination.pages}
+                    className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${pagination.page >= pagination.pages ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  >
+                    <span className="sr-only">Next</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -321,6 +488,23 @@ const JobCardsManagementPage = () => {
           </div>
         </Modal>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => {
+          setShowConfirmation(false);
+          setConfirmationAction(null);
+        }}
+        onConfirm={async () => {
+          if (confirmationAction) {
+            await confirmationAction();
+          }
+          setShowConfirmation(false);
+          setConfirmationAction(null);
+        }}
+        message={confirmationMessage}
+      />
     </div>
   );
 };

@@ -104,6 +104,11 @@ export const createJobCard = async (req, res) => {
 
 export const getJobCards = async (req, res) => {
   try {
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
     let queryText = `
       SELECT j.*, v.model, v.vin, u.name as customer_name, u.email as customer_email, m.name as mechanic_name, b.service_type as service_type
       FROM jobcards j
@@ -112,30 +117,67 @@ export const getJobCards = async (req, res) => {
       LEFT JOIN users m ON j.mechanic_id = m.id
       LEFT JOIN bookings b ON j.booking_id = b.id
     `;
+    
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM jobcards j
+      JOIN vehicles v ON j.vehicle_id = v.id
+      JOIN users u ON j.customer_id = u.id
+      LEFT JOIN users m ON j.mechanic_id = m.id
+      LEFT JOIN bookings b ON j.booking_id = b.id
+    `;
+    
     const params = [];
+    const countParams = [];
     const conditions = [];
     
     // Add status filter if provided
     if (req.query.status) {
       conditions.push(`j.status = $${params.length + 1}`);
       params.push(req.query.status);
+      countParams.push(req.query.status);
     }
     
     // Add mechanic filter if provided
     if (req.query.mechanic_id) {
       conditions.push(`j.mechanic_id = $${params.length + 1}`);
       params.push(req.query.mechanic_id);
+      countParams.push(req.query.mechanic_id);
     }
     
-    // Add conditions to query if any exist
+    // Add conditions to both queries if any exist
     if (conditions.length > 0) {
-      queryText += ' WHERE ' + conditions.join(' AND ');
+      const conditionString = conditions.join(' AND ');
+      queryText += ' WHERE ' + conditionString;
+      countQuery += ' WHERE ' + conditionString;
     }
     
     queryText += ' ORDER BY j.created_at DESC';
     
-    const result = await query(queryText, params);
-    res.json({ jobcards: result.rows });
+    // Add pagination
+    const limitParamIndex = params.length + 1;
+    const offsetParamIndex = params.length + 2;
+    queryText += ` LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
+    params.push(limit, offset);
+    
+    // Execute both queries
+    const [result, countResult] = await Promise.all([
+      query(queryText, params),
+      query(countQuery, countParams)
+    ]);
+    
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
+    
+    res.json({ 
+      jobcards: result.rows,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit
+      }
+    });
   } catch (error) {
     console.error('Get jobcards error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -608,17 +650,47 @@ export const updateStatus = async (req, res) => {
 
 export const getCompletedJobCards = async (req, res) => {
   try {
-    const result = await query(
-      `SELECT j.*, v.model, v.vin, u.name as customer_name, u.email as customer_email, m.name as mechanic_name
-       FROM jobcards j
-       JOIN vehicles v ON j.vehicle_id = v.id
-       JOIN users u ON j.customer_id = u.id
-       LEFT JOIN users m ON j.mechanic_id = m.id
-       WHERE j.status = 'completed'
-       ORDER BY j.completed_at DESC`
-    );
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
     
-    res.json({ jobcards: result.rows });
+    const queryText = `
+      SELECT j.*, v.model, v.vin, u.name as customer_name, u.email as customer_email, m.name as mechanic_name
+      FROM jobcards j
+      JOIN vehicles v ON j.vehicle_id = v.id
+      JOIN users u ON j.customer_id = u.id
+      LEFT JOIN users m ON j.mechanic_id = m.id
+      WHERE j.status = 'completed'
+      ORDER BY j.completed_at DESC
+      LIMIT $1 OFFSET $2`;
+    
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM jobcards j
+      JOIN vehicles v ON j.vehicle_id = v.id
+      JOIN users u ON j.customer_id = u.id
+      LEFT JOIN users m ON j.mechanic_id = m.id
+      WHERE j.status = 'completed'`;
+    
+    // Execute both queries
+    const [result, countResult] = await Promise.all([
+      query(queryText, [limit, offset]),
+      query(countQuery)
+    ]);
+    
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
+    
+    res.json({ 
+      jobcards: result.rows,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit
+      }
+    });
   } catch (error) {
     console.error('Get completed jobcards error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -734,17 +806,35 @@ export const getMechanicJobCards = async (req, res) => {
   try {
     const mechanicId = req.params.id;
     
+    // Extract pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
     // First get the job cards
-    const jobcardsResult = await query(
-      `SELECT j.*, v.model, v.vin, v.year, u.name as customer_name, u.email as customer_email, u.phone as customer_phone, b.service_type as service_type
-       FROM jobcards j
-       JOIN vehicles v ON j.vehicle_id = v.id
-       JOIN users u ON j.customer_id = u.id
-       LEFT JOIN bookings b ON j.booking_id = b.id
-       WHERE j.mechanic_id = $1
-       ORDER BY j.created_at DESC`,
-      [mechanicId]
-    );
+    const queryText = `
+      SELECT j.*, v.model, v.vin, v.year, u.name as customer_name, u.email as customer_email, u.phone as customer_phone, b.service_type as service_type
+      FROM jobcards j
+      JOIN vehicles v ON j.vehicle_id = v.id
+      JOIN users u ON j.customer_id = u.id
+      LEFT JOIN bookings b ON j.booking_id = b.id
+      WHERE j.mechanic_id = $1
+      ORDER BY j.created_at DESC
+      LIMIT $2 OFFSET $3`;
+    
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM jobcards j
+      JOIN vehicles v ON j.vehicle_id = v.id
+      JOIN users u ON j.customer_id = u.id
+      LEFT JOIN bookings b ON j.booking_id = b.id
+      WHERE j.mechanic_id = $1`;
+    
+    // Execute both queries
+    const [jobcardsResult, countResult] = await Promise.all([
+      query(queryText, [mechanicId, limit, offset]),
+      query(countQuery, [mechanicId])
+    ]);
     
     // Enhance each job card with tasks and parts data
     const jobcards = await Promise.all(jobcardsResult.rows.map(async (jobcard) => {
@@ -770,7 +860,18 @@ export const getMechanicJobCards = async (req, res) => {
       };
     }));
     
-    res.json({ jobcards });
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
+    
+    res.json({ 
+      jobcards,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit
+      }
+    });
   } catch (error) {
     console.error('Get mechanic job cards error:', error);
     res.status(500).json({ message: 'Server error' });

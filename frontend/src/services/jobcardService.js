@@ -34,23 +34,63 @@ export const createJobCard = async (jobCardData) => {
 };
 
 /**
- * Get all job cards
- * @returns {Promise<Array>} List of all job cards
+ * Get all job cards with pagination, search, and filtering
+ * @param {Object} options - Options for pagination, search, and filtering
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 10)
+ * @param {string} options.status - Filter by status
+ * @returns {Promise<Object>} Paginated job cards data or array of all job cards
  */
-export const getAllJobCards = async () => {
-  const response = await api.get('/jobcards');
-  // The backend returns { jobcards: [...] }, so we need to extract the array
-  return response.data.jobcards || [];
+export const getAllJobCards = async (options = {}) => {
+  // Extract options with defaults
+  const { page = 1, limit = 10, status = '' } = options;
+  
+  // Build query string
+  const queryParams = new URLSearchParams({
+    page,
+    limit,
+    ...(status && { status })
+  }).toString();
+  
+  const response = await api.get(`/jobcards?${queryParams}`);
+  
+  // Check if response contains pagination data
+  if (response.data.jobcards && response.data.pagination) {
+    // Return paginated response
+    return response.data;
+  } else {
+    // Return array response (backward compatibility)
+    return response.data.jobcards || [];
+  }
 };
 
 /**
  * Get completed job cards (Mechanic/Admin only)
- * @returns {Promise<Array>} List of completed job cards
+ * @param {Object} options - Options for pagination
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 10)
+ * @returns {Promise<Object>} Paginated job cards data or array of all job cards
  */
-export const getCompletedJobCards = async () => {
-  const response = await api.get('/jobcards/completed');
-  // The backend returns { jobcards: [...] }, so we need to extract the array
-  return response.data.jobcards || [];
+export const getCompletedJobCards = async (options = {}) => {
+  // Extract options with defaults
+  const { page = 1, limit = 10 } = options;
+  
+  // Build query string
+  const queryParams = new URLSearchParams({
+    page,
+    limit
+  }).toString();
+  
+  const response = await api.get(`/jobcards/completed?${queryParams}`);
+  
+  // Check if response contains pagination data
+  if (response.data.jobcards && response.data.pagination) {
+    // Return paginated response
+    return response.data;
+  } else {
+    // Return array response (backward compatibility)
+    return response.data.jobcards || [];
+  }
 };
 
 /**
@@ -237,13 +277,32 @@ export const deleteJobCard = async (jobCardId) => {
 /**
  * Get job cards by mechanic ID (Mechanic/Admin only)
  * @param {string} mechanicId - Mechanic ID
- * @returns {Promise<Array>} List of job cards for the mechanic
+ * @param {Object} options - Options for pagination
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 10)
+ * @returns {Promise<Object>} Paginated job cards data or array of all job cards
  */
-export const getMechanicJobCards = async (mechanicId) => {
+export const getMechanicJobCards = async (mechanicId, options = {}) => {
   try {
-    const response = await api.get(`/jobcards/mechanic/${mechanicId}`);
-    // The backend returns { jobcards: [...] }, so we need to extract the array
-    return response.data?.jobcards || [];
+    // Extract options with defaults
+    const { page = 1, limit = 10 } = options;
+    
+    // Build query string
+    const queryParams = new URLSearchParams({
+      page,
+      limit
+    }).toString();
+    
+    const response = await api.get(`/jobcards/mechanic/${mechanicId}?${queryParams}`);
+    
+    // Check if response contains pagination data
+    if (response.data.jobcards && response.data.pagination) {
+      // Return paginated response
+      return response.data;
+    } else {
+      // Return array response (backward compatibility)
+      return response.data?.jobcards || [];
+    }
   } catch (error) {
     console.error('Error fetching mechanic job cards:', error);
     return [];
