@@ -39,8 +39,20 @@ const MechanicDashboard = () => {
         setPendingBookings(mechanicAssignedBookings);
         
         // Load mechanic's job cards
-        const jobCardData = await Promise.race([jobCardPromise, timeout(10000)]); // 10 second timeout
-        const jobCardsArray = Array.isArray(jobCardData) ? jobCardData : [];
+        const jobCardResponse = await Promise.race([jobCardPromise, timeout(10000)]); // 10 second timeout
+        
+        // Handle both paginated and non-paginated responses
+        let jobCardsArray = [];
+        if (Array.isArray(jobCardResponse)) {
+          // Direct array response (backward compatibility)
+          jobCardsArray = jobCardResponse;
+        } else if (jobCardResponse && jobCardResponse.jobcards) {
+          // Paginated response
+          jobCardsArray = jobCardResponse.jobcards;
+        } else {
+          // Fallback to empty array
+          jobCardsArray = [];
+        }
         
         // Set active job cards (not completed or cancelled)
         setActiveJobCards(jobCardsArray.filter(jc => 
@@ -56,9 +68,9 @@ const MechanicDashboard = () => {
         ).length;
         setCompletedToday(completedTodayCount);
         
-        // Count in-progress jobs (jobs that are assigned to the mechanic and in progress)
+        // Count in-progress jobs (jobs that are assigned to the mechanic and not completed/cancelled)
         const inProgressCount = jobCardsArray.filter(jc => 
-          jc.status === 'in_progress' || jc.status === 'assigned'
+          jc.status !== 'completed' && jc.status !== 'cancelled'
         ).length;
         setInProgressJobs(inProgressCount);
       } catch (error) {

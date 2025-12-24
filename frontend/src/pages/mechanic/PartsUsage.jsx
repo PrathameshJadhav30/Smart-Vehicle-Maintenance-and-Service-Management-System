@@ -12,6 +12,7 @@ const PartsUsagePage = () => {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentSupplierPage, setCurrentSupplierPage] = useState(1);
   const itemsPerPage = 5; // Adjust as needed
 
   useEffect(() => {
@@ -20,6 +21,7 @@ const PartsUsagePage = () => {
     
     // Reset to first page when filters change
     setCurrentPage(1);
+    setCurrentSupplierPage(1);
   }, [showLowStock]);
 
   const filteredParts = parts.filter(part => {
@@ -32,24 +34,39 @@ const PartsUsagePage = () => {
     );
   });
   
-  // Pagination calculations
+  // Parts pagination calculations
   const totalPages = Math.ceil(filteredParts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedParts = filteredParts.slice(startIndex, startIndex + itemsPerPage);
+  
+  // Suppliers pagination calculations
+  const totalSupplierPages = Math.ceil(suppliers.length / itemsPerPage);
+  const startSupplierIndex = (currentSupplierPage - 1) * itemsPerPage;
+  const paginatedSuppliers = suppliers.slice(startSupplierIndex, startSupplierIndex + itemsPerPage);
 
   const loadPartsData = async () => {
     try {
       setLoading(true);
-      let data;
+      let response;
       
       if (showLowStock) {
-        data = await partsService.getLowStockParts();
+        response = await partsService.getLowStockParts();
       } else {
-        data = await partsService.getAllParts();
+        response = await partsService.getAllParts();
+      }
+      
+      // Handle both paginated and non-paginated responses
+      let partsData = [];
+      if (Array.isArray(response)) {
+        // Direct array response (backward compatibility)
+        partsData = response;
+      } else if (response && response.parts) {
+        // Paginated response
+        partsData = response.parts;
       }
       
       // Map backend field names to frontend expected names
-      const mappedData = data.map(part => ({
+      const mappedData = partsData.map(part => ({
         ...part,
         partNumber: part.part_number || part.partNumber || '',
         stockLevel: part.quantity !== undefined ? part.quantity : (part.stockLevel || 0),
@@ -68,10 +85,20 @@ const PartsUsagePage = () => {
 
   const loadSuppliers = async () => {
     try {
-      const data = await partsService.getAllSuppliers();
+      const response = await partsService.getAllSuppliers();
+      
+      // Handle both paginated and non-paginated responses
+      let suppliersData = [];
+      if (Array.isArray(response)) {
+        // Direct array response (backward compatibility)
+        suppliersData = response;
+      } else if (response && response.suppliers) {
+        // Paginated response
+        suppliersData = response.suppliers;
+      }
       
       // Map backend field names to frontend expected names if needed
-      const mappedData = data.map(supplier => ({
+      const mappedData = suppliersData.map(supplier => ({
         ...supplier,
         contactPerson: supplier.contact_person || supplier.contactPerson || ''
       }));
@@ -132,6 +159,7 @@ const PartsUsagePage = () => {
                         setSearchTerm(e.target.value);
                         // Reset to first page when search term changes
                         setCurrentPage(1);
+                        setCurrentSupplierPage(1);
                       }}
                       className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-64"
                     />
@@ -333,59 +361,146 @@ const PartsUsagePage = () => {
                 <p className="mt-2 text-gray-500">There are no suppliers in the system.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Supplier
-                      </th>
-                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Contact Person
-                      </th>
-                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Phone
-                      </th>
-                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {suppliers.map((supplier) => (
-                      <tr key={supplier.id} className="hover:bg-gray-50 transition-colors duration-150">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {supplier.name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {supplier.contactPerson || 'N/A'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {supplier.phone || 'N/A'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {supplier.email || 'N/A'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Active
-                          </span>
-                        </td>
+              <div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Supplier
+                        </th>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Contact Person
+                        </th>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Phone
+                        </th>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedSuppliers.map((supplier) => (
+                        <tr key={supplier.id} className="hover:bg-gray-50 transition-colors duration-150">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {supplier.name}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {supplier.contactPerson || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {supplier.phone || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {supplier.email || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              Active
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Suppliers Pagination Controls */}
+                {totalSupplierPages > 1 && (
+                  <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-6">
+                    <div className="flex flex-1 justify-between sm:hidden">
+                      <button
+                        onClick={() => setCurrentSupplierPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentSupplierPage === 1}
+                        className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                          currentSupplierPage === 1 
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                            : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                        }`}
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setCurrentSupplierPage(prev => Math.min(prev + 1, totalSupplierPages))}
+                        disabled={currentSupplierPage === totalSupplierPages}
+                        className={`relative ml-3 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                          currentSupplierPage === totalSupplierPages 
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                            : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+                        }`}
+                      >
+                        Next
+                      </button>
+                    </div>
+                    <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm text-gray-700">
+                          Showing <span className="font-medium">{startSupplierIndex + 1}</span> to{' '}
+                          <span className="font-medium">
+                            {Math.min(startSupplierIndex + itemsPerPage, suppliers.length)}
+                          </span>{' '}
+                          of <span className="font-medium">{suppliers.length}</span> results
+                        </p>
+                      </div>
+                      <div>
+                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                          <button
+                            onClick={() => setCurrentSupplierPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentSupplierPage === 1}
+                            className={`relative inline-flex items-center px-2 py-2 rounded-l-md text-sm font-semibold ${
+                              currentSupplierPage === 1
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                            }`}
+                          >
+                            <span className="sr-only">Previous</span>
+                            &larr;
+                          </button>
+                          
+                          {/* Supplier Page numbers */}
+                          {Array.from({ length: totalSupplierPages }, (_, i) => i + 1).map(pageNumber => (
+                            <button
+                              key={pageNumber}
+                              onClick={() => setCurrentSupplierPage(pageNumber)}
+                              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                                currentSupplierPage === pageNumber
+                                  ? 'z-10 bg-blue-600 text-white border-blue-600'
+                                  : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50 cursor-pointer border'
+                              }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          ))}
+                          
+                          <button
+                            onClick={() => setCurrentSupplierPage(prev => Math.min(prev + 1, totalSupplierPages))}
+                            disabled={currentSupplierPage === totalSupplierPages}
+                            className={`relative inline-flex items-center px-2 py-2 rounded-r-md text-sm font-semibold ${
+                              currentSupplierPage === totalSupplierPages
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-900 hover:bg-gray-50 cursor-pointer border border-gray-300'
+                            }`}
+                          >
+                            <span className="sr-only">Next</span>
+                            &rarr;
+                          </button>
+                        </nav>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -162,7 +162,16 @@ const JobCardsPage = () => {
       // Get job cards assigned to this specific mechanic
       const data = await jobcardService.getMechanicJobCards(user.id);
       console.log('Loaded job cards:', data);
-      setJobCards(data);
+      // Handle both paginated and non-paginated responses
+      let jobCardsData = [];
+      if (Array.isArray(data)) {
+        // Direct array response (backward compatibility)
+        jobCardsData = data;
+      } else if (data && data.jobcards) {
+        // Paginated response
+        jobCardsData = data.jobcards;
+      }
+      setJobCards(jobCardsData);
     } catch (error) {
       console.error('Error loading job cards:', error);
     } finally {
@@ -172,10 +181,11 @@ const JobCardsPage = () => {
 
   // Add useEffect to filter job cards when filterStatus or jobCards change
   useEffect(() => {
+    const jobCardsArray = Array.isArray(jobCards) ? jobCards : jobCards || [];
     if (filterStatus === 'all') {
-      setFilteredJobCards(jobCards);
+      setFilteredJobCards(jobCardsArray);
     } else {
-      setFilteredJobCards(jobCards.filter(card => card.status === filterStatus));
+      setFilteredJobCards(jobCardsArray.filter(card => card.status === filterStatus));
     }
     
     // Reset to first page when filters change
@@ -214,9 +224,20 @@ const JobCardsPage = () => {
   // Added function to load parts
   const loadParts = async () => {
     try {
-      const data = await partsService.getAllParts();
+      const response = await partsService.getAllParts();
+      
+      // Handle both paginated and non-paginated responses
+      let partsData = [];
+      if (Array.isArray(response)) {
+        // Direct array response (backward compatibility)
+        partsData = response;
+      } else if (response && response.parts) {
+        // Paginated response
+        partsData = response.parts;
+      }
+      
       // Ensure parts is always an array
-      setParts(Array.isArray(data) ? data : []);
+      setParts(Array.isArray(partsData) ? partsData : []);
     } catch (error) {
       console.error('Error loading parts:', error);
       setParts([]); // Set to empty array on error
@@ -546,10 +567,13 @@ const JobCardsPage = () => {
     setShowConfirmation(false);
   };
 
+  // Ensure filteredJobCards is always an array
+  const filteredJobCardsArray = Array.isArray(filteredJobCards) ? filteredJobCards : filteredJobCards || [];
+  
   // Pagination calculations
-  const totalPages = Math.ceil(filteredJobCards.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredJobCardsArray.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedJobCards = filteredJobCards.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedJobCards = filteredJobCardsArray.slice(startIndex, startIndex + itemsPerPage);
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
@@ -599,7 +623,7 @@ const JobCardsPage = () => {
             </div>
           </div>
           
-          {filteredJobCards.length === 0 ? (
+          {filteredJobCardsArray.length === 0 ? (
             <div className="text-center py-16">
               <div className="flex justify-center mb-6">
                 <div className="bg-gray-100 rounded-full p-4 inline-flex">
@@ -812,9 +836,9 @@ const JobCardsPage = () => {
                       <p className="text-sm text-gray-700">
                         Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
                         <span className="font-medium">
-                          {Math.min(startIndex + itemsPerPage, filteredJobCards.length)}
+                          {Math.min(startIndex + itemsPerPage, filteredJobCardsArray.length)}
                         </span>{' '}
-                        of <span className="font-medium">{filteredJobCards.length}</span> results
+                        of <span className="font-medium">{filteredJobCardsArray.length}</span> results
                       </p>
                     </div>
                     <div>
@@ -1185,7 +1209,7 @@ const JobCardsPage = () => {
                         <option value="">Select a part</option>
                         {Array.isArray(parts) && parts.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.part_name} ({p.part_number}) - {formatCurrency(p.price)} (Stock: {p.quantity})
+                            {p.name || p.part_name} ({p.part_number || p.partNumber}) - {formatCurrency(p.price)} (Stock: {p.quantity || p.stockLevel})
                           </option>
                         ))}
                       </select>

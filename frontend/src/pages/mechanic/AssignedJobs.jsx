@@ -32,7 +32,16 @@ const AssignedJobsPage = () => {
       setLoading(true);
       // Get job cards assigned to this mechanic
       const data = await jobcardService.getMechanicJobCards(user.id);
-      setJobCards(data);
+      // Handle both paginated and non-paginated responses
+      let jobCardsData = [];
+      if (Array.isArray(data)) {
+        // Direct array response (backward compatibility)
+        jobCardsData = data;
+      } else if (data && data.jobcards) {
+        // Paginated response
+        jobCardsData = data.jobcards;
+      }
+      setJobCards(jobCardsData);
     } catch (error) {
       console.error('Error loading job cards:', error);
     } finally {
@@ -43,7 +52,9 @@ const AssignedJobsPage = () => {
   const loadParts = async () => {
     try {
       const data = await partsService.getAllParts();
-      setParts(data);
+      // Ensure data is always an array
+      const partsData = Array.isArray(data) ? data : [];
+      setParts(partsData);
     } catch (error) {
       console.error('Error loading parts:', error);
     }
@@ -121,8 +132,11 @@ const AssignedJobsPage = () => {
     );
   }
   
+  // Ensure jobCards is always an array before filtering
+  const jobCardsArray = Array.isArray(jobCards) ? jobCards : jobCards || [];
+  
   // Filter and search logic
-  const filteredJobCards = jobCards
+  const filteredJobCards = jobCardsArray
     .filter(job => filter === 'all' || job.status === filter)
     .filter(job => {
       if (!searchTerm) return true;
@@ -140,9 +154,9 @@ const AssignedJobsPage = () => {
   const paginatedJobCards = filteredJobCards.slice(startIndex, startIndex + itemsPerPage);
 
   // Filter job cards by status (for stats display)
-  const pendingJobs = jobCards.filter(job => job.status === 'pending');
-  const inProgressJobs = jobCards.filter(job => job.status === 'in_progress');
-  const completedJobs = jobCards.filter(job => job.status === 'completed');
+  const pendingJobs = jobCardsArray.filter(job => job.status === 'pending');
+  const inProgressJobs = jobCardsArray.filter(job => job.status === 'in_progress');
+  const completedJobs = jobCardsArray.filter(job => job.status === 'completed');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -195,7 +209,7 @@ const AssignedJobsPage = () => {
           </div>
           
           {/* Show unified empty state when no job cards */}
-          {jobCards.length === 0 && !loading ? (
+          {jobCardsArray.length === 0 && !loading ? (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
               <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-gray-100">
                 <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

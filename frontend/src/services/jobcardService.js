@@ -60,7 +60,7 @@ export const getAllJobCards = async (options = {}) => {
     return response.data;
   } else {
     // Return array response (backward compatibility)
-    return response.data.jobcards || [];
+    return response.data.jobcards || response.data || [];
   }
 };
 
@@ -89,7 +89,7 @@ export const getCompletedJobCards = async (options = {}) => {
     return response.data;
   } else {
     // Return array response (backward compatibility)
-    return response.data.jobcards || [];
+    return response.data.jobcards || response.data || [];
   }
 };
 
@@ -301,7 +301,7 @@ export const getMechanicJobCards = async (mechanicId, options = {}) => {
       return response.data;
     } else {
       // Return array response (backward compatibility)
-      return response.data?.jobcards || [];
+      return response.data?.jobcards || response.data || [];
     }
   } catch (error) {
     console.error('Error fetching mechanic job cards:', error);

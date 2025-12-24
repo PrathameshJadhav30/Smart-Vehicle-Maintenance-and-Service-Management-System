@@ -42,8 +42,19 @@ const MechanicInvoicesPage = () => {
   
   const loadParts = async () => {
     try {
-      const data = await partsService.getAllParts();
-      setParts(data);
+      const response = await partsService.getAllParts();
+      
+      // Handle both paginated and non-paginated responses
+      let partsData = [];
+      if (Array.isArray(response)) {
+        // Direct array response (backward compatibility)
+        partsData = response;
+      } else if (response && response.parts) {
+        // Paginated response
+        partsData = response.parts;
+      }
+      
+      setParts(partsData);
     } catch (error) {
       console.error('Error loading parts:', error);
     }
@@ -53,14 +64,24 @@ const MechanicInvoicesPage = () => {
     try {
       setLoading(true);
       // Get only invoices related to the mechanic's job cards
-      let data = await invoiceService.getMechanicInvoices(user.id);
+      const response = await invoiceService.getMechanicInvoices(user.id);
+      
+      // Handle both paginated and non-paginated responses
+      let invoicesData = [];
+      if (Array.isArray(response)) {
+        // Direct array response (backward compatibility)
+        invoicesData = response;
+      } else if (response && response.invoices) {
+        // Paginated response
+        invoicesData = response.invoices;
+      }
       
       // Filter by payment status if needed
       if (filter !== 'all') {
-        data = data.filter(invoice => invoice.status === filter);
+        invoicesData = invoicesData.filter(invoice => invoice.status === filter);
       }
       
-      setInvoices(data);
+      setInvoices(invoicesData);
       setCurrentPage(1); // Reset to first page when loading new data
     } catch (error) {
       console.error('Error loading invoices:', error);
@@ -635,7 +656,7 @@ const MechanicInvoicesPage = () => {
                         const partDetails = Array.isArray(parts) ? parts.find(p => p.id === part.part_id) : null;
                         return (
                           <div key={part.id} className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
-                            <span className="text-sm text-gray-700">{partDetails?.part_name || 'N/A'} ({partDetails?.part_number || 'N/A'}) x {part.quantity}</span>
+                            <span className="text-sm text-gray-700">{partDetails?.name || partDetails?.part_name || 'N/A'} ({partDetails?.part_number || partDetails?.partNumber || 'N/A'}) x {part.quantity}</span>
                             <span className="text-sm font-medium text-gray-900">{formatCurrency(part.total_price)}</span>
                           </div>
                         );
@@ -712,9 +733,9 @@ const MechanicInvoicesPage = () => {
                             className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                           >
                             <option value="">Select a part</option>
-                            {parts.map((p) => (
+                            {Array.isArray(parts) && parts.map((p) => (
                               <option key={p.id} value={p.id}>
-                                {p.part_name} ({p.part_number}) - {(typeof p.price === 'number' ? p.price : parseFloat(p.price || 0)).toFixed(2)} (Stock: {p.quantity})
+                                {p.name || p.part_name} ({p.part_number || p.partNumber}) - {(typeof p.price === 'number' ? p.price : parseFloat(p.price || 0)).toFixed(2)} (Stock: {p.quantity || p.stockLevel})
                               </option>
                             ))}
                           </select>

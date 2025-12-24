@@ -303,15 +303,32 @@ const PartsManagementPage = () => {
     try {
       // Map frontend field names to backend expected names
       const partData = {
-        name: partFormData.name,
-        part_number: partFormData.partNumber,
+        name: partFormData.name.trim(),
+        part_number: partFormData.partNumber.trim() || null,
         price: parseFloat(partFormData.price) || 0,
         quantity: parseInt(partFormData.stockLevel) || 0,
         reorder_level: parseInt(partFormData.minStockLevel) || 0,
-        description: partFormData.description,
+        description: partFormData.description?.trim() || null,
         supplier_id: partFormData.supplierId ? parseInt(partFormData.supplierId) : null
       };
       
+      // Validate required fields
+      if (!partData.name) {
+        showToast.error('Part name is required');
+        return;
+      }
+      
+      if (isNaN(partData.price) || partData.price < 0) {
+        showToast.error('Valid price is required');
+        return;
+      }
+      
+      if (isNaN(partData.quantity) || partData.quantity < 0) {
+        showToast.error('Valid quantity is required');
+        return;
+      }
+      
+      // For updates, we can have partial updates
       if (editingPart) {
         // Update part
         await partsService.updatePart(editingPart.id, partData);
@@ -338,12 +355,23 @@ const PartsManagementPage = () => {
     try {
       // Map frontend field names to backend expected names
       const supplierData = {
-        name: supplierFormData.name,
-        contact_person: supplierFormData.contactPerson,
-        email: supplierFormData.email,
-        phone: supplierFormData.phone,
-        address: supplierFormData.address
+        name: supplierFormData.name.trim(),
+        contact_person: supplierFormData.contactPerson?.trim() || null,
+        email: supplierFormData.email?.trim() || null,
+        phone: supplierFormData.phone?.trim() || null,
+        address: supplierFormData.address?.trim() || null
       };
+      
+      // Validate required fields
+      if (!supplierData.name) {
+        showToast.error('Supplier name is required');
+        return;
+      }
+      
+      if (supplierData.email && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(supplierData.email)) {
+        showToast.error('Valid email is required');
+        return;
+      }
       
       if (editingSupplier) {
         // Update supplier
@@ -984,7 +1012,7 @@ const PartsManagementPage = () => {
                 className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select a supplier</option>
-                {suppliers.map((supplier) => (
+                {suppliersArray.map((supplier) => (
                   <option key={supplier.id} value={supplier.id}>
                     {supplier.name}
                   </option>

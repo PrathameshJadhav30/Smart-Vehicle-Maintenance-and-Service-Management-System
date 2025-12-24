@@ -52,7 +52,8 @@ const AssignedBookingsPage = () => {
         const response = await bookingService.getAllBookings();
         data = response.bookings || [];
       } else if (hasRole('mechanic')) {
-        data = await bookingService.getMechanicBookings(user.id);
+        const mechanicBookings = await bookingService.getMechanicBookings(user.id);
+        data = Array.isArray(mechanicBookings) ? mechanicBookings : [];
       } else {
         console.error('Unauthorized access');
         return;
@@ -73,7 +74,8 @@ const AssignedBookingsPage = () => {
 
   // Apply filters whenever bookings, filter, or searchTerm change
   useEffect(() => {
-    let result = [...bookings];
+    const bookingsArray = Array.isArray(bookings) ? bookings : [];
+    let result = [...bookingsArray];
     
     // Apply service type filter
     if (filter !== 'all') {
@@ -144,7 +146,9 @@ const AssignedBookingsPage = () => {
   );
 
   const handleViewDetails = (bookingId) => {
-    const booking = filteredBookings.find(b => b.id === bookingId) || bookings.find(b => b.id === bookingId);
+    const bookingsArray = Array.isArray(bookings) ? bookings : [];
+    const filteredBookingsArray = Array.isArray(filteredBookings) ? filteredBookings : [];
+    const booking = filteredBookingsArray.find(b => b.id === bookingId) || bookingsArray.find(b => b.id === bookingId);
     if (!booking) {
       showToast.error('Booking not found');
       return;
@@ -184,10 +188,14 @@ const AssignedBookingsPage = () => {
     );
   }
 
+  // Ensure arrays are always arrays for pagination
+  const bookingsArray = Array.isArray(bookings) ? bookings : [];
+  const filteredBookingsArray = Array.isArray(filteredBookings) ? filteredBookings : [];
+  
   // Pagination calculations
-  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredBookingsArray.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedBookings = filteredBookings.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedBookings = filteredBookingsArray.slice(startIndex, startIndex + itemsPerPage);
   
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -246,7 +254,7 @@ const AssignedBookingsPage = () => {
           
           <div className="flex items-center justify-between md:justify-end pt-4 md:pt-0">
             <span className="text-sm text-gray-600 hidden md:block">
-              Showing <span className="font-medium">{filteredBookings.length}</span> of <span className="font-medium">{bookings.length}</span> bookings
+              Showing <span className="font-medium">{filteredBookings.length}</span> of <span className="font-medium">{bookingsArray.length}</span> bookings
             </span>
             <button
               onClick={() => {
@@ -266,7 +274,7 @@ const AssignedBookingsPage = () => {
         {/* Mobile view of results count */}
         <div className="mt-3 md:hidden">
           <span className="text-sm text-gray-600">
-            Showing <span className="font-medium">{filteredBookings.length}</span> of <span className="font-medium">{bookings.length}</span> bookings
+            Showing <span className="font-medium">{filteredBookings.length}</span> of <span className="font-medium">{bookingsArray.length}</span> bookings
           </span>
         </div>
       </div>
@@ -373,9 +381,9 @@ const AssignedBookingsPage = () => {
               <p className="text-sm text-gray-700">
                 Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
                 <span className="font-medium">
-                  {Math.min(startIndex + itemsPerPage, filteredBookings.length)}
+                  {Math.min(startIndex + itemsPerPage, filteredBookingsArray.length)}
                 </span>{' '}
-                of <span className="font-medium">{filteredBookings.length}</span> results
+                of <span className="font-medium">{filteredBookingsArray.length}</span> results
               </p>
             </div>
             <div>

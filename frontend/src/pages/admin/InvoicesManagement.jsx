@@ -23,21 +23,14 @@ const InvoicesManagementPage = () => {
   });
   
   // Toast context
-  const { showToast } = useToast();
+  const { showToast, addToast } = useToast();
   
   // Confirmation modal state
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState(null);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   
-  // Edit invoice modal state
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingInvoice, setEditingInvoice] = useState(null);
-  const [invoiceFormData, setInvoiceFormData] = useState({
-    parts_total: '',
-    labor_total: '',
-    grand_total: ''
-  });
+
 
   useEffect(() => {
     loadInvoices();
@@ -116,7 +109,7 @@ const InvoicesManagementPage = () => {
       setInvoices(data);
     } catch (error) {
       console.error('Error loading invoices:', error);
-      showToast('Failed to load invoices. Please try again.', 'error');
+      addToast('Failed to load invoices. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -198,81 +191,25 @@ const InvoicesManagementPage = () => {
       try {
         await invoiceService.updatePaymentStatus(invoiceId, { status: status });
         loadInvoices(); // Reload all data to update KPIs
-        showToast(`Invoice marked as ${status} successfully.`, 'success');
+        if (addToast) {
+          addToast(`Invoice marked as ${status} successfully.`, 'success');
+        } else {
+          console.warn('addToast is not available');
+        }
       } catch (error) {
         console.error('Error updating payment status:', error);
-        showToast('Failed to update payment status. Please try again.', 'error');
+        if (addToast) {
+          addToast('Failed to update payment status. Please try again.', 'error');
+        } else {
+          console.warn('addToast is not available');
+        }
       }
     });
     setShowConfirmation(true);
   };
-  
-  const openEditInvoiceModal = (invoice) => {
-    setEditingInvoice(invoice);
-    setInvoiceFormData({
-      parts_total: invoice.parts_total || invoice.partsTotal || 0,
-      labor_total: invoice.labor_total || invoice.laborTotal || 0,
-      grand_total: invoice.grand_total || invoice.grandTotal || 0
-    });
-    setShowEditModal(true);
-  };
-  
-  const handleEditInvoice = async () => {
-    if (!editingInvoice) return;
     
-    try {
-      const updatedInvoice = await invoiceService.updateInvoice(editingInvoice.id, {
-        parts_total: parseFloat(invoiceFormData.parts_total) || 0,
-        labor_total: parseFloat(invoiceFormData.labor_total) || 0,
-        grand_total: parseFloat(invoiceFormData.grand_total) || 0
-      });
-      
-      if (typeof showToast === 'function') {
-        showToast('Invoice updated successfully.', 'success');
-      } else {
-        console.error('showToast function is not available in success case');
-      }
-      loadInvoices(); // Reload invoices to reflect changes
-      setShowEditModal(false);
-      setEditingInvoice(null);
-      setInvoiceFormData({
-        parts_total: '',
-        labor_total: '',
-        grand_total: ''
-      });
-    } catch (error) {
-      console.error('Error updating invoice:', error);
-      // Use a more robust error handling approach
-      if (typeof showToast === 'function') {
-        showToast('Failed to update invoice. Please try again.', 'error');
-      } else {
-        console.error('showToast function is not available');
-      }
-    }
-  };
-  
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
     
-    if (name === 'parts_total' || name === 'labor_total') {
-      // Auto-calculate grand total when parts or labor changes
-      const parts = name === 'parts_total' ? parseFloat(value) || 0 : parseFloat(invoiceFormData.parts_total) || 0;
-      const labor = name === 'labor_total' ? parseFloat(value) || 0 : parseFloat(invoiceFormData.labor_total) || 0;
-      
-      setInvoiceFormData(prev => ({
-        ...prev,
-        [name]: value,
-        grand_total: (parts + labor).toString()
-      }));
-    } else {
-      // For grand_total, just update the field
-      setInvoiceFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -452,18 +389,7 @@ const InvoicesManagementPage = () => {
                               </svg>
                               View
                             </Button>
-                            {invoice.status !== 'paid' && (
-                              <Button 
-                                variant="warning" 
-                                size="sm"
-                                onClick={() => openEditInvoiceModal(invoice)}
-                              >
-                                <svg className="-ml-0.5 mr-1 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                Edit
-                              </Button>
-                            )}
+
                             {invoice.status !== 'paid' && (
                               <Button 
                                 variant="success" 
@@ -653,118 +579,7 @@ const InvoicesManagementPage = () => {
         </Modal>
       )}
       
-      {/* Edit Invoice Modal */}
-      {editingInvoice && (
-        <Modal 
-          isOpen={showEditModal} 
-          onClose={() => {
-            setShowEditModal(false);
-            setEditingInvoice(null);
-            setInvoiceFormData({
-              parts_total: '',
-              labor_total: '',
-              grand_total: ''
-            });
-          }}
-          title={`Edit Invoice #${String(editingInvoice.id || '').substring(0, 8)}`}
-          size="md"
-        >
-          <div className="space-y-6 py-4">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Invoice #{String(editingInvoice.id || '').substring(0, 8)}
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Customer: {editingInvoice.customer_name || 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Vehicle: {editingInvoice.model || 'N/A'}
-                  </p>
-                </div>
-                <div className="flex items-center">
-                  {getStatusBadge(editingInvoice.status)}
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Parts Total (₹)
-                </label>
-                <input
-                  type="number"
-                  name="parts_total"
-                  value={invoiceFormData.parts_total}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Labor Total (₹)
-                </label>
-                <input
-                  type="number"
-                  name="labor_total"
-                  value={invoiceFormData.labor_total}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Grand Total (₹)
-                </label>
-                <input
-                  type="number"
-                  name="grand_total"
-                  value={invoiceFormData.grand_total}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                />
-                <p className="mt-1 text-sm text-gray-500">Can be manually edited or auto-calculated</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-8 flex justify-end space-x-3">
-            <Button 
-              variant="secondary" 
-              onClick={() => {
-                setShowEditModal(false);
-                setEditingInvoice(null);
-                setInvoiceFormData({
-                  parts_total: '',
-                  labor_total: '',
-                  grand_total: ''
-                });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="primary" 
-              onClick={handleEditInvoice}
-            >
-              Update Invoice
-            </Button>
-          </div>
-        </Modal>
-      )}
+
       
       {/* Confirmation Modal */}
       <ConfirmationModal
