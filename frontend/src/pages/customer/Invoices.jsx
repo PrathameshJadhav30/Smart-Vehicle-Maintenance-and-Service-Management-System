@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useNavigate } from 'react-router-dom';
 import invoiceService from '../../services/invoiceService';
 import paymentService from '../../services/paymentService';
 import Button from '../../components/Button';
@@ -10,6 +11,7 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 const InvoicesPage = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -219,6 +221,15 @@ const InvoicesPage = () => {
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
+              <button 
+                onClick={() => navigate('/customer/dashboard')}
+                className="flex items-center text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 px-4 py-2.5 rounded-lg transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md border border-blue-300"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Dashboard
+              </button>
               <h1 className="text-3xl font-bold text-gray-900">My Invoices</h1>
               <p className="mt-2 text-gray-600">View and manage your service invoices</p>
             </div>
@@ -227,19 +238,19 @@ const InvoicesPage = () => {
             <div className="flex space-x-2">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'all' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'all' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'} cursor-pointer`}
               >
                 All Invoices
               </button>
               <button
                 onClick={() => setFilter('paid')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'paid' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'paid' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'} cursor-pointer`}
               >
                 Paid
               </button>
               <button
                 onClick={() => setFilter('unpaid')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'unpaid' ? 'bg-amber-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'unpaid' ? 'bg-amber-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'} cursor-pointer`}
               >
                 Unpaid
               </button>
@@ -394,8 +405,7 @@ const InvoicesPage = () => {
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className={`px-4 py-2 rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer'}`}
-                style={{ cursor: 'pointer' }}
+                className={`px-4 py-2 rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} cursor-pointer`}
               >
                 Previous
               </button>
@@ -416,7 +426,6 @@ const InvoicesPage = () => {
                       key={pageNumber}
                       onClick={() => handlePageChange(pageNumber)}
                       className={`px-4 py-2 rounded-lg border ${isCurrent ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} cursor-pointer`}
-                      style={{ cursor: 'pointer' }}
                     >
                       {pageNumber}
                     </button>
@@ -438,8 +447,7 @@ const InvoicesPage = () => {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className={`px-4 py-2 rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer'}`}
-                style={{ cursor: 'pointer' }}
+                className={`px-4 py-2 rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} cursor-pointer`}
               >
                 Next
               </button>
