@@ -102,17 +102,23 @@ const CustomerProfilePage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <button 
-            onClick={() => navigate('/customer/dashboard')}
-            className="flex items-center text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 px-4 py-2.5 rounded-lg transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md border border-blue-300 mb-4"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Dashboard
-          </button>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 text-center md:text-left">My Profile</h1>
-          <p className="mt-2 text-gray-600 text-center md:text-left">Manage your account settings and preferences</p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <button 
+                onClick={() => navigate('/customer/dashboard')}
+                className="flex items-center text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 px-4 py-2.5 rounded-lg transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md border border-blue-300"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Dashboard
+              </button>
+            </div>
+            <div className="text-center md:text-center flex-1 md:mx-auto">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">My Profile</h1>
+              <p className="mt-2 text-gray-600">Manage your account settings and preferences</p>
+            </div>
+          </div>
         </div>
         
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 mb-8">
