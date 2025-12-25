@@ -360,14 +360,23 @@ const BookServicePage = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 sm:py-10 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
-        <div className="text-center mb-10 sm:mb-12">
+        <div className="mb-10 sm:mb-12">
+          <button 
+            onClick={() => navigate('/customer/dashboard')}
+            className="flex items-center text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 px-4 py-2.5 rounded-lg transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md border border-blue-300 mb-6"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Dashboard
+          </button>
           <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg mb-5 sm:mb-6 mx-auto">
             <svg className="h-7 w-7 sm:h-8 sm:w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 sm:mb-4">Service Booking</h1>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 sm:mb-4 text-center">Service Booking</h1>
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-2 text-center">
             Schedule your vehicle service appointment in minutes. Our team will confirm your booking shortly.
           </p>
         </div>
