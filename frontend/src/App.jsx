@@ -31,6 +31,7 @@ import AdminPartsManagement from './pages/admin/PartsManagement';
 import AdminInvoicesManagement from './pages/admin/InvoicesManagement';
 import AdminAnalyticsDashboard from './pages/admin/AnalyticsDashboard';
 import AdminUtilities from './pages/admin/Utilities';
+import AdminProfile from './pages/admin/Profile';
 import './App.css';
 
 function App() {
@@ -226,6 +227,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <AdminUtilities />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/profile" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminProfile />
                   </ProtectedRoute>
                 } 
               />

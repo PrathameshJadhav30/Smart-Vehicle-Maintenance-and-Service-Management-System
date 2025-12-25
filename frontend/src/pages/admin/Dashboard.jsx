@@ -499,6 +499,18 @@ const AdminDashboard = () => {
                 </div>
                 <span className="mt-3 text-sm font-medium text-gray-900 text-center">Invoices</span>
               </button>
+              
+              <button 
+                onClick={() => navigate('/admin/profile')}
+                className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
+              >
+                <div className="flex-shrink-0 bg-pink-100 rounded-full p-3 group-hover:bg-pink-200 transition-colors duration-200">
+                  <svg className="h-6 w-6 text-pink-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <span className="mt-3 text-sm font-medium text-gray-900 text-center">Profile</span>
+              </button>
             </div>
           </div>
         </div>
