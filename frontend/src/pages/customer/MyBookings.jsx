@@ -299,7 +299,9 @@ const MyBookingsPage = () => {
               </svg>
               Back to Dashboard
             </button>
-            <h1 className="text-3xl font-bold text-gray-900 mt-4 md:mt-0">My Bookings</h1>
+          </div>
+          <div className="text-center md:text-center flex-1 md:mx-auto">
+            <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
             <p className="mt-2 text-gray-600">Manage and track your service appointments</p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
