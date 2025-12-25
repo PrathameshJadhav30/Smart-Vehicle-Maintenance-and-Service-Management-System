@@ -230,6 +230,9 @@ const InvoicesPage = () => {
                 </svg>
                 Back to Dashboard
               </button>
+            </div>
+            
+            <div className="text-center md:text-center flex-1 md:mx-auto">
               <h1 className="text-3xl font-bold text-gray-900">My Invoices</h1>
               <p className="mt-2 text-gray-600">View and manage your service invoices</p>
             </div>
