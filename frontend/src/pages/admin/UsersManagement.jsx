@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import authService from '../../services/authService';
 import Button from '../../components/Button';
@@ -8,6 +9,7 @@ import Select from '../../components/Select';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Table, { TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../../components/Table';
 const UsersManagementPage = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -338,6 +340,17 @@ const UsersManagementPage = () => {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-6">
             <div>
+              <button 
+                onClick={() => navigate('/admin/dashboard')}
+                className="flex items-center text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 px-4 py-2.5 rounded-lg transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md border border-blue-300 mb-4 md:mb-0"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="hidden sm:inline">Back to Dashboard</span>
+              </button>
+            </div>
+            <div className="text-center md:text-center flex-1 md:mx-auto">
               <h1 className="text-3xl font-bold text-gray-900">Users Management</h1>
               <p className="mt-2 text-lg text-gray-600">
                 Manage user accounts and permissions
