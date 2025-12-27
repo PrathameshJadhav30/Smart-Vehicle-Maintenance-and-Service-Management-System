@@ -107,12 +107,23 @@ describe('Booking Controller', () => {
           notes: 'Please check engine oil level',
           estimated_cost: 50.00,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          model: 'Toyota Camry',
+          vin: 'VIN123',
+          year: 2020,
+          make: 'Toyota',
+          customer_name: 'John Doe',
+          customer_phone: '1234567890',
+          customer_email: 'john@example.com'
         }
       ];
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockBookings });
+      const mockCount = [{ total: '1' }];
+
+      // Mock database responses for Promise.all
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockBookings }) // Get bookings
+        .mockResolvedValueOnce({ rows: mockCount }); // Get count
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockCustomerUser);
@@ -123,6 +134,7 @@ describe('Booking Controller', () => {
         .expect(200);
 
       expect(response.body.bookings).toEqual(mockBookings);
+      expect(response.body.pagination).toBeDefined();
     });
   });
 
