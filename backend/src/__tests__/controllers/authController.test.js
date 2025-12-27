@@ -63,14 +63,16 @@ describe('Auth Controller', () => {
           phone: '1234567890',
           address: '123 Main St',
           created_at: new Date().toISOString()
-        }] }); // Insert user
+        }] }) // Insert user
+        .mockResolvedValueOnce({ rows: [] }); // Insert refresh token
 
       await authController.register(mockReq, mockRes, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalledWith({
         message: 'User registered successfully',
-        token: 'jwt_token',
+        accessToken: 'jwt_token',
+        refreshToken: 'jwt_token',
         user: {
           id: 1,
           name: 'John Doe',
@@ -108,7 +110,7 @@ describe('Auth Controller', () => {
       };
 
       // Mock database error
-      mockDb.query.mockRejectedValue(new Error('Database error'));
+      mockDb.query.mockRejectedValueOnce(new Error('Database error'));
 
       await authController.register(mockReq, mockRes, mockNext);
 
@@ -125,17 +127,19 @@ describe('Auth Controller', () => {
       };
 
       // Mock database responses
-      mockDb.query.mockResolvedValueOnce({ 
-        rows: [{ 
-          id: 1, 
-          name: 'John Doe', 
-          email: 'john@example.com', 
-          password_hash: 'hashed_password',
-          role: 'customer',
-          phone: '1234567890',
-          address: '123 Main St'
-        }] 
-      });
+      mockDb.query
+        .mockResolvedValueOnce({ 
+          rows: [{ 
+            id: 1, 
+            name: 'John Doe', 
+            email: 'john@example.com', 
+            password_hash: 'hashed_password',
+            role: 'customer',
+            phone: '1234567890',
+            address: '123 Main St'
+          }] 
+        })
+        .mockResolvedValueOnce({ rows: [] }); // Insert refresh token
 
       // Ensure bcrypt.compare returns true for this test
       require('bcrypt').compare.mockResolvedValue(true);
@@ -146,7 +150,8 @@ describe('Auth Controller', () => {
       expect(mockRes.status).not.toHaveBeenCalled();
       expect(mockRes.json).toHaveBeenCalledWith({
         message: 'Login successful',
-        token: 'jwt_token',
+        accessToken: 'jwt_token',
+        refreshToken: 'jwt_token',
         user: {
           id: 1,
           name: 'John Doe',
@@ -180,15 +185,17 @@ describe('Auth Controller', () => {
       };
 
       // Mock database responses
-      mockDb.query.mockResolvedValueOnce({ 
-        rows: [{ 
-          id: 1, 
-          name: 'John Doe', 
-          email: 'john@example.com', 
-          password_hash: 'hashed_password',
-          role: 'customer'
-        }] 
-      });
+      mockDb.query
+        .mockResolvedValueOnce({ 
+          rows: [{ 
+            id: 1, 
+            name: 'John Doe', 
+            email: 'john@example.com', 
+            password_hash: 'hashed_password',
+            role: 'customer'
+          }] 
+        })
+        .mockResolvedValueOnce({ rows: [] }); // Insert refresh token
 
       // Override bcrypt.compare mock for this test to return false
       require('bcrypt').compare.mockResolvedValue(false);
@@ -214,8 +221,14 @@ describe('Auth Controller', () => {
         created_at: new Date().toISOString()
       };
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: [mockUser] });
+      // Mock database response for SELECT query specifically
+      mockDb.query = jest.fn().mockImplementation((queryText, params) => {
+        if (queryText.includes('SELECT id, name, email, role, phone, address, created_at FROM users WHERE id = $1')) {
+          return Promise.resolve({ rows: [mockUser] });
+        }
+        // Default response for other queries
+        return Promise.resolve({ rows: [] });
+      });
 
       await authController.getProfile(mockReq, mockRes, mockNext);
 
@@ -228,7 +241,13 @@ describe('Auth Controller', () => {
       mockReq.user = { id: 999 };
       
       // Mock database response for non-existent user
-      mockDb.query.mockResolvedValueOnce({ rows: [] });
+      mockDb.query = jest.fn().mockImplementation((queryText, params) => {
+        if (queryText.includes('SELECT id, name, email, role, phone, address, created_at FROM users WHERE id = $1')) {
+          return Promise.resolve({ rows: [] });
+        }
+        // Default response for other queries
+        return Promise.resolve({ rows: [] });
+      });
 
       await authController.getProfile(mockReq, mockRes, mockNext);
 
@@ -256,8 +275,14 @@ describe('Auth Controller', () => {
         address: '456 New St'
       };
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: [updatedUser] });
+      // Mock database response - update returns updated user
+      mockDb.query = jest.fn().mockImplementation((queryText, params) => {
+        if (queryText.includes('UPDATE users') && queryText.includes('RETURNING')) {
+          return Promise.resolve({ rows: [updatedUser] });
+        }
+        // Default response for other queries
+        return Promise.resolve({ rows: [] });
+      });
 
       await authController.updateProfile(mockReq, mockRes, mockNext);
 
@@ -355,7 +380,13 @@ describe('Auth Controller', () => {
       };
 
       // Mock database response - user does not exist (empty array)
-      mockDb.query.mockResolvedValueOnce({ rows: [] });
+      mockDb.query = jest.fn().mockImplementation((queryText, params) => {
+        if (queryText.includes('SELECT id, email, name FROM users WHERE email = $1')) {
+          return Promise.resolve({ rows: [] });
+        }
+        // Default response for other queries
+        return Promise.resolve({ rows: [] });
+      });
 
       await authController.forgotPassword(mockReq, mockRes, mockNext);
 
@@ -378,7 +409,13 @@ describe('Auth Controller', () => {
       require('jsonwebtoken').verify.mockReturnValue({ id: 1, email: 'john@example.com' });
 
       // Mock database response - user exists and gets updated
-      mockDb.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      mockDb.query = jest.fn().mockImplementation((queryText, params) => {
+        if (queryText.includes('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2')) {
+          return Promise.resolve({ rows: [{ id: 1 }] });
+        }
+        // Default response for other queries
+        return Promise.resolve({ rows: [] });
+      });
 
       await authController.resetPassword(mockReq, mockRes, mockNext);
 
