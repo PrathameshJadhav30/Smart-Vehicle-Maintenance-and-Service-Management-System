@@ -218,8 +218,8 @@ export const getMechanicPerformance = async (req, res) => {
     // Add debug logging
     console.log('Mechanic performance query result:', result.rows);
 
-    // If this is for a specific mechanic (or the mechanic themselves), return detailed performance data
-    if (req.user.role === 'mechanic' || mechanicId) {
+    // If this is for a specific mechanic (the mechanic themselves), return detailed performance data
+    if (req.user.role === 'mechanic' && !mechanicId) {
       const mechanicData = result.rows[0] || {};
       
       // For mechanics, we'll return a more detailed performance object

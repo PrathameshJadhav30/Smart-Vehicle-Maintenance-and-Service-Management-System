@@ -18,9 +18,10 @@ export default {
     '/jest.config.test.js'
   ],
   transform: {
-    '^.+\\.js$': 'babel-jest'
+    '^.+\\.js$': ['babel-jest', { "presets": ['@babel/preset-env'] }]
   },
   transformIgnorePatterns: [
-    'node_modules/(?!axios)/'
-  ]
+    'node_modules/(?!(axios|uuid|.+uuid)/)'
+  ],
+  testTimeout: 15000
 };

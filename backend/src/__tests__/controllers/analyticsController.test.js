@@ -60,6 +60,21 @@ describe('Analytics Controller', () => {
       expect(response.body.topVehicles).toEqual(mockTopVehicles);
       expect(response.body.servicesByModel).toEqual(mockServicesByModel);
     });
+    
+    it('should handle errors when getting vehicle analytics', async () => {
+      // Mock database error
+      mockDb.query.mockRejectedValueOnce(new Error('Database error'));
+
+      // Mock JWT token
+      jwt.verify.mockReturnValue(mockAdminUser);
+
+      const response = await request(app)
+        .get('/api/analytics/vehicles')
+        .set('Authorization', 'Bearer admin_token')
+        .expect(500);
+
+      expect(response.body.message).toBe('Server error');
+    });
   });
 
   describe('GET /api/analytics/parts-usage', () => {
@@ -85,6 +100,21 @@ describe('Analytics Controller', () => {
         .expect(200);
 
       expect(response.body.partsUsage).toEqual(mockPartsUsage);
+    });
+    
+    it('should handle errors when getting parts usage analytics', async () => {
+      // Mock database error
+      mockDb.query.mockRejectedValueOnce(new Error('Database error'));
+
+      // Mock JWT token
+      jwt.verify.mockReturnValue(mockAdminUser);
+
+      const response = await request(app)
+        .get('/api/analytics/parts-usage')
+        .set('Authorization', 'Bearer admin_token')
+        .expect(500);
+
+      expect(response.body.message).toBe('Server error');
     });
   });
 
@@ -163,33 +193,48 @@ describe('Analytics Controller', () => {
       // Check that the query was called with the correct parameters
       expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('WHERE'), mockParams);
     });
+    
+    it('should handle errors when getting revenue analytics', async () => {
+      // Mock database error
+      mockDb.query.mockRejectedValueOnce(new Error('Database error'));
+
+      // Mock JWT token
+      jwt.verify.mockReturnValue(mockAdminUser);
+
+      const response = await request(app)
+        .get('/api/analytics/revenue')
+        .set('Authorization', 'Bearer admin_token')
+        .expect(500);
+
+      expect(response.body.message).toBe('Server error');
+    });
   });
 
   describe('GET /api/analytics/dashboard-stats', () => {
     it('should get dashboard stats successfully', async () => {
-      const mockStats = [
-        { count: '10' }, // users
-        { count: '7' },  // customers
-        { count: '15' }, // vehicles
-        { count: '3' },  // pending bookings
-        { count: '5' },  // active jobs
-        { count: '2' },  // low stock parts
-        { total: '2500.00' }, // monthly revenue
-        { total: '15000.00' }, // total revenue
-        { count: '3' },  // mechanics
-        [], // recent invoices
-        []  // recent job cards
-      ];
-
-      // Mock database responses
-      mockDb.query.mockResolvedValue({ rows: [] }); // Default mock
-      for (let i = 0; i < mockStats.length; i++) {
-        if (Array.isArray(mockStats[i])) {
-          mockDb.query.mockResolvedValueOnce({ rows: mockStats[i] });
-        } else {
-          mockDb.query.mockResolvedValueOnce({ rows: [mockStats[i]] });
-        }
-      }
+      const mockUsers = [{ count: '10' }];
+      const mockCustomers = [{ count: '7' }];
+      const mockVehicles = [{ count: '15' }];
+      const mockPendingBookings = [{ count: '3' }];
+      const mockActiveJobcards = [{ count: '5' }];
+      const mockLowStock = [{ count: '2' }];
+      const mockMonthlyRevenue = [{ total: '2500.00' }];
+      const mockTotalRevenue = [{ total: '15000.00' }];
+      const mockMechanics = [{ count: '3' }];
+      
+      // Mock database responses for all queries in sequence
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockUsers }) // users count
+        .mockResolvedValueOnce({ rows: mockCustomers }) // customers count
+        .mockResolvedValueOnce({ rows: mockVehicles }) // vehicles count
+        .mockResolvedValueOnce({ rows: mockPendingBookings }) // pending bookings
+        .mockResolvedValueOnce({ rows: mockActiveJobcards }) // active jobs
+        .mockResolvedValueOnce({ rows: mockLowStock }) // low stock
+        .mockResolvedValueOnce({ rows: mockMonthlyRevenue }) // monthly revenue
+        .mockResolvedValueOnce({ rows: mockTotalRevenue }) // total revenue
+        .mockResolvedValueOnce({ rows: mockMechanics }) // mechanics
+        .mockResolvedValueOnce({ rows: [] }) // recent invoices (for debugging)
+        .mockResolvedValueOnce({ rows: [] }); // recent job cards (for debugging)
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -208,6 +253,21 @@ describe('Analytics Controller', () => {
       expect(response.body.monthlyRevenue).toBe(2500.00);
       expect(response.body.totalRevenue).toBe(15000.00);
       expect(response.body.mechanics).toBe(3);
+    });
+    
+    it('should handle errors when getting dashboard stats', async () => {
+      // Mock database error
+      mockDb.query.mockRejectedValueOnce(new Error('Database error'));
+
+      // Mock JWT token
+      jwt.verify.mockReturnValue(mockAdminUser);
+
+      const response = await request(app)
+        .get('/api/analytics/dashboard-stats')
+        .set('Authorization', 'Bearer admin_token')
+        .expect(500);
+
+      expect(response.body.message).toBe('Server error');
     });
   });
 
@@ -237,15 +297,17 @@ describe('Analytics Controller', () => {
     });
 
     it('should get detailed performance for mechanic user', async () => {
-      const mockMechanicData = {
-        id: 2,
-        name: 'Mechanic One',
-        jobs_completed: 15,
-        total_revenue: 3750.00
-      };
+      const mockMechanicData = [
+        {
+          id: 2,
+          name: 'Mechanic One',
+          jobs_completed: 15,
+          total_revenue: 3750.00
+        }
+      ];
 
       // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: [mockMechanicData] });
+      mockDb.query.mockResolvedValueOnce({ rows: mockMechanicData });
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockMechanicUser);
@@ -257,6 +319,30 @@ describe('Analytics Controller', () => {
 
       expect(response.body.performance.jobs_completed).toBe(15);
       expect(response.body.performance.revenue_generated).toBe(3750.00);
+    });
+    
+    it('should get specific mechanic performance by mechanic ID for admin', async () => {
+      const mockMechanicData = [
+        {
+          id: 2,
+          name: 'Mechanic One',
+          jobs_completed: 15,
+          total_revenue: 3750.00
+        }
+      ];
+
+      // Mock database response
+      mockDb.query.mockResolvedValueOnce({ rows: mockMechanicData });
+
+      // Mock JWT token
+      jwt.verify.mockReturnValue(mockAdminUser);
+
+      const response = await request(app)
+        .get('/api/analytics/mechanic-performance?mechanicId=2')
+        .set('Authorization', 'Bearer admin_token')
+        .expect(200);
+
+      expect(response.body.mechanicPerformance).toEqual(mockMechanicData);
     });
 
     it('should filter mechanic performance by date range', async () => {
@@ -281,6 +367,21 @@ describe('Analytics Controller', () => {
         .expect(200);
 
       expect(response.body.mechanicPerformance).toEqual(mockMechanicPerformance);
+    });
+    
+    it('should handle errors when getting mechanic performance', async () => {
+      // Mock database error
+      mockDb.query.mockRejectedValueOnce(new Error('Database error'));
+
+      // Mock JWT token
+      jwt.verify.mockReturnValue(mockAdminUser);
+
+      const response = await request(app)
+        .get('/api/analytics/mechanic-performance')
+        .set('Authorization', 'Bearer admin_token')
+        .expect(500);
+
+      expect(response.body.message).toBe('Server error');
     });
   });
 });
