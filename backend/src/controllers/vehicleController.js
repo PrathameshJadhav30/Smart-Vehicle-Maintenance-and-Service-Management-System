@@ -123,6 +123,12 @@ export const getUserVehicles = async (req, res) => {
   try {
     const userId = req.params.id;
     
+    // First check if the user exists
+    const userCheck = await query('SELECT id FROM users WHERE id = $1', [userId]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
     // Extract pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;

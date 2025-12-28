@@ -190,10 +190,11 @@ describe('Vehicle Controller', () => {
         }
       ];
 
-      // Mock database responses
+      // Mock database responses for getUserVehicles (user check + Promise.all)
       mockDb.query
         .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Check user exists
-        .mockResolvedValueOnce({ rows: mockVehicles }); // Get vehicles
+        .mockResolvedValueOnce({ rows: mockVehicles }) // Get vehicles query
+        .mockResolvedValueOnce({ rows: [{ total: 1 }] }); // Count query
 
       // Mock JWT token
       jwt.verify.mockImplementation(() => mockAdminUser);
@@ -208,8 +209,8 @@ describe('Vehicle Controller', () => {
     });
 
     it('should return 404 if user not found', async () => {
-      // Mock database response for non-existent user
-      mockDb.query.mockResolvedValueOnce({ rows: [] });
+      // Mock database response for user not found
+      mockDb.query.mockResolvedValueOnce({ rows: [] }); // Check user exists (empty = not found)
 
       // Mock JWT token
       jwt.verify.mockImplementation(() => mockAdminUser);
