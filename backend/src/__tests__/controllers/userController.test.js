@@ -49,8 +49,10 @@ describe('User Controller', () => {
         }
       ];
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockUsers });
+      // Mock database responses for both count and users queries
+      mockDb.query
+        .mockResolvedValueOnce({ rows: [{ count: 2 }] }) // Count query result
+        .mockResolvedValueOnce({ rows: mockUsers }); // Users query result
 
       // Mock JWT token
       jwt.verify.mockImplementation(() => mockAdminUser);
