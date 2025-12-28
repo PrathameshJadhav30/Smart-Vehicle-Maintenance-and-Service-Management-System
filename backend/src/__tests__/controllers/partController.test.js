@@ -148,8 +148,10 @@ describe('Part Controller', () => {
       // Mock cache miss
       mockCache.has.mockReturnValue(false);
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockParts });
+      // Mock database responses for Promise.all
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockParts }) // Main query result
+        .mockResolvedValueOnce({ rows: [{ count: 2 }] }); // Count query result
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -162,6 +164,7 @@ describe('Part Controller', () => {
       expect(response.body.parts).toHaveLength(2);
       expect(response.body.parts[0]).toEqual(mockParts[0]);
       expect(response.body.parts[1]).toEqual(mockParts[1]);
+      expect(response.body.pagination).toBeDefined();
     });
 
     it('should return cached data if available', async () => {
@@ -354,8 +357,10 @@ describe('Part Controller', () => {
       // Mock cache miss
       mockCache.has.mockReturnValue(false);
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockLowStockParts });
+      // Mock database responses for Promise.all
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockLowStockParts }) // Main query result
+        .mockResolvedValueOnce({ rows: [{ count: 1 }] }); // Count query result
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -367,6 +372,7 @@ describe('Part Controller', () => {
 
       expect(response.body.parts).toHaveLength(1);
       expect(response.body.parts[0]).toEqual(mockLowStockParts[0]);
+      expect(response.body.pagination).toBeDefined();
     });
   });
 
@@ -448,8 +454,10 @@ describe('Part Controller', () => {
         }
       ];
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockSuppliers });
+      // Mock database responses for Promise.all
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockSuppliers }) // Main query result
+        .mockResolvedValueOnce({ rows: [{ count: 1 }] }); // Count query result
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -461,6 +469,7 @@ describe('Part Controller', () => {
 
       expect(response.body.suppliers).toHaveLength(1);
       expect(response.body.suppliers[0]).toEqual(mockSuppliers[0]);
+      expect(response.body.pagination).toBeDefined();
     });
   });
 
