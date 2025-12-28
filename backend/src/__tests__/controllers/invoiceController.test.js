@@ -239,8 +239,10 @@ describe('Invoice Controller', () => {
         }
       ];
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockInvoices });
+      // Mock database responses for Promise.all
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockInvoices }) // Main query result
+        .mockResolvedValueOnce({ rows: [{ total: 1 }] }); // Count query result
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockCustomerUser);
@@ -252,6 +254,7 @@ describe('Invoice Controller', () => {
 
       expect(response.body.invoices).toHaveLength(1);
       expect(response.body.invoices[0]).toEqual(mockInvoices[0]);
+      expect(response.body.pagination).toBeDefined();
     });
   });
 
@@ -274,8 +277,10 @@ describe('Invoice Controller', () => {
         }
       ];
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockInvoices });
+      // Mock database responses for Promise.all
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockInvoices }) // Main query result
+        .mockResolvedValueOnce({ rows: [{ total: 1 }] }); // Count query result
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -287,6 +292,7 @@ describe('Invoice Controller', () => {
 
       expect(response.body.invoices).toHaveLength(1);
       expect(response.body.invoices[0]).toEqual(mockInvoices[0]);
+      expect(response.body.pagination).toBeDefined();
     });
   });
 
