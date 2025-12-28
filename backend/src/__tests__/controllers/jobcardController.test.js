@@ -129,8 +129,10 @@ describe('Job Card Controller', () => {
         }
       ];
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockJobCards });
+      // Mock database responses for Promise.all
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockJobCards }) // Main query result
+        .mockResolvedValueOnce({ rows: [{ total: 1 }] }); // Count query result
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -142,6 +144,7 @@ describe('Job Card Controller', () => {
 
       expect(response.body.jobcards).toHaveLength(1);
       expect(response.body.jobcards[0]).toEqual(mockJobCards[0]);
+      expect(response.body.pagination).toBeDefined();
     });
 
     it('should filter job cards by status', async () => {
@@ -164,8 +167,10 @@ describe('Job Card Controller', () => {
         }
       ];
 
-      // Mock database response
-      mockDb.query.mockResolvedValueOnce({ rows: mockJobCards });
+      // Mock database responses for Promise.all
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockJobCards }) // Main query result
+        .mockResolvedValueOnce({ rows: [{ total: 1 }] }); // Count query result
 
       // Mock JWT token
       jwt.verify.mockReturnValue(mockAdminUser);
@@ -177,6 +182,7 @@ describe('Job Card Controller', () => {
 
       expect(response.body.jobcards).toHaveLength(1);
       expect(response.body.jobcards[0]).toEqual(mockJobCards[0]);
+      expect(response.body.pagination).toBeDefined();
     });
   });
 
@@ -401,9 +407,13 @@ describe('Job Card Controller', () => {
         }
       ];
 
-      // Mock database responses - need to mock all queries for Promise.all
+      // Mock database responses for Promise.all - get job cards and count
       mockDb.query
         .mockResolvedValueOnce({ rows: [mockJobCard] }) // Get job cards
+        .mockResolvedValueOnce({ rows: [{ total: 1 }] }); // Count query result
+
+      // Mock additional queries for tasks and parts for each job card
+      mockDb.query
         .mockResolvedValueOnce({ rows: mockTasks }) // Get tasks for job card
         .mockResolvedValueOnce({ rows: mockParts }); // Get parts for job card
 
@@ -421,6 +431,7 @@ describe('Job Card Controller', () => {
         tasks: mockTasks,
         parts_used: mockParts
       });
+      expect(response.body.pagination).toBeDefined();
     });
   });
 
