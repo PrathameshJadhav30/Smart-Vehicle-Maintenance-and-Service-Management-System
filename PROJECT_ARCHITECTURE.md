@@ -59,8 +59,6 @@ This document provides a comprehensive architecture overview of the Service Vehi
 └────────────────┘   │ • paymentRoutes │   │ • paymentCtrl  │
                      │ • analyticsRt   │   │ • analyticsCtrl│
                      │ • cacheRoutes   │   │ • cacheCtrl    │
-                     │ • seedRoutes    │   │ • seedCtrl     │
-                     │ • clearRoutes   │   │ • clearCtrl    │
                      └─────────────────┘   └────────────────┘
 
                               │

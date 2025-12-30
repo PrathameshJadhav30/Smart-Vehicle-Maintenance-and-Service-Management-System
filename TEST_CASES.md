@@ -344,13 +344,6 @@ This document provides a comprehensive overview of all test cases implemented fo
    - Should clear cache successfully
    - Should handle cache clearing errors
 
-### Clear Controller Tests
-
-**File**: `backend/src/__tests__/controllers/clearController.test.js`
-
-1. **Clear Test Data**
-   - Should clear test data successfully
-   - Should handle database errors gracefully
 
 ## Frontend Test Cases
 
@@ -542,10 +535,6 @@ This document provides a comprehensive overview of all test cases implemented fo
    - Updates user role
    - Deletes user
 
-8. **Utilities**
-   - Provides utility functions
-   - Handles data export
-   - Manages system settings
 
 9. **VehiclesManagement**
    - Displays vehicles table

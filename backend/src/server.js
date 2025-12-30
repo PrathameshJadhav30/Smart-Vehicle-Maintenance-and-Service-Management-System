@@ -11,7 +11,7 @@ import jobcardRoutes from './routes/jobcardRoutes.js';
 import partRoutes from './routes/partRoutes.js';
 import invoiceRoutes from './routes/invoiceRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
-import seedRoutes from './routes/seedRoutes.js';
+
 import paymentRoutes from './routes/paymentRoutes.js';
 import cacheRoutes from './routes/cacheRoutes.js';
 
@@ -40,17 +40,8 @@ app.use('/api/parts', partRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/seed', seedRoutes);
-app.use('/api/cache', cacheRoutes);
-// Health check route
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'SVMMS API is running',
-    timestamp: new Date().toISOString()
-  });
-});
 
+app.use('/api/cache', cacheRoutes);
 // Root route
 app.get('/', (req, res) => {
   res.json({

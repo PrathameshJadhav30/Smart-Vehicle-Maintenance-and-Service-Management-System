@@ -145,12 +145,6 @@ Base path: `/cache`
 | POST   | `/clear`                 | Clear all cache                 | Admin         |
 | GET    | `/stats`                 | Get cache statistics            | Admin         |
 
-## Seed Routes
-Base path: `/seed`
-
-| Method | Endpoint                 | Description                     | Authentication |
-|--------|--------------------------|---------------------------------|----------------|
-| POST   | `/`                      | Seed database                   | None           |
 
 ## Utility Routes
 Base path: `/` (Root)
@@ -158,11 +152,4 @@ Base path: `/` (Root)
 | Method | Endpoint                 | Description                     | Authentication |
 |--------|--------------------------|---------------------------------|----------------|
 | GET    | `/`                      | API information                 | None           |
-| GET    | `/api/health`            | Health check                    | None           |
 
-## Clear Routes
-Base path: `/clear`
-
-| Method | Endpoint                 | Description                     | Authentication |
-|--------|--------------------------|---------------------------------|----------------|
-| POST   | `/`                      | Clear database                  | None           |
