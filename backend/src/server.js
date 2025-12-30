@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
@@ -23,6 +24,57 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting middleware
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    code: 429
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skip: (req, res) => {
+    // Skip rate limiting for authenticated requests
+    return req.headers.authorization || req.headers['x-auth-token'];
+  }
+});
+
+// Rate limiter for authentication endpoints (more restrictive)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 auth attempts per windowMs
+  message: {
+    error: 'Too many authentication attempts from this IP, please try again later.',
+    code: 429
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter for booking endpoints (moderate restrictions)
+const bookingLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // Limit each IP to 20 booking requests per hour
+  message: {
+    error: 'Too many booking requests from this IP, please try again later.',
+    code: 429
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+
+
+// Apply general rate limiting to all requests
+app.use(generalLimiter);
+
+// Apply specific rate limiting to auth routes
+app.use('/api/auth', authLimiter);
+
+// Apply specific rate limiting to booking routes
+app.use('/api/bookings', bookingLimiter);
 
 // Request logging middleware
 app.use((req, res, next) => {
