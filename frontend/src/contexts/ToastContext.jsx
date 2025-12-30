@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer } from 'react';
+import { createContext, useContext, useReducer, useEffect } from 'react';
 
 // Toast types
 const TOAST_TYPES = {
@@ -78,6 +78,19 @@ export const ToastProvider = ({ children }) => {
     info: (message, duration) => addToast(message, TOAST_TYPES.INFO, duration),
   };
 
+  // Effect to handle rate limit events
+  useEffect(() => {
+    const handleRateLimit = (event) => {
+      addToast(event.detail.message, TOAST_TYPES.WARNING);
+    };
+    
+    window.addEventListener('rateLimitExceeded', handleRateLimit);
+    
+    return () => {
+      window.removeEventListener('rateLimitExceeded', handleRateLimit);
+    };
+  }, [addToast]);
+  
   return (
     <ToastContext.Provider
       value={{

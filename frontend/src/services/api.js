@@ -60,6 +60,17 @@ api.interceptors.response.use(
       console.error('Access forbidden:', error.response?.data?.message || 'You do not have permission to access this resource');
     }
     
+    // Handle 429 Too Many Requests (Rate Limiting)
+    if (error.response?.status === 429) {
+      const rateLimitMessage = error.response?.data?.error || 'Too many requests. Please try again later.';
+      console.warn('Rate limit exceeded:', rateLimitMessage);
+      
+      // Dispatch a custom event for the UI to handle
+      window.dispatchEvent(new CustomEvent('rateLimitExceeded', {
+        detail: { message: rateLimitMessage }
+      }));
+    }
+    
     return Promise.reject(error);
   }
 );
