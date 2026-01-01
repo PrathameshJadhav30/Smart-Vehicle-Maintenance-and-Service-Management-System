@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import Toast from './components/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -39,202 +40,205 @@ function App() {
     <Router>
       <AuthProvider>
         <ToastProvider>
-          <div className="min-h-screen bg-gray-50">
-            <Toast />
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              
-              {/* Customer Routes */}
-              <Route 
-                path="/customer/dashboard" 
-                element={
-                  <ProtectedRoute allowedRoles={['customer']}>
-                    <CustomerDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/customer/vehicles" 
-                element={
-                  <ProtectedRoute allowedRoles={['customer']}>
-                    <CustomerVehicles />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/customer/book-service" 
-                element={
-                  <ProtectedRoute allowedRoles={['customer']}>
-                    <BookService />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/customer/bookings" 
-                element={
-                  <ProtectedRoute allowedRoles={['customer']}>
-                    <MyBookings />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/customer/invoices" 
-                element={
-                  <ProtectedRoute allowedRoles={['customer']}>
-                    <CustomerInvoices />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/customer/profile" 
-                element={
-                  <ProtectedRoute allowedRoles={['customer']}>
-                    <CustomerProfile />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              {/* Mechanic Routes */}
-              <Route 
-                path="/mechanic/dashboard" 
-                element={
-                  <ProtectedRoute allowedRoles={['mechanic']}>
-                    <MechanicDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/mechanic/bookings" 
-                element={
-                  <ProtectedRoute allowedRoles={['mechanic']}>
-                    <MechanicAssignedBookings />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/mechanic/job-cards" 
-                element={
-                  <ProtectedRoute allowedRoles={['mechanic']}>
-                    <MechanicJobCards />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/mechanic/assigned-jobs" 
-                element={
-                  <ProtectedRoute allowedRoles={['mechanic']}>
-                    <MechanicAssignedJobs />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/mechanic/parts" 
-                element={
-                  <ProtectedRoute allowedRoles={['mechanic']}>
-                    <MechanicPartsUsage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/mechanic/invoices" 
-                element={
-                  <ProtectedRoute allowedRoles={['mechanic']}>
-                    <MechanicInvoices />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/mechanic/profile" 
-                element={
-                  <ProtectedRoute allowedRoles={['mechanic']}>
-                    <MechanicProfile />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              {/* Admin Routes */}
-              <Route 
-                path="/admin/dashboard" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/users" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminUsersManagement />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/vehicles" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminVehiclesManagement />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/bookings" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminBookingsManagement />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/jobcards" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminJobCardsManagement />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/parts" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminPartsManagement />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/invoices" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminInvoicesManagement />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/analytics" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminAnalyticsDashboard />
-                  </ProtectedRoute>
-                } 
-              />
+          <div className="min-h-screen flex flex-col bg-gray-50">
+            <div className="flex-grow">
+              <Toast />
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                
+                {/* Customer Routes */}
+                <Route 
+                  path="/customer/dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <CustomerDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/customer/vehicles" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <CustomerVehicles />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/customer/book-service" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <BookService />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/customer/bookings" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <MyBookings />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/customer/invoices" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <CustomerInvoices />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/customer/profile" 
+                  element={
+                    <ProtectedRoute allowedRoles={['customer']}>
+                      <CustomerProfile />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Mechanic Routes */}
+                <Route 
+                  path="/mechanic/dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['mechanic']}>
+                      <MechanicDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/mechanic/bookings" 
+                  element={
+                    <ProtectedRoute allowedRoles={['mechanic']}>
+                      <MechanicAssignedBookings />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/mechanic/job-cards" 
+                  element={
+                    <ProtectedRoute allowedRoles={['mechanic']}>
+                      <MechanicJobCards />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/mechanic/assigned-jobs" 
+                  element={
+                    <ProtectedRoute allowedRoles={['mechanic']}>
+                      <MechanicAssignedJobs />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/mechanic/parts" 
+                  element={
+                    <ProtectedRoute allowedRoles={['mechanic']}>
+                      <MechanicPartsUsage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/mechanic/invoices" 
+                  element={
+                    <ProtectedRoute allowedRoles={['mechanic']}>
+                      <MechanicInvoices />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/mechanic/profile" 
+                  element={
+                    <ProtectedRoute allowedRoles={['mechanic']}>
+                      <MechanicProfile />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Admin Routes */}
+                <Route 
+                  path="/admin/dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/users" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminUsersManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/vehicles" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminVehiclesManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/bookings" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminBookingsManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/jobcards" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminJobCardsManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/parts" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminPartsManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/invoices" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminInvoicesManagement />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/analytics" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminAnalyticsDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
 
-              <Route 
-                path="/admin/profile" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminProfile />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              {/* Catch-all route */}
-              <Route path="*" element={<Home />} />
-            </Routes>
+                <Route 
+                  path="/admin/profile" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminProfile />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Catch-all route */}
+                <Route path="*" element={<Home />} />
+              </Routes>
+            </div>
+            <Footer />
           </div>
         </ToastProvider>
       </AuthProvider>

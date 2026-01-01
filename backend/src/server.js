@@ -53,28 +53,12 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Rate limiter for booking endpoints (moderate restrictions)
-const bookingLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // Limit each IP to 20 booking requests per hour
-  message: {
-    error: 'Too many booking requests from this IP, please try again later.',
-    code: 429
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-
-
 // Apply general rate limiting to all requests
 app.use(generalLimiter);
 
 // Apply specific rate limiting to auth routes
 app.use('/api/auth', authLimiter);
 
-// Apply specific rate limiting to booking routes
-app.use('/api/bookings', bookingLimiter);
 
 // Request logging middleware
 app.use((req, res, next) => {
