@@ -1,8 +1,6 @@
 import { query, getClient } from '../config/database.js';
 
-/* ------------------------------------------------------------------
-    1. CREATE BOOKING (Customer)
-------------------------------------------------------------------- */
+/* -----------1. CREATE BOOKING (Customer)------------------- */
 export const createBooking = async (req, res) => {
   try {
     const { vehicle_id, service_type, booking_date, booking_time, notes, estimated_cost } = req.body;
