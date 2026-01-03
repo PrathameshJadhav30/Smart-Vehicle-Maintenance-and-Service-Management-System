@@ -1,6 +1,6 @@
 import { query } from '../config/database.js';
 
-// ---------------- Vehicle Analytics ----------------
+//  Vehicle Analytics 
 export const getVehicleAnalytics = async (req, res) => {
   try {
     // Top serviced vehicles
@@ -33,7 +33,7 @@ export const getVehicleAnalytics = async (req, res) => {
   }
 };
 
-// ---------------- Parts Usage ----------------
+//  Parts Usage 
 export const getPartsUsage = async (req, res) => {
   try {
     const result = await query(
@@ -53,7 +53,7 @@ export const getPartsUsage = async (req, res) => {
   }
 };
 
-// ---------------- Revenue Analytics ----------------
+//  Revenue Analytics 
 export const getRevenueAnalytics = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -118,7 +118,7 @@ export const getRevenueAnalytics = async (req, res) => {
   }
 };
 
-// ---------------- Dashboard Stats ----------------
+//  Dashboard Stats 
 export const getDashboardStats = async (req, res) => {
   try {
     // Add debug logging
@@ -162,7 +162,7 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
-// ---------------- Mechanic Performance ----------------
+// Mechanic Performance 
 export const getMechanicPerformance = async (req, res) => {
   try {
     const { from, to, mechanicId } = req.query;
