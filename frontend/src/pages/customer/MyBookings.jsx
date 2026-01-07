@@ -6,6 +6,7 @@ import bookingService from '../../services/bookingService';
 import Button from '../../components/Button';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import Modal from '../../components/Modal';
 import { formatBookingDateWithoutTime, formatCreatedDateShort } from '../../utils/dateFormatter';
 
 const MyBookingsPage = () => {
@@ -17,6 +18,9 @@ const MyBookingsPage = () => {
   const [filter, setFilter] = useState('all');
   const [cancelConfirmation, setCancelConfirmation] = useState({ isOpen: false, bookingId: null });
   const [processingCancel, setProcessingCancel] = useState(false);
+  const [rescheduleModal, setRescheduleModal] = useState({ isOpen: false, booking: null });
+  const [rescheduleData, setRescheduleData] = useState({ date: '', time: '' });
+  const [processingReschedule, setProcessingReschedule] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -243,6 +247,62 @@ const MyBookingsPage = () => {
     setCancelConfirmation({ isOpen: true, bookingId });
   };
   
+  const handleRescheduleBooking = (booking) => {
+    // Set the current booking date as default for rescheduling
+    if (booking.booking_date) {
+      const date = new Date(booking.booking_date);
+      const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const formattedTime = booking.booking_time || '09:00'; // Default to 9 AM if no time
+      
+      setRescheduleData({
+        date: formattedDate,
+        time: formattedTime
+      });
+    }
+    
+    setRescheduleModal({ isOpen: true, booking });
+  };
+  
+  const confirmRescheduleBooking = async () => {
+    if (!rescheduleModal.booking || !rescheduleData.date || !rescheduleData.time) {
+      showToast.error('Please select both date and time for rescheduling');
+      return;
+    }
+    
+    try {
+      setProcessingReschedule(true);
+      
+      const rescheduleDataToSend = {
+        date: rescheduleData.date,
+        time: rescheduleData.time
+      };
+      
+      const result = await bookingService.rescheduleBooking(rescheduleModal.booking.id, rescheduleDataToSend);
+      
+      loadBookings(); // Refresh the list
+      setRescheduleModal({ isOpen: false, booking: null });
+      setRescheduleData({ date: '', time: '' });
+      showToast.success('Booking rescheduled successfully!');
+    } catch (error) {
+      console.error('Error rescheduling booking:', error);
+      console.error('Error response:', error.response?.data);
+      
+      // Show a more user-friendly error message
+      if (error.response?.status === 500) {
+        showToast.error('Failed to reschedule booking due to a server error. Please try again later or contact support.');
+      } else {
+        showToast.error('Failed to reschedule booking. Please try again.');
+      }
+    } finally {
+      setProcessingReschedule(false);
+    }
+  };
+  
+  const cancelRescheduleBooking = () => {
+    setRescheduleModal({ isOpen: false, booking: null });
+    setRescheduleData({ date: '', time: '' });
+  };
+  
   const confirmCancelBooking = async () => {
     const bookingId = cancelConfirmation.bookingId;
     
@@ -440,7 +500,15 @@ const MyBookingsPage = () => {
                   
                   <div className="px-5 pb-5">
                     {booking.status === 'pending' && (
-                      <div className="mt-4">
+                      <div className="mt-4 flex flex-col space-y-2">
+                        <Button 
+                          variant="primary" 
+                          size="md"
+                          onClick={() => handleRescheduleBooking(booking)}
+                          className="w-full px-4 py-2.5 rounded-lg transition-all duration-300 hover:shadow-md bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 border border-amber-400 text-white"
+                        >
+                          Reschedule Booking
+                        </Button>
                         <Button 
                           variant="danger" 
                           size="md"
@@ -559,6 +627,65 @@ const MyBookingsPage = () => {
         confirmVariant="danger"
         cancelVariant="secondary"
       />
+      
+      {/* Reschedule Booking Modal */}
+      <Modal
+        isOpen={rescheduleModal.isOpen}
+        onClose={cancelRescheduleBooking}
+        title="Reschedule Booking"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              New Date
+            </label>
+            <input
+              type="date"
+              value={rescheduleData.date}
+              onChange={(e) => setRescheduleData({...rescheduleData, date: e.target.value})}
+              min={new Date().toISOString().split('T')[0]} // Prevent past dates
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              New Time
+            </label>
+            <input
+              type="time"
+              value={rescheduleData.time}
+              onChange={(e) => setRescheduleData({...rescheduleData, time: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          
+          {rescheduleModal.booking && (
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-800">
+                Current: {formatBookingDateWithoutTime(rescheduleModal.booking.booking_date, rescheduleModal.booking.booking_time)}
+              </p>
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-6 flex justify-end space-x-3">
+          <Button
+            variant="secondary"
+            onClick={cancelRescheduleBooking}
+            disabled={processingReschedule}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmRescheduleBooking}
+            disabled={processingReschedule || !rescheduleData.date || !rescheduleData.time}
+            processing={processingReschedule}
+          >
+            Reschedule Booking
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };
