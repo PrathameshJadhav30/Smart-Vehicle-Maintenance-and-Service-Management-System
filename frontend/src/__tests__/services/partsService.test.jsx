@@ -44,13 +44,13 @@ describe('partsService', () => {
 
   describe('getAllParts', () => {
     test('should call api.get with correct endpoint and return parts array', async () => {
-      const mockResponse = { parts: [{ id: '1', name: 'Engine Oil', quantity: 100 }] };
+      const mockResponse = { parts: [{ id: '1', name: 'Engine Oil', quantity: 100 }], pagination: { page: 1, limit: 10, total: 1 } };
       api.get.mockResolvedValue({ data: mockResponse });
 
       const result = await getAllParts();
 
-      expect(api.get).toHaveBeenCalledWith('/parts');
-      expect(result).toEqual(mockResponse.parts);
+      expect(api.get).toHaveBeenCalledWith('/parts?page=1&limit=10');
+      expect(result).toEqual(mockResponse);
     });
 
     test('should return empty array when no parts in response', async () => {
@@ -137,13 +137,13 @@ describe('partsService', () => {
 
   describe('getLowStockParts', () => {
     test('should call api.get with correct endpoint and return parts array', async () => {
-      const mockResponse = { parts: [{ id: '1', name: 'Engine Oil', quantity: 5 }] };
+      const mockResponse = { parts: [{ id: '1', name: 'Engine Oil', quantity: 5 }], pagination: { page: 1, limit: 10, total: 1 } };
       api.get.mockResolvedValue({ data: mockResponse });
 
       const result = await getLowStockParts();
 
-      expect(api.get).toHaveBeenCalledWith('/parts/low-stock');
-      expect(result).toEqual(mockResponse.parts);
+      expect(api.get).toHaveBeenCalledWith('/parts/low-stock?page=1&limit=10');
+      expect(result).toEqual(mockResponse);
     });
 
     test('should return empty array when no parts in response', async () => {
@@ -205,13 +205,13 @@ describe('partsService', () => {
 
   describe('getAllSuppliers', () => {
     test('should call api.get with correct endpoint and return suppliers array', async () => {
-      const mockResponse = { suppliers: [{ id: '1', name: 'Auto Parts Co.', contact: 'John Doe' }] };
+      const mockResponse = { suppliers: [{ id: '1', name: 'Auto Parts Co.', contact: 'John Doe' }], pagination: { page: 1, limit: 10, total: 1 } };
       api.get.mockResolvedValue({ data: mockResponse });
 
       const result = await getAllSuppliers();
 
-      expect(api.get).toHaveBeenCalledWith('/parts/suppliers');
-      expect(result).toEqual(mockResponse.suppliers);
+      expect(api.get).toHaveBeenCalledWith('/parts/suppliers?page=1&limit=10');
+      expect(result).toEqual(mockResponse);
     });
 
     test('should return empty array when no suppliers in response', async () => {
