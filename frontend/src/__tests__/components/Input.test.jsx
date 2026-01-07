@@ -57,7 +57,7 @@ describe('Input Component', () => {
   });
 
   test('renders with initial value', () => {
-    render(<Input value="Initial value" />);
+    render(<Input defaultValue="Initial value" />);
     const input = screen.getByDisplayValue('Initial value');
     expect(input).toBeInTheDocument();
   });
