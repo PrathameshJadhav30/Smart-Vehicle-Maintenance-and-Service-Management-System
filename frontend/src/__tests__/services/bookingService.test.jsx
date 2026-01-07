@@ -106,8 +106,8 @@ describe('bookingService', () => {
 
       const result = await getCustomerBookings(customerId);
 
-      expect(api.get).toHaveBeenCalledWith(`/bookings/customer/${customerId}`);
-      expect(result).toEqual(mockResponse.bookings);
+      expect(api.get).toHaveBeenCalledWith(`/bookings/customer/${customerId}?page=1&limit=10`);
+      expect(result).toEqual(mockResponse);
     });
 
     test('should handle API errors gracefully', async () => {
