@@ -20,8 +20,8 @@ describe('authService', () => {
       
       const mockResponse = {
         data: {
-          message: 'User registered successfully',
-          token: 'jwt_token',
+          accessToken: 'access_token',
+          refreshToken: 'refresh_token',
           user: mockUserData
         }
       };
@@ -42,8 +42,8 @@ describe('authService', () => {
       
       const mockResponse = {
         data: {
-          message: 'Login successful',
-          token: 'jwt_token',
+          accessToken: 'access_token',
+          refreshToken: 'refresh_token',
           user: { id: 1, email, role: 'customer' }
         }
       };
@@ -112,8 +112,8 @@ describe('authService', () => {
       
       const result = await authService.getAllUsers();
       
-      expect(api.get).toHaveBeenCalledWith('/users');
-      expect(result).toEqual(mockUsers);
+      expect(api.get).toHaveBeenCalledWith('/users?');
+      expect(result).toEqual({ users: mockUsers, pagination: undefined });
     });
 
     it('should return empty array on error', async () => {
@@ -121,7 +121,7 @@ describe('authService', () => {
       
       const result = await authService.getAllUsers();
       
-      expect(result).toEqual([]);
+      expect(result).toEqual({ users: [], pagination: null });
     });
   });
 });
