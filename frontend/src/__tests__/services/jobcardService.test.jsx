@@ -54,13 +54,13 @@ describe('jobcardService', () => {
 
   describe('getAllJobCards', () => {
     test('should call api.get with correct endpoint and return jobcards array', async () => {
-      const mockResponse = { jobcards: [{ id: '1', title: 'Engine Repair' }] };
+      const mockResponse = { jobcards: [{ id: '1', title: 'Engine Repair' }], pagination: { page: 1, limit: 10, total: 1 } };
       api.get.mockResolvedValue({ data: mockResponse });
 
       const result = await getAllJobCards();
 
-      expect(api.get).toHaveBeenCalledWith('/jobcards');
-      expect(result).toEqual(mockResponse.jobcards);
+      expect(api.get).toHaveBeenCalledWith('/jobcards?page=1&limit=10');
+      expect(result).toEqual(mockResponse);
     });
 
     test('should return empty array when no jobcards in response', async () => {
@@ -69,7 +69,7 @@ describe('jobcardService', () => {
 
       const result = await getAllJobCards();
 
-      expect(result).toEqual([]);
+      expect(result).toEqual({});
     });
 
     test('should handle API errors gracefully', async () => {
@@ -82,13 +82,13 @@ describe('jobcardService', () => {
 
   describe('getCompletedJobCards', () => {
     test('should call api.get with correct endpoint and return jobcards array', async () => {
-      const mockResponse = { jobcards: [{ id: '1', title: 'Engine Repair', status: 'completed' }] };
+      const mockResponse = { jobcards: [{ id: '1', title: 'Engine Repair', status: 'completed' }], pagination: { page: 1, limit: 10, total: 1 } };
       api.get.mockResolvedValue({ data: mockResponse });
 
       const result = await getCompletedJobCards();
 
-      expect(api.get).toHaveBeenCalledWith('/jobcards/completed');
-      expect(result).toEqual(mockResponse.jobcards);
+      expect(api.get).toHaveBeenCalledWith('/jobcards/completed?page=1&limit=10');
+      expect(result).toEqual(mockResponse);
     });
 
     test('should return empty array when no jobcards in response', async () => {
@@ -97,7 +97,7 @@ describe('jobcardService', () => {
 
       const result = await getCompletedJobCards();
 
-      expect(result).toEqual([]);
+      expect(result).toEqual({});
     });
 
     test('should handle API errors gracefully', async () => {
@@ -398,13 +398,13 @@ describe('jobcardService', () => {
   describe('getMechanicJobCards', () => {
     test('should call api.get with correct endpoint and return jobcards array', async () => {
       const mechanicId = '456';
-      const mockResponse = { jobcards: [{ id: '1', mechanicId, title: 'Engine Repair' }] };
+      const mockResponse = { jobcards: [{ id: '1', mechanicId, title: 'Engine Repair' }], pagination: { page: 1, limit: 10, total: 1 } };
       api.get.mockResolvedValue({ data: mockResponse });
 
       const result = await getMechanicJobCards(mechanicId);
 
-      expect(api.get).toHaveBeenCalledWith(`/jobcards/mechanic/${mechanicId}`);
-      expect(result).toEqual(mockResponse.jobcards);
+      expect(api.get).toHaveBeenCalledWith(`/jobcards/mechanic/${mechanicId}?page=1&limit=10`);
+      expect(result).toEqual(mockResponse);
     });
 
     test('should return empty array when no jobcards in response', async () => {
@@ -414,7 +414,7 @@ describe('jobcardService', () => {
 
       const result = await getMechanicJobCards(mechanicId);
 
-      expect(result).toEqual([]);
+      expect(result).toEqual({});
     });
 
     test('should return empty array when API call fails', async () => {
