@@ -62,7 +62,7 @@ describe('Modal Component', () => {
     );
     
     // Get the backdrop element by its class
-    const backdrop = document.querySelector('.bg-black.bg-opacity-50');
+    const backdrop = document.querySelector('.bg-black.bg-opacity-20');
     await user.click(backdrop);
     
     expect(handleClose).toHaveBeenCalledTimes(1);
