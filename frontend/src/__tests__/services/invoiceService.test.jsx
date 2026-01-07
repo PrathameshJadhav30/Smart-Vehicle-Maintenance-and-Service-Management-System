@@ -106,8 +106,8 @@ describe('invoiceService', () => {
 
       const result = await getCustomerInvoices(customerId);
 
-      expect(api.get).toHaveBeenCalledWith(`/invoices/customer/${customerId}`);
-      expect(result).toEqual(mockResponse.invoices);
+      expect(api.get).toHaveBeenCalledWith(`/invoices/customer/${customerId}?page=1&limit=10`);
+      expect(result).toEqual(mockResponse);
     });
 
     test('should handle API errors gracefully', async () => {
@@ -126,7 +126,7 @@ describe('invoiceService', () => {
 
       const result = await getAllInvoices();
 
-      expect(api.get).toHaveBeenCalledWith('/invoices');
+      expect(api.get).toHaveBeenCalledWith('/invoices?page=1&limit=10');
       expect(result).toEqual(mockResponse.invoices);
     });
 
