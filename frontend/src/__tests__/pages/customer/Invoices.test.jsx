@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import InvoicesPage from '../../../pages/customer/Invoices';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as invoiceService from '../../../services/invoiceService';
@@ -63,7 +64,9 @@ describe('InvoicesPage', () => {
 
     render(
       <BrowserRouter>
-        <InvoicesPage />
+        <ToastProvider>
+          <InvoicesPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -82,7 +85,9 @@ describe('InvoicesPage', () => {
 
     render(
       <BrowserRouter>
-        <InvoicesPage />
+        <ToastProvider>
+          <InvoicesPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -115,7 +120,9 @@ describe('InvoicesPage', () => {
 
     render(
       <BrowserRouter>
-        <InvoicesPage />
+        <ToastProvider>
+          <InvoicesPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -163,7 +170,9 @@ describe('InvoicesPage', () => {
 
     render(
       <BrowserRouter>
-        <InvoicesPage />
+        <ToastProvider>
+          <InvoicesPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -205,7 +214,9 @@ describe('InvoicesPage', () => {
 
     render(
       <BrowserRouter>
-        <InvoicesPage />
+        <ToastProvider>
+          <InvoicesPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -234,7 +245,9 @@ describe('InvoicesPage', () => {
 
     render(
       <BrowserRouter>
-        <InvoicesPage />
+        <ToastProvider>
+          <InvoicesPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
