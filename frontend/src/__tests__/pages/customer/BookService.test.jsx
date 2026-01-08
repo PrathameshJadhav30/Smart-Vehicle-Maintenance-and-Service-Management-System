@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import BookServicePage from '../../../pages/customer/BookService';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as bookingService from '../../../services/bookingService';
@@ -54,7 +55,9 @@ describe('BookServicePage', () => {
 
     render(
       <BrowserRouter>
-        <BookServicePage />
+        <ToastProvider>
+          <BookServicePage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -90,7 +93,9 @@ describe('BookServicePage', () => {
 
     render(
       <BrowserRouter>
-        <BookServicePage />
+        <ToastProvider>
+          <BookServicePage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -125,7 +130,9 @@ describe('BookServicePage', () => {
 
     render(
       <BrowserRouter>
-        <BookServicePage />
+        <ToastProvider>
+          <BookServicePage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -167,7 +174,9 @@ describe('BookServicePage', () => {
 
     render(
       <BrowserRouter>
-        <BookServicePage />
+        <ToastProvider>
+          <BookServicePage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -216,7 +225,9 @@ describe('BookServicePage', () => {
 
     render(
       <BrowserRouter>
-        <BookServicePage />
+        <ToastProvider>
+          <BookServicePage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
