@@ -128,9 +128,6 @@ describe('Register', () => {
     const confirmPasswordInput = screen.getByLabelText('Confirm Password');
     fireEvent.change(confirmPasswordInput, { target: { value: '123' } });
 
-    const roleSelect = screen.getByLabelText('Role');
-    fireEvent.change(roleSelect, { target: { value: 'customer' } });
-
     // Use fireEvent.click on the submit button
     const submitButton = screen.getByRole('button', { name: 'Create Account' });
     fireEvent.click(submitButton);
@@ -158,9 +155,6 @@ describe('Register', () => {
     const confirmPasswordInput = screen.getByLabelText('Confirm Password');
     fireEvent.change(confirmPasswordInput, { target: { value: 'differentpassword' } });
 
-    const roleSelect = screen.getByLabelText('Role');
-    fireEvent.change(roleSelect, { target: { value: 'customer' } });
-
     // Use fireEvent.click on the submit button
     const submitButton = screen.getByRole('button', { name: 'Create Account' });
     fireEvent.click(submitButton);
@@ -169,7 +163,7 @@ describe('Register', () => {
     expect(screen.getByTestId('error')).toHaveTextContent('Passwords do not match');
   });
 
-  test('shows validation error when role is not selected', () => {
+  test('shows validation error when password is too short', () => {
     render(
       <BrowserRouter>
         <Register />
@@ -183,19 +177,17 @@ describe('Register', () => {
     fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
 
     const passwordInput = screen.getByLabelText('Password');
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.change(passwordInput, { target: { value: '123' } });
 
     const confirmPasswordInput = screen.getByLabelText('Confirm Password');
-    fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } });
-
-    // Leave role empty
+    fireEvent.change(confirmPasswordInput, { target: { value: '123' } });
 
     // Use fireEvent.click on the submit button
     const submitButton = screen.getByRole('button', { name: 'Create Account' });
     fireEvent.click(submitButton);
 
     expect(screen.getByTestId('error')).toBeInTheDocument();
-    expect(screen.getByTestId('error')).toHaveTextContent('Role is required');
+    expect(screen.getByTestId('error')).toHaveTextContent('Password must be at least 6 characters');
   });
 
   test('submits form with valid data', async () => {
@@ -224,9 +216,6 @@ describe('Register', () => {
 
     const confirmPasswordInput = screen.getByLabelText('Confirm Password');
     fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } });
-
-    const roleSelect = screen.getByLabelText('Role');
-    fireEvent.change(roleSelect, { target: { value: 'customer' } });
 
     // Use fireEvent.click on the submit button
     const submitButton = screen.getByRole('button', { name: 'Create Account' });
