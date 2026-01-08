@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import MyBookingsPage from '../../../pages/customer/MyBookings';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as bookingService from '../../../services/bookingService';

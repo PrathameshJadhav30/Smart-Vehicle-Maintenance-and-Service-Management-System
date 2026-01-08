@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import VehiclesPage from '../../../pages/customer/Vehicles';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as vehicleService from '../../../services/vehicleService';
