@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import JobCardsManagementPage from '../../../pages/admin/JobCardsManagement';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as jobcardService from '../../../services/jobcardService';
@@ -44,6 +45,20 @@ vi.mock('../../../components/Modal', () => ({
   )
 }));
 
+// Mock the ConfirmationModal component
+vi.mock('../../../components/ConfirmationModal', () => ({
+  __esModule: true,
+  default: ({ isOpen, onConfirm, onCancel, message }) => (
+    isOpen ? (
+      <div data-testid="confirmation-modal">
+        <p>{message}</p>
+        <button onClick={onConfirm} data-testid="confirm-action">Confirm</button>
+        <button onClick={onCancel} data-testid="cancel-action">Cancel</button>
+      </div>
+    ) : null
+  )
+}));
+
 // Mock useNavigate
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -70,7 +85,9 @@ describe('JobCardsManagementPage', () => {
   test('renders loading spinner initially', () => {
     render(
       <BrowserRouter>
-        <JobCardsManagementPage />
+        <ToastProvider>
+          <JobCardsManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -113,7 +130,9 @@ describe('JobCardsManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <JobCardsManagementPage />
+        <ToastProvider>
+          <JobCardsManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -133,7 +152,9 @@ describe('JobCardsManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <JobCardsManagementPage />
+        <ToastProvider>
+          <JobCardsManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -173,7 +194,9 @@ describe('JobCardsManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <JobCardsManagementPage />
+        <ToastProvider>
+          <JobCardsManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -186,13 +209,19 @@ describe('JobCardsManagementPage', () => {
     const deleteButton = screen.getByTestId('delete-button');
     fireEvent.click(deleteButton);
 
-    // Wait for confirmation
+    // Wait for confirmation modal to appear
     await waitFor(() => {
-      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to delete this job card? This action cannot be undone.');
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
     });
+    
+    // Click confirm action
+    const confirmButton = screen.getByTestId('confirm-action');
+    fireEvent.click(confirmButton);
 
-    // Check that deleteJobCard was called
-    expect(jobcardService.deleteJobCard).toHaveBeenCalledWith('1');
+    // Wait for deleteJobCard to be called
+    await waitFor(() => {
+      expect(jobcardService.deleteJobCard).toHaveBeenCalledWith('1');
+    });
   });
 
   test('does not delete job card when user cancels confirmation', async () => {
@@ -219,7 +248,9 @@ describe('JobCardsManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <JobCardsManagementPage />
+        <ToastProvider>
+          <JobCardsManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -232,10 +263,14 @@ describe('JobCardsManagementPage', () => {
     const deleteButton = screen.getByTestId('delete-button');
     fireEvent.click(deleteButton);
 
-    // Wait for confirmation
+    // Wait for confirmation modal to appear
     await waitFor(() => {
-      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to delete this job card? This action cannot be undone.');
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
     });
+    
+    // Click cancel action
+    const cancelButton = screen.getByTestId('cancel-action');
+    fireEvent.click(cancelButton);
 
     // Check that deleteJobCard was not called
     expect(jobcardService.deleteJobCard).not.toHaveBeenCalled();
