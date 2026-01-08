@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import UsersManagementPage from '../../../pages/admin/UsersManagement';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as authService from '../../../services/authService';
@@ -15,6 +16,20 @@ vi.mock('../../../services/authService');
 
 // Mock window.alert
 window.alert = vi.fn();
+
+// Mock the ConfirmationModal component
+vi.mock('../../../components/ConfirmationModal', () => ({
+  __esModule: true,
+  default: ({ isOpen, onConfirm, onCancel, message }) => (
+    isOpen ? (
+      <div data-testid="confirmation-modal">
+        <p>{message}</p>
+        <button onClick={onConfirm} data-testid="confirm-button">Confirm</button>
+        <button onClick={onCancel} data-testid="cancel-button">Cancel</button>
+      </div>
+    ) : null
+  )
+}));
 
 describe('UsersManagementPage', () => {
   const mockUser = { id: '123', name: 'Admin User', role: 'admin' };
@@ -36,7 +51,9 @@ describe('UsersManagementPage', () => {
     
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -50,7 +67,9 @@ describe('UsersManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -87,7 +106,9 @@ describe('UsersManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -106,7 +127,9 @@ describe('UsersManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -148,7 +171,9 @@ describe('UsersManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -190,7 +215,9 @@ describe('UsersManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -224,7 +251,9 @@ describe('UsersManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -268,7 +297,9 @@ describe('UsersManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -307,11 +338,12 @@ describe('UsersManagementPage', () => {
   test('deletes user successfully', async () => {
     authService.getAllUsers.mockResolvedValue(mockUsers);
     authService.deleteUser.mockResolvedValue({ message: 'User deleted successfully' });
-    window.confirm = vi.fn(() => true); // Mock confirm dialog
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -329,8 +361,14 @@ describe('UsersManagementPage', () => {
     const deleteButtons = screen.getAllByText('Delete');
     fireEvent.click(deleteButtons[0]);
 
-    // Confirm deletion
-    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to delete this user? This action cannot be undone.');
+    // Wait for confirmation modal to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
+    });
+
+    // Click confirm button
+    const confirmButton = screen.getByTestId('confirm-button');
+    fireEvent.click(confirmButton);
 
     // Wait for data to reload
     await waitFor(() => {
@@ -343,11 +381,12 @@ describe('UsersManagementPage', () => {
 
   test('cancels user deletion', async () => {
     authService.getAllUsers.mockResolvedValue(mockUsers);
-    window.confirm = vi.fn(() => false); // Mock canceling confirm dialog
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -365,8 +404,14 @@ describe('UsersManagementPage', () => {
     const deleteButtons = screen.getAllByText('Delete');
     fireEvent.click(deleteButtons[0]);
 
-    // Confirm deletion was canceled
-    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to delete this user? This action cannot be undone.');
+    // Wait for confirmation modal to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
+    });
+
+    // Click cancel button
+    const cancelButton = screen.getByTestId('cancel-button');
+    fireEvent.click(cancelButton);
     
     // Check that deleteUser was not called
     expect(authService.deleteUser).not.toHaveBeenCalled();
@@ -375,11 +420,12 @@ describe('UsersManagementPage', () => {
   test('handles delete user error', async () => {
     authService.getAllUsers.mockResolvedValue(mockUsers);
     authService.deleteUser.mockRejectedValue(new Error('Failed to delete user'));
-    window.confirm = vi.fn(() => true); // Mock confirm dialog
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -396,6 +442,15 @@ describe('UsersManagementPage', () => {
     // Click delete button for John Doe (first delete button)
     const deleteButtons = screen.getAllByText('Delete');
     fireEvent.click(deleteButtons[0]);
+
+    // Wait for confirmation modal to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
+    });
+
+    // Click confirm button
+    const confirmButton = screen.getByTestId('confirm-button');
+    fireEvent.click(confirmButton);
 
     // Wait for error handling
     await waitFor(() => {
@@ -412,7 +467,9 @@ describe('UsersManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -449,7 +506,9 @@ describe('UsersManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <UsersManagementPage />
+        <ToastProvider>
+          <UsersManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
