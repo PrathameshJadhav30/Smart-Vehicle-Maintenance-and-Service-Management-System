@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import PartsManagementPage from '../../../pages/admin/PartsManagement';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as partsService from '../../../services/partsService';
@@ -37,6 +38,20 @@ vi.mock('../../../components/Modal', () => ({
         <h2>{title}</h2>
         <button onClick={onClose}>Close</button>
         {children}
+      </div>
+    ) : null
+  )
+}));
+
+// Mock the ConfirmationModal component
+vi.mock('../../../components/ConfirmationModal', () => ({
+  __esModule: true,
+  default: ({ isOpen, onConfirm, onCancel, message }) => (
+    isOpen ? (
+      <div data-testid="confirmation-modal">
+        <p>{message}</p>
+        <button onClick={onConfirm} data-testid="confirm-button">Confirm</button>
+        <button onClick={onCancel} data-testid="cancel-button">Cancel</button>
       </div>
     ) : null
   )
@@ -114,7 +129,9 @@ describe('PartsManagementPage', () => {
     await act(async () => {
       render(
         <BrowserRouter>
-          <PartsManagementPage />
+          <ToastProvider>
+            <PartsManagementPage />
+          </ToastProvider>
         </BrowserRouter>
       );
     });
@@ -148,7 +165,9 @@ describe('PartsManagementPage', () => {
     await act(async () => {
       render(
         <BrowserRouter>
-          <PartsManagementPage />
+          <ToastProvider>
+            <PartsManagementPage />
+          </ToastProvider>
         </BrowserRouter>
       );
     });
@@ -176,7 +195,9 @@ describe('PartsManagementPage', () => {
     await act(async () => {
       render(
         <BrowserRouter>
-          <PartsManagementPage />
+          <ToastProvider>
+            <PartsManagementPage />
+          </ToastProvider>
         </BrowserRouter>
       );
     });
@@ -279,7 +300,9 @@ describe('PartsManagementPage', () => {
     await act(async () => {
       render(
         <BrowserRouter>
-          <PartsManagementPage />
+          <ToastProvider>
+            <PartsManagementPage />
+          </ToastProvider>
         </BrowserRouter>
       );
     });
@@ -393,7 +416,9 @@ describe('PartsManagementPage', () => {
     await act(async () => {
       render(
         <BrowserRouter>
-          <PartsManagementPage />
+          <ToastProvider>
+            <PartsManagementPage />
+          </ToastProvider>
         </BrowserRouter>
       );
     });
@@ -403,13 +428,20 @@ describe('PartsManagementPage', () => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
     });
 
-    // Mock window.confirm to return true
-    const mockConfirm = vi.fn(() => true);
-    window.confirm = mockConfirm;
+
 
     // Click delete button (use specific selector to avoid ambiguity)
     const deleteButton = screen.getByRole('button', { name: 'Delete' });
     fireEvent.click(deleteButton);
+
+    // Wait for confirmation modal to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
+    });
+
+    // Click confirm button
+    const confirmButton = screen.getByTestId('confirm-button');
+    fireEvent.click(confirmButton);
 
     // Wait for part to be deleted
     await waitFor(() => {
@@ -440,7 +472,9 @@ describe('PartsManagementPage', () => {
     await act(async () => {
       render(
         <BrowserRouter>
-          <PartsManagementPage />
+          <ToastProvider>
+            <PartsManagementPage />
+          </ToastProvider>
         </BrowserRouter>
       );
     });
