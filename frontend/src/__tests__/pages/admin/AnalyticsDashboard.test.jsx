@@ -37,7 +37,7 @@ describe('AnalyticsDashboardPage', () => {
     analyticsService.getDashboardStats.mockResolvedValue({
       totalVehicles: 95,
       pendingBookings: 12,
-      activeJobcards: 25,
+      activeJobs: 25,
       lowStockParts: 8,
       totalUsers: 85,
       monthlyRevenue: 15000,
@@ -142,7 +142,7 @@ describe('AnalyticsDashboardPage', () => {
     analyticsService.getDashboardStats.mockResolvedValue({
       totalVehicles: 95,
       pendingBookings: 12,
-      activeJobcards: 25,
+      activeJobs: 25,
       lowStockParts: 8,
       totalUsers: 85,
       monthlyRevenue: 15000,
