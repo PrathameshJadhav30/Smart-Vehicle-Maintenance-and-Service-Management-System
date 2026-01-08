@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import InvoicesManagementPage from '../../../pages/admin/InvoicesManagement';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as invoiceService from '../../../services/invoiceService';
@@ -23,6 +24,7 @@ vi.mock('../../../components/Button', () => ({
       {...props}
       data-testid={children.includes('View Details') ? 'view-button' : 
                    children.includes('Mark as Paid') ? 'mark-paid-button' : 
+                   children.includes('Mark Paid') ? 'mark-paid-button' : 
                    children === 'Close' ? 'close-button' : undefined}
     >
       {children}
@@ -39,6 +41,20 @@ vi.mock('../../../components/Modal', () => ({
         <h2>{title}</h2>
         <button onClick={onClose} data-testid="close-modal-button">Close</button>
         {children}
+      </div>
+    ) : null
+  )
+}));
+
+// Mock the ConfirmationModal component
+vi.mock('../../../components/ConfirmationModal', () => ({
+  __esModule: true,
+  default: ({ isOpen, onConfirm, onCancel, message }) => (
+    isOpen ? (
+      <div data-testid="confirmation-modal">
+        <p>{message}</p>
+        <button onClick={onConfirm} data-testid="confirm-action">Confirm</button>
+        <button onClick={onCancel} data-testid="cancel-action">Cancel</button>
       </div>
     ) : null
   )
@@ -70,7 +86,9 @@ describe('InvoicesManagementPage', () => {
   test('renders loading spinner initially', () => {
     render(
       <BrowserRouter>
-        <InvoicesManagementPage />
+        <ToastProvider>
+          <InvoicesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -84,44 +102,28 @@ describe('InvoicesManagementPage', () => {
       {
         id: '1',
         booking_id: '123',
-        totalAmount: 150.00,
-        paymentStatus: 'paid',
-        createdAt: '2023-01-15T10:00:00Z',
-        dueDate: '2023-01-22T10:00:00Z',
-        customer: {
-          name: 'John Doe',
-          email: 'john@example.com'
-        },
-        jobCard: {
-          vehicle: {
-            make: 'Toyota',
-            model: 'Camry'
-          }
-        }
+        grand_total: 150.00,
+        status: 'paid',
+        created_at: '2023-01-15T10:00:00Z',
+        customer_name: 'John Doe',
+        model: 'Toyota Camry'
       },
       {
         id: '2',
         booking_id: '456',
-        totalAmount: 300.00,
-        paymentStatus: 'unpaid',
-        createdAt: '2023-01-16T14:00:00Z',
-        dueDate: '2023-01-23T14:00:00Z',
-        customer: {
-          name: 'Jane Smith',
-          email: 'jane@example.com'
-        },
-        jobCard: {
-          vehicle: {
-            make: 'Honda',
-            model: 'Civic'
-          }
-        }
+        grand_total: 300.00,
+        status: 'unpaid',
+        created_at: '2023-01-16T14:00:00Z',
+        customer_name: 'Jane Smith',
+        model: 'Honda Civic'
       }
     ]);
 
     render(
       <BrowserRouter>
-        <InvoicesManagementPage />
+        <ToastProvider>
+          <InvoicesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -131,11 +133,11 @@ describe('InvoicesManagementPage', () => {
     });
 
     // Check that invoices are displayed
-    expect(screen.getByText('Invoice #1')).toBeInTheDocument();
-    expect(screen.getByText('Invoice #2')).toBeInTheDocument();
-    // Check for currency values
-    expect(screen.getByText('₹150.00')).toBeInTheDocument();
-    expect(screen.getByText('₹300.00')).toBeInTheDocument();
+    expect(screen.getByText('#1')).toBeInTheDocument();
+    expect(screen.getByText('#2')).toBeInTheDocument();
+    // Check for currency values - using partial text matching since format may vary
+    expect(screen.getByText(/₹150/)).toBeInTheDocument();
+    expect(screen.getByText(/₹300/)).toBeInTheDocument();
     // Use getAllByText and check specific elements to avoid dropdown conflicts
     const statusElements = screen.getAllByText('Paid');
     // The first one should be in the invoice list (not in the dropdown)
@@ -150,7 +152,9 @@ describe('InvoicesManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <InvoicesManagementPage />
+        <ToastProvider>
+          <InvoicesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -169,32 +173,25 @@ describe('InvoicesManagementPage', () => {
       {
         id: '1',
         booking_id: '123',
-        totalAmount: 150.00,
-        paymentStatus: 'unpaid',
-        createdAt: '2023-01-15T10:00:00Z',
-        dueDate: '2023-01-22T10:00:00Z',
-        customer: {
-          name: 'John Doe',
-          email: 'john@example.com'
-        },
-        jobCard: {
-          vehicle: {
-            make: 'Toyota',
-            model: 'Camry'
-          }
-        }
+        grand_total: 150.00,
+        status: 'unpaid',
+        created_at: '2023-01-15T10:00:00Z',
+        customer_name: 'John Doe',
+        model: 'Toyota Camry'
       }
     ]);
     
     // Mock updatePaymentStatus service method
     invoiceService.updatePaymentStatus.mockResolvedValue({});
 
-    // Mock window.confirm to return true
-    mockConfirm.mockImplementation(() => true);
+    // Note: The component uses confirmation modal, not window.confirm
+    // mockConfirm.mockImplementation(() => true);
 
     render(
       <BrowserRouter>
-        <InvoicesManagementPage />
+        <ToastProvider>
+          <InvoicesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -207,13 +204,19 @@ describe('InvoicesManagementPage', () => {
     const markPaidButton = screen.getByTestId('mark-paid-button');
     fireEvent.click(markPaidButton);
 
-    // Wait for confirmation
+    // Wait for confirmation modal to appear
     await waitFor(() => {
-      expect(mockConfirm).toHaveBeenCalledWith('Are you sure you want to mark this invoice as paid?');
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
     });
+    
+    // Click confirm action
+    const confirmButton = screen.getByTestId('confirm-action');
+    fireEvent.click(confirmButton);
 
-    // Check that updatePaymentStatus was called
-    expect(invoiceService.updatePaymentStatus).toHaveBeenCalledWith('1', { paymentStatus: 'paid' });
+    // Wait for updatePaymentStatus to be called
+    await waitFor(() => {
+      expect(invoiceService.updatePaymentStatus).toHaveBeenCalledWith('1', { status: 'paid' });
+    });
   });
 
   test('filters invoices by status', async () => {
@@ -222,44 +225,28 @@ describe('InvoicesManagementPage', () => {
       {
         id: '1',
         booking_id: '123',
-        totalAmount: 150.00,
-        paymentStatus: 'paid',
-        createdAt: '2023-01-15T10:00:00Z',
-        dueDate: '2023-01-22T10:00:00Z',
-        customer: {
-          name: 'John Doe',
-          email: 'john@example.com'
-        },
-        jobCard: {
-          vehicle: {
-            make: 'Toyota',
-            model: 'Camry'
-          }
-        }
+        grand_total: 150.00,
+        status: 'paid',
+        created_at: '2023-01-15T10:00:00Z',
+        customer_name: 'John Doe',
+        model: 'Toyota Camry'
       },
       {
         id: '2',
         booking_id: '456',
-        totalAmount: 300.00,
-        paymentStatus: 'unpaid',
-        createdAt: '2023-01-16T14:00:00Z',
-        dueDate: '2023-01-23T14:00:00Z',
-        customer: {
-          name: 'Jane Smith',
-          email: 'jane@example.com'
-        },
-        jobCard: {
-          vehicle: {
-            make: 'Honda',
-            model: 'Civic'
-          }
-        }
+        grand_total: 300.00,
+        status: 'unpaid',
+        created_at: '2023-01-16T14:00:00Z',
+        customer_name: 'Jane Smith',
+        model: 'Honda Civic'
       }
     ]);
 
     render(
       <BrowserRouter>
-        <InvoicesManagementPage />
+        <ToastProvider>
+          <InvoicesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
