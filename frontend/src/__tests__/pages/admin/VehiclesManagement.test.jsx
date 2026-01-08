@@ -1,9 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import VehiclesManagementPage from '../../../pages/admin/VehiclesManagement';
 import { useAuth } from '../../../contexts/AuthContext';
 import * as vehicleService from '../../../services/vehicleService';
+import * as authService from '../../../services/authService';
 
 // Mock the contexts
 vi.mock('../../../contexts/AuthContext', () => ({
@@ -12,6 +14,7 @@ vi.mock('../../../contexts/AuthContext', () => ({
 
 // Mock the services
 vi.mock('../../../services/vehicleService');
+vi.mock('../../../services/authService');
 
 // Mock the Button component
 vi.mock('../../../components/Button', () => ({
@@ -47,6 +50,20 @@ vi.mock('../../../components/LoadingSpinner', () => ({
   default: () => <div data-testid="loading-spinner">Loading...</div>
 }));
 
+// Mock the ConfirmationModal component
+vi.mock('../../../components/ConfirmationModal', () => ({
+  __esModule: true,
+  default: ({ isOpen, onConfirm, onCancel, message }) => (
+    isOpen ? (
+      <div data-testid="confirmation-modal">
+        <p>{message}</p>
+        <button onClick={onConfirm} data-testid="confirm-button">Confirm</button>
+        <button onClick={onCancel} data-testid="cancel-button">Cancel</button>
+      </div>
+    ) : null
+  )
+}));
+
 // Mock useNavigate
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -60,10 +77,16 @@ vi.mock('react-router-dom', async (importOriginal) => {
 describe('VehiclesManagementPage', () => {
   const mockUser = { id: '123', name: 'Admin User', role: 'admin' };
   const mockAlert = vi.fn();
+  const mockCustomers = [
+    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'customer' },
+    { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'customer' }
+  ];
 
   beforeEach(() => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ user: mockUser, hasRole: (role) => role === 'admin' });
+    // Mock authService.getAllUsers to return customers
+    vi.mocked(authService.getAllUsers).mockResolvedValue(mockCustomers);
     // Mock window.alert
     window.alert = mockAlert;
   });
@@ -71,7 +94,9 @@ describe('VehiclesManagementPage', () => {
   test('renders loading spinner initially', () => {
     render(
       <BrowserRouter>
-        <VehiclesManagementPage />
+        <ToastProvider>
+          <VehiclesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -104,7 +129,9 @@ describe('VehiclesManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <VehiclesManagementPage />
+        <ToastProvider>
+          <VehiclesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -128,7 +155,9 @@ describe('VehiclesManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <VehiclesManagementPage />
+        <ToastProvider>
+          <VehiclesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -157,7 +186,9 @@ describe('VehiclesManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <VehiclesManagementPage />
+        <ToastProvider>
+          <VehiclesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -196,15 +227,17 @@ describe('VehiclesManagementPage', () => {
       id: '1',
       make: 'Toyota',
       model: 'Corolla',
-      year: '2021',
+      year: 2021,
       vin: 'VIN123',
-      registrationNumber: 'ABC123',
+      registration_number: 'ABC123',
       mileage: '15000'
     });
 
     render(
       <BrowserRouter>
-        <VehiclesManagementPage />
+        <ToastProvider>
+          <VehiclesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -232,8 +265,9 @@ describe('VehiclesManagementPage', () => {
         model: 'Corolla',
         year: '2021', // Year should be a string as it comes from an input field
         vin: 'VIN123',
-        registrationNumber: 'ABC123',
-        mileage: '15000' // Mileage should be a string as it comes from an input field
+        registration_number: 'ABC123',
+        mileage: '15000', // Mileage should be a string as it comes from an input field
+        customer_id: '' // The form also includes customer_id
       });
     });
 
@@ -260,7 +294,9 @@ describe('VehiclesManagementPage', () => {
 
     render(
       <BrowserRouter>
-        <VehiclesManagementPage />
+        <ToastProvider>
+          <VehiclesManagementPage />
+        </ToastProvider>
       </BrowserRouter>
     );
 
@@ -269,20 +305,24 @@ describe('VehiclesManagementPage', () => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
     });
 
-    // Mock window.confirm to return true
-    const mockConfirm = vi.fn(() => true);
-    window.confirm = mockConfirm;
+
 
     // Click delete button
     const deleteButton = screen.getByText('Delete');
     fireEvent.click(deleteButton);
 
+    // Wait for confirmation modal to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
+    });
+
+    // Click confirm button
+    const confirmButton = screen.getByTestId('confirm-button');
+    fireEvent.click(confirmButton);
+
     // Wait for vehicle to be deleted
     await waitFor(() => {
       expect(vehicleService.deleteVehicle).toHaveBeenCalledWith('1');
     });
-
-    // Restore window.confirm
-    mockConfirm.mockRestore();
   });
 });
