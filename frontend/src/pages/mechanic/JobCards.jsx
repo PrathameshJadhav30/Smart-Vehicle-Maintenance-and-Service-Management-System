@@ -1078,15 +1078,22 @@ const JobCardsPage = () => {
                 <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
                   Notes
                 </label>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  rows={4}
-                  value={updateData.notes}
-                  onChange={handleUpdateChange}
-                  className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-                  placeholder="Add any notes about the job progress..."
-                />
+                <div className="relative">
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    rows={4}
+                    value={updateData.notes}
+                    onChange={handleUpdateChange}
+                    className="mt-1 block w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                    placeholder="Add any notes about the job progress..."
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <span className="text-sm text-gray-500">
+                      {updateData.notes.length}/500
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="mt-6 flex justify-end space-x-3">

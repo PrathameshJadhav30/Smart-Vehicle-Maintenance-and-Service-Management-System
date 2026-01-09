@@ -961,14 +961,21 @@ const PartsManagementPage = () => {
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                 Description
               </label>
-              <textarea
-                id="description"
-                name="description"
-                rows={3}
-                value={partFormData.description}
-                onChange={handlePartInputChange}
-                className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="relative">
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={3}
+                  value={partFormData.description}
+                  onChange={handlePartInputChange}
+                  className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span className="text-sm text-gray-500">
+                    {partFormData.description.length}/500
+                  </span>
+                </div>
+              </div>
             </div>
             <div>
               <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1105,14 +1112,21 @@ const PartsManagementPage = () => {
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                 Address
               </label>
-              <textarea
-                id="address"
-                name="address"
-                rows={3}
-                value={supplierFormData.address}
-                onChange={handleSupplierInputChange}
-                className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="relative">
+                <textarea
+                  id="address"
+                  name="address"
+                  rows={3}
+                  value={supplierFormData.address}
+                  onChange={handleSupplierInputChange}
+                  className="w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span className="text-sm text-gray-500">
+                    {supplierFormData.address.length}/500
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           <div className="mt-8 flex justify-end space-x-3">

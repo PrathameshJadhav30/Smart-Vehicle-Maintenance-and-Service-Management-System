@@ -217,7 +217,7 @@ const VehiclesPage = () => {
         <div className={`bg-red-100 ${baseStyle}`}>
           {/* Honda car icon */}
           <svg className="h-10 w-10 text-red-600" viewBox="0 0 64 64" fill="currentColor">
-            <path d="M10 40h44l5-18H5l5 18zm0 0v3a3 3 0 0 0 6 0v-3h36v3a3 3 0 0 0 6 0v-3M18 24a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm22 0a3 3 0 1 1 6 0 3 3 0 0 1-6 0z" />
+            <path d="M10 40h44l5-18H5l5 18zm0 0v3a3 3 0 0 0 6 0v-3h36v3a3 3 0 0 0 6 0v-3M18 24a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm22 0a3 3 0 1 1 6 0 3 3 0 0 1-8 0z" />
           </svg>
         </div>
       );
@@ -244,7 +244,7 @@ const VehiclesPage = () => {
       return (
         <div className={`bg-gray-100 ${baseStyle}`}>
           <svg className="h-10 w-10 text-gray-600" viewBox="0 0 64 64" fill="currentColor">
-            <path d="M10 40h44l5-18H5l5 18zm0 0v3a3 3 0 0 0 6 0v-3h36v3a3 3 0 0 0 6 0v-3M18 24a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm22 0a3 3 0 1 1 6 0 3 3 0 0 1-6 0z" />
+            <path d="M10 40h44l5-18H5l5 18zm0 0v3a3 3 0 0 0 6 0v-3h36v3a3 3 0 0 0 6 0v-3M18 24a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm22 0a3 3 0 1 1 6 0 3 3 0 0 1-8 0z" />
           </svg>
         </div>
       );
@@ -554,14 +554,21 @@ const VehiclesPage = () => {
             </div>
             <div>
               <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-1">VIN</label>
-              <input
-                type="text"
-                id="vin"
-                name="vin"
-                value={formData.vin}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="vin"
+                  name="vin"
+                  value={formData.vin}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span className="text-sm text-gray-500">
+                    {formData.vin.length}/17
+                  </span>
+                </div>
+              </div>
             </div>
             <div>
               <label htmlFor="registration_number" className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
@@ -665,14 +672,21 @@ const VehiclesPage = () => {
             </div>
             <div>
               <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-1">VIN</label>
-              <input
-                type="text"
-                id="vin"
-                name="vin"
-                value={formData.vin}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="vin"
+                  name="vin"
+                  value={formData.vin}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span className="text-sm text-gray-500">
+                    {formData.vin.length}/17
+                  </span>
+                </div>
+              </div>
             </div>
             <div>
               <label htmlFor="registration_number" className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>

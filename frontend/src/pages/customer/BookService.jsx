@@ -561,15 +561,22 @@ const BookServicePage = () => {
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
                       Description
                     </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      rows={4}
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm cursor-pointer"
-                      placeholder="Describe any specific issues with your vehicle or special requests..."
-                    />
+                    <div className="relative">
+                      <textarea
+                        id="description"
+                        name="description"
+                        rows={4}
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-300 rounded-xl py-3 px-4 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-gray-900 text-base shadow-sm cursor-pointer"
+                        placeholder="Describe any specific issues with your vehicle or special requests..."
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <span className="text-sm text-gray-500">
+                          {formData.description.length}/500
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

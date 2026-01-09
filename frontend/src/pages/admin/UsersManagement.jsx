@@ -672,14 +672,21 @@ const UsersManagementPage = () => {
               <label htmlFor="create-address" className="block text-sm font-medium text-gray-700 mb-1">
                 Address
               </label>
-              <input
-                type="text"
-                id="create-address"
-                name="address"
-                value={createUserData.address}
-                onChange={handleCreateUserInputChange}
-                className={`block w-full border ${createUserErrors.address ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200`}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="create-address"
+                  name="address"
+                  value={createUserData.address}
+                  onChange={handleCreateUserInputChange}
+                  className={`block w-full border ${createUserErrors.address ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm py-2.5 px-4 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200`}
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span className="text-sm text-gray-500">
+                    {createUserData.address.length}/255
+                  </span>
+                </div>
+              </div>
               {createUserErrors.address && (
                 <p className="mt-1 text-sm text-red-600">{createUserErrors.address}</p>
               )}
