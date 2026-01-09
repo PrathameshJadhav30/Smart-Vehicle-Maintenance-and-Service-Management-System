@@ -5,6 +5,7 @@ import jobcardService from '../../services/jobcardService';
 import partsService from '../../services/partsService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import useDebounce from '../../hooks/useDebounce';
 
 const AssignedJobsPage = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const AssignedJobsPage = () => {
   // Added state for filtering and searching
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -139,8 +141,8 @@ const AssignedJobsPage = () => {
   const filteredJobCards = jobCardsArray
     .filter(job => filter === 'all' || job.status === filter)
     .filter(job => {
-      if (!searchTerm) return true;
-      const term = searchTerm.toLowerCase();
+      if (!debouncedSearchTerm) return true;
+      const term = debouncedSearchTerm.toLowerCase();
       return (
         (job.customer_name && job.customer_name.toLowerCase().includes(term)) ||
         (job.model && job.model.toLowerCase().includes(term)) ||

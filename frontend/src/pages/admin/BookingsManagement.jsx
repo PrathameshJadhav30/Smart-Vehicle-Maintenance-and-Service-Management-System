@@ -8,6 +8,7 @@ import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { formatBookingDateWithoutTime } from '../../utils/dateFormatter';
+import useDebounce from '../../hooks/useDebounce';
 
 const BookingsManagementPage = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const BookingsManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -78,8 +80,8 @@ const BookingsManagementPage = () => {
       }
       
       // Add search term if present
-      if (searchTerm) {
-        params.search = searchTerm;
+      if (debouncedSearchTerm) {
+        params.search = debouncedSearchTerm;
       }
       
       const response = await bookingService.getAllBookings(params);
@@ -171,7 +173,7 @@ const BookingsManagementPage = () => {
     if (!loading) {  // Only reload if not already loading
       loadBookings();
     }
-  }, [filter, searchTerm]);
+  }, [filter, debouncedSearchTerm]);
   
   const refreshBookings = () => {
     setPagination(prev => ({

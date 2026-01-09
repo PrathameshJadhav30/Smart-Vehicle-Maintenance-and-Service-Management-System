@@ -6,6 +6,7 @@ import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useToast } from '../../contexts/ToastContext';
+import useDebounce from '../../hooks/useDebounce';
 
 const VehiclesManagementPage = () => {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ const VehiclesManagementPage = () => {
   
   // Add state for search and filters
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   
   useEffect(() => {
     // Initial load when component mounts
@@ -51,6 +53,15 @@ const VehiclesManagementPage = () => {
     }));
     // This will trigger the loadVehicles useEffect to reload with new filter
   }, [filterStatus]);
+  
+  // Reset to page 1 when search term changes and reload data
+  useEffect(() => {
+    setPagination(prev => ({
+      ...prev,
+      page: 1
+    }));
+    // This will trigger the loadVehicles useEffect to reload with new search term
+  }, [debouncedSearchTerm]);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -63,7 +74,7 @@ const VehiclesManagementPage = () => {
     };
     
     loadInitialData();
-  }, [pagination.page, pagination.limit, filterStatus]);
+  }, [pagination.page, pagination.limit, filterStatus, debouncedSearchTerm]);
 
   const loadVehicles = async () => {
     try {
@@ -76,6 +87,11 @@ const VehiclesManagementPage = () => {
       // Only add status filter if it's not 'all'
       if (filterStatus !== 'all') {
         params.status = filterStatus;
+      }
+      
+      // Add search term if present
+      if (debouncedSearchTerm) {
+        params.search = debouncedSearchTerm;
       }
       
       const data = await vehicleService.getAllVehicles(params);
@@ -418,6 +434,20 @@ const VehiclesManagementPage = () => {
                 <option value="complete">Complete Info</option>
                 <option value="incomplete">Incomplete Info</option>
               </select>
+            </div>
+            <div className="relative rounded-lg shadow-sm flex-1 max-w-xs">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-200"
+                placeholder="Search vehicles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
           

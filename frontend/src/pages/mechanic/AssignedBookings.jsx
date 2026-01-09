@@ -10,6 +10,7 @@ import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { formatBookingDateWithoutTime } from '../../utils/dateFormatter';
 import { formatCurrency } from '../../utils/currencyFormatter';
+import useDebounce from '../../hooks/useDebounce';
 
 const AssignedBookingsPage = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const AssignedBookingsPage = () => {
   const [sortBy, setSortBy] = useState('booking_date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -83,8 +85,8 @@ const AssignedBookingsPage = () => {
     }
     
     // Apply search term filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
       result = result.filter(booking => 
         booking.customer_name.toLowerCase().includes(term) ||
         (booking.make && booking.make.toLowerCase().includes(term)) ||
@@ -128,7 +130,7 @@ const AssignedBookingsPage = () => {
     
     setFilteredBookings(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [bookings, filter, searchTerm, sortBy, sortOrder]);
+  }, [bookings, filter, debouncedSearchTerm, sortBy, sortOrder]);
   const getStatusColor = (status) => ({
     pending: 'bg-amber-100 text-amber-800',
     approved: 'bg-blue-100 text-blue-800',

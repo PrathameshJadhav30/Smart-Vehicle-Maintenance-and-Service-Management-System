@@ -7,6 +7,7 @@ import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { formatCurrency } from '../../utils/currencyFormatter';
+import useDebounce from '../../hooks/useDebounce';
 
 const PartsManagementPage = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const PartsManagementPage = () => {
   const [editingPart, setEditingPart] = useState(null);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   
   // Confirmation modal state
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -62,8 +64,8 @@ const PartsManagementPage = () => {
   }, [showLowStock]);
   
   useEffect(() => {
-    searchTermRef.current = searchTerm;
-  }, [searchTerm]);
+    searchTermRef.current = debouncedSearchTerm;
+  }, [debouncedSearchTerm]);
   
   const [partFormData, setPartFormData] = useState({
     name: '',
@@ -100,7 +102,7 @@ const PartsManagementPage = () => {
     if (!loading) {  // Only reload if not already loading
       loadPartsData();
     }
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
   // Add event listener for real-time updates
   useEffect(() => {

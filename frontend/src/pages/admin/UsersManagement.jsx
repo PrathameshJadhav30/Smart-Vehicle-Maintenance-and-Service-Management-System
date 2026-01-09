@@ -8,6 +8,7 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Table, { TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../../components/Table';
+import useDebounce from '../../hooks/useDebounce';
 const UsersManagementPage = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -32,6 +33,7 @@ const UsersManagementPage = () => {
   });
   const [createUserErrors, setCreateUserErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [filterRole, setFilterRole] = useState('all');
   const [pagination, setPagination] = useState({
     page: 1,
@@ -49,7 +51,7 @@ const UsersManagementPage = () => {
   useEffect(() => {
     // When search or filter changes, fetch filtered data
     filterUsers();
-  }, [searchTerm, filterRole]);
+  }, [debouncedSearchTerm, filterRole]);
 
 
 
@@ -93,7 +95,7 @@ const UsersManagementPage = () => {
       const data = await authService.getAllUsers({
         page: 1,
         limit: pagination.limit,
-        search: searchTerm,
+        search: debouncedSearchTerm,
         role: filterRole !== 'all' ? filterRole : undefined
       });
       

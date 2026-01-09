@@ -7,6 +7,7 @@ import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import useDebounce from '../../hooks/useDebounce';
 
 const VehiclesPage = () => {
   const { user } = useAuth();
@@ -33,13 +34,14 @@ const VehiclesPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
   const itemsPerPage = 6;
 
   useEffect(() => {
     loadVehicles();
-  }, [currentPage, searchTerm, sortBy, sortOrder]);
+  }, [currentPage, debouncedSearchTerm, sortBy, sortOrder]);
 
   const loadVehicles = async () => {
     try {
@@ -47,7 +49,7 @@ const VehiclesPage = () => {
       const options = {
         page: currentPage,
         limit: itemsPerPage,
-        search: searchTerm,
+        search: debouncedSearchTerm,
         sortBy,
         sortOrder
       };
