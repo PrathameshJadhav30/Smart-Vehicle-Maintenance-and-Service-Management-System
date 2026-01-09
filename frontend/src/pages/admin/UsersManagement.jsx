@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 import authService from '../../services/authService';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -9,8 +10,10 @@ import Select from '../../components/Select';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Table, { TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '../../components/Table';
 import useDebounce from '../../hooks/useDebounce';
+
 const UsersManagementPage = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -128,6 +131,32 @@ const UsersManagementPage = () => {
     e.preventDefault();
     try {
       if (selectedUser) {
+        // Prevent admin from changing their own role
+        if (currentUser && currentUser.id === selectedUser.id && currentUser.role === 'admin') {
+          showToast.error('Admin cannot change their own role');
+          setShowEditModal(false);
+          setFormData({
+            name: '',
+            email: '',
+            role: 'customer'
+          });
+          setSelectedUser(null);
+          return;
+        }
+        
+        // Prevent admin from changing another admin's role
+        if (currentUser && currentUser.role === 'admin' && selectedUser.role === 'admin') {
+          showToast.error('Admin cannot change another admin\'s role');
+          setShowEditModal(false);
+          setFormData({
+            name: '',
+            email: '',
+            role: 'customer'
+          });
+          setSelectedUser(null);
+          return;
+        }
+        
         // Check if there are actual changes before updating
         const hasChanges = selectedUser.role !== formData.role;
         
@@ -256,6 +285,20 @@ const UsersManagementPage = () => {
   };
 
   const handleDelete = (userId) => {
+    // Prevent admin from deleting their own account
+    if (currentUser && currentUser.id === userId && currentUser.role === 'admin') {
+      showToast.error('Admin cannot delete their own account');
+      return;
+    }
+    
+    // Find the user object to check if they are an admin
+    const userToDelete = users.find(user => user.id === userId);
+    
+    // Prevent admin from deleting another admin's account
+    if (currentUser && currentUser.role === 'admin' && userToDelete && userToDelete.role === 'admin') {
+      showToast.error('Admin cannot delete another admin\'s account');
+      return;
+    }
     setUserToDelete(userId);
     setShowConfirmModal(true);
   };
@@ -468,6 +511,8 @@ const UsersManagementPage = () => {
                               variant="secondary" 
                               size="sm"
                               onClick={() => handleEdit(user)}
+                              disabled={(currentUser && currentUser.id === user.id && currentUser.role === 'admin') || (currentUser && currentUser.role === 'admin' && user.role === 'admin')}
+                              title={(currentUser && currentUser.id === user.id && currentUser.role === 'admin') ? 'Cannot edit your own role' : (currentUser && currentUser.role === 'admin' && user.role === 'admin') ? 'Cannot edit another admin\'s role' : ''}
                             >
                               Edit Role
                             </Button>
@@ -475,6 +520,8 @@ const UsersManagementPage = () => {
                               variant="danger" 
                               size="sm"
                               onClick={() => handleDelete(user.id)}
+                              disabled={(currentUser && currentUser.id === user.id && currentUser.role === 'admin') || (currentUser && currentUser.role === 'admin' && user.role === 'admin')}
+                              title={(currentUser && currentUser.id === user.id && currentUser.role === 'admin') ? 'Cannot delete your own account' : (currentUser && currentUser.role === 'admin' && user.role === 'admin') ? 'Cannot delete another admin\'s account' : ''}
                             >
                               Delete
                             </Button>
