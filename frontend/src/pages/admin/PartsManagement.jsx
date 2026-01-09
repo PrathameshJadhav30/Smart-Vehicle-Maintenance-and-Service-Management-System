@@ -334,10 +334,29 @@ const PartsManagementPage = () => {
       
       // For updates, we can have partial updates
       if (editingPart) {
+        // Check if there are actual changes before updating
+        const hasChanges = 
+          editingPart.name !== partData.name ||
+          editingPart.part_number !== partData.part_number ||
+          editingPart.price !== partData.price ||
+          editingPart.quantity !== partData.quantity ||
+          editingPart.reorder_level !== partData.reorder_level ||
+          editingPart.description !== partData.description ||
+          editingPart.supplier_id !== partData.supplier_id;
+        
+        if (!hasChanges) {
+          // No changes detected, close the modal without making an API call
+          setShowPartModal(false);
+          resetPartForm();
+          showToast.info('No changes detected. Part details remain unchanged.');
+          return;
+        }
+        
         // Update part
         await partsService.updatePart(editingPart.id, partData);
         // Dispatch event for real-time updates
         window.dispatchEvent(new CustomEvent('partUpdated'));
+        showToast.success('Part updated successfully!');
       } else {
         // Create new part
         await partsService.createPart(partData);
@@ -378,10 +397,27 @@ const PartsManagementPage = () => {
       }
       
       if (editingSupplier) {
+        // Check if there are actual changes before updating
+        const hasChanges = 
+          editingSupplier.name !== supplierData.name ||
+          editingSupplier.contact_person !== supplierData.contact_person ||
+          editingSupplier.email !== supplierData.email ||
+          editingSupplier.phone !== supplierData.phone ||
+          editingSupplier.address !== supplierData.address;
+        
+        if (!hasChanges) {
+          // No changes detected, close the modal without making an API call
+          setShowSupplierModal(false);
+          resetSupplierForm();
+          showToast.info('No changes detected. Supplier details remain unchanged.');
+          return;
+        }
+        
         // Update supplier
         await partsService.updateSupplier(editingSupplier.id, supplierData);
         // Dispatch event for real-time updates
         window.dispatchEvent(new CustomEvent('supplierUpdated'));
+        showToast.success('Supplier updated successfully!');
       } else {
         // Create new supplier
         await partsService.createSupplier(supplierData);

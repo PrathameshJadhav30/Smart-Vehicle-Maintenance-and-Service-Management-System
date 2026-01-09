@@ -128,6 +128,22 @@ const UsersManagementPage = () => {
     e.preventDefault();
     try {
       if (selectedUser) {
+        // Check if there are actual changes before updating
+        const hasChanges = selectedUser.role !== formData.role;
+        
+        if (!hasChanges) {
+          // No changes detected, close the modal without making an API call
+          setShowEditModal(false);
+          setFormData({
+            name: '',
+            email: '',
+            role: 'customer'
+          });
+          setSelectedUser(null);
+          showToast.info('No changes detected. User role remains unchanged.');
+          return;
+        }
+        
         // Update user role
         await authService.updateUserRole(selectedUser.id, { role: formData.role });
       }

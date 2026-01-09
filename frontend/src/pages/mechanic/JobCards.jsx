@@ -270,6 +270,22 @@ const JobCardsPage = () => {
       // Check if status is being updated to 'completed'
       const isBeingCompleted = updateData.status === 'completed';
       
+      // Check if there are actual changes before updating
+      const hasChanges = 
+        (updateData.status && updateData.status !== selectedJobCard.status) ||
+        (updateData.notes && updateData.notes !== selectedJobCard.notes);
+      
+      if (!hasChanges) {
+        // No changes detected, close the modal without making an API call
+        setShowUpdateModal(false);
+        setUpdateData({
+          status: '',
+          notes: ''
+        });
+        showToast.info('No changes detected. Job card remains unchanged.');
+        return;
+      }
+      
       // Update job card status and/or progress based on provided data
       if (updateData.status) {
         // Validate status before sending

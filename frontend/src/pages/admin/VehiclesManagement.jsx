@@ -257,6 +257,28 @@ const VehiclesManagementPage = () => {
         return;
       }
       
+      // Check if there are actual changes before updating
+      const hasChanges = Object.keys(formData).some(key => 
+        key !== 'customer_id' && formData[key] !== (editingVehicle[key] || '')
+      );
+      
+      if (!hasChanges) {
+        // No changes detected, close the modal without making an API call
+        setShowEditModal(false);
+        setEditingVehicle(null);
+        setFormData({
+          make: '',
+          model: '',
+          year: '',
+          vin: '',
+          registration_number: '',
+          mileage: '',
+          customer_id: ''
+        });
+        showToast.info('No changes detected. Vehicle details remain unchanged.');
+        return;
+      }
+      
       // For editing, we don't send customer_id as it shouldn't change
       const vehicleData = {
         make: formData.make,

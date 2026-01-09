@@ -52,6 +52,20 @@ const AdminProfilePage = () => {
     e.preventDefault();
     try {
       setLoading(true);
+      
+      // Check if there are actual changes before updating
+      const hasChanges = Object.keys(formData).some(key => 
+        formData[key] !== (user[key] || '')
+      );
+      
+      if (!hasChanges) {
+        // No changes detected, close the edit mode without making an API call
+        setEditing(false);
+        showToast.info('No changes detected. Profile remains unchanged.');
+        setLoading(false);
+        return;
+      }
+      
       const response = await authService.updateProfile(user.id, formData);
       updateUser(response.user); // Pass only the user object, not the entire response
       setEditing(false);
