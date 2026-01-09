@@ -5,14 +5,23 @@ import { authMiddleware, roleMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validator.js';
 const router = express.Router();
 
+// Custom validator for strong password
+const strongPasswordValidator = (field) => body(field)
+  .isLength({ min: 6, max: 16 })
+  .withMessage(`${field.charAt(0).toUpperCase() + field.slice(1)} must be between 6 and 16 characters`)
+  .matches(/[A-Z]/)
+  .withMessage(`${field.charAt(0).toUpperCase() + field.slice(1)} must contain at least one uppercase letter`)
+  .matches(/[!@#$%^&*(),.?":{}|<>]/)
+  .withMessage(`${field.charAt(0).toUpperCase() + field.slice(1)} must contain at least one special character`);
+
 // Create user (admin only)
 router.post('/create-user',
   authMiddleware,
   roleMiddleware('admin'),
   [
-    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('name').trim().notEmpty().withMessage('Name is required').matches(/^[a-zA-Z\s]+$/).withMessage('Name must contain only letters and spaces'),
     body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    strongPasswordValidator('password'),
     body('role').isIn(['customer', 'mechanic', 'admin']).withMessage('Valid role is required'),
     body('phone').optional().trim(),
     body('address').optional().trim()
@@ -24,9 +33,9 @@ router.post('/create-user',
 // Register
 router.post('/register',
   [
-    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('name').trim().notEmpty().withMessage('Name is required').matches(/^[a-zA-Z\s]+$/).withMessage('Name must contain only letters and spaces'),
     body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    strongPasswordValidator('password'),
     body('role').isIn(['customer', 'mechanic', 'admin']).withMessage('Valid role is required'),
     body('phone').optional().trim(),
     body('address').optional().trim()
@@ -65,7 +74,7 @@ router.put('/users/:id/change-password',
   authMiddleware,
   [
     body('oldPassword').notEmpty().withMessage('Current password is required'),
-    body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+    strongPasswordValidator('newPassword')
   ],
   validate,
   changePassword
@@ -84,7 +93,7 @@ router.post('/forgot-password',
 router.post('/reset-password',
   [
     body('token').notEmpty().withMessage('Reset token is required'),
-    body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+    strongPasswordValidator('newPassword')
   ],
   validate,
   resetPassword

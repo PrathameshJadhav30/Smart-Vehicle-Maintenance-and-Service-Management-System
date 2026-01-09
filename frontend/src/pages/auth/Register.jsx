@@ -45,8 +45,11 @@ const Register = () => {
   const validateForm = () => {
     const newErrors = {};
     
+    // Validate name - only letters and spaces allowed
     if (!formData.name) {
       newErrors.name = 'Name is required';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
+      newErrors.name = 'Name must contain only letters and spaces';
     }
     
     if (!formData.email) {
@@ -57,8 +60,18 @@ const Register = () => {
     
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 6 || formData.password.length > 16) {
+      newErrors.password = 'Password must be between 6 and 16 characters';
+    } else {
+      // Check for strong password: at least one uppercase, one lowercase, one special character
+      const hasUpperCase = /[A-Z]/.test(formData.password);
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
+      
+      if (!hasUpperCase) {
+        newErrors.password = 'Password must contain at least one uppercase letter';
+      } else if (!hasSpecialChar) {
+        newErrors.password = 'Password must contain at least one special character';
+      }
     }
     
     if (formData.password !== formData.confirmPassword) {
@@ -143,6 +156,22 @@ const Register = () => {
           error={errors.password}
           required
         />
+        
+        {/* Password Requirements Indicator */}
+        <div className="mt-1 text-xs text-gray-500">
+          <p className="mb-1">Requirements:</p>
+          <div className="flex flex-wrap gap-2">
+            <span className={`inline-flex items-center ${formData.password.length >= 6 && formData.password.length <= 16 ? 'text-green-600' : 'text-gray-400'}`}>
+              {formData.password.length >= 6 && formData.password.length <= 16 ? '✓' : '○'} 6-16 chars
+            </span>
+            <span className={`inline-flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
+              {/[A-Z]/.test(formData.password) ? '✓' : '○'} upper
+            </span>
+            <span className={`inline-flex items-center ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
+              {/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? '✓' : '○'} special
+            </span>
+          </div>
+        </div>
         
         <Input
           label="Confirm Password"
