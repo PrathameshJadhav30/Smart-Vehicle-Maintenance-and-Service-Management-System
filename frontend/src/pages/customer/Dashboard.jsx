@@ -9,6 +9,7 @@ import ErrorDisplay from '../../components/ErrorDisplay';
 import { formatBookingDateShort, formatCreatedDateShort } from '../../utils/dateFormatter';
 import { formatCurrency } from '../../utils/currencyFormatter';
 import DashboardLayout from '../../layouts/DashboardLayout';
+
 const CustomerDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
