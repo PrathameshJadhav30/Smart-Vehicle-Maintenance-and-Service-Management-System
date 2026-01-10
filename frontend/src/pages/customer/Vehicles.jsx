@@ -37,6 +37,54 @@ const VehiclesPage = () => {
   });
   const [formError, setFormError] = useState('');
 
+  // Validation function
+  const validateForm = (data) => {
+    // Validate required fields
+    if (!data.make || data.make.trim() === '') {
+      return 'Make is required';
+    }
+    
+    if (!data.model || data.model.trim() === '') {
+      return 'Model is required';
+    }
+    
+    // Validate year if provided
+    if (data.year) {
+      const yearValue = parseInt(data.year);
+      const currentYear = new Date().getFullYear();
+      if (isNaN(yearValue) || yearValue < 1900 || yearValue > currentYear + 1) {
+        return `Year must be between 1900 and ${currentYear + 1}`;
+      }
+    }
+    
+    // Validate VIN if provided (should be 17 characters)
+    if (data.vin && data.vin.length > 0) {
+      if (data.vin.length !== 17) {
+        return 'VIN must be exactly 17 characters';
+      }
+      // Also check for valid VIN characters (alphanumeric, excluding I, O, Q)
+      const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/i;
+      if (!vinRegex.test(data.vin)) {
+        return 'VIN contains invalid characters (I, O, Q are not allowed)';
+      }
+    }
+    
+    // Validate registration number if provided
+    if (data.registration_number && data.registration_number.trim() === '') {
+      return 'Registration number cannot be empty if provided';
+    }
+    
+    // Validate mileage if provided
+    if (data.mileage) {
+      const mileageValue = parseInt(data.mileage);
+      if (isNaN(mileageValue) || mileageValue < 0) {
+        return 'Mileage must be a non-negative number';
+      }
+    }
+    
+    return null; // No validation errors
+  };
+
   // Pagination, search, and sort states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -101,15 +149,50 @@ const VehiclesPage = () => {
       setFormError('');
     }
     
+    let processedValue = value;
+    
+    // For VIN field, only allow valid VIN characters (alphanumeric, excluding I, O, Q)
+    if (name === 'vin') {
+      processedValue = value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/gi, '');
+      // Limit to 17 characters
+      if (processedValue.length > 17) {
+        processedValue = processedValue.substring(0, 17);
+      }
+    }
+    
+    // For year field, only allow numeric values within reasonable range
+    if (name === 'year') {
+      // Only allow numeric characters
+      processedValue = value.replace(/[^0-9]/g, '');
+      // Limit to 4 digits
+      if (processedValue.length > 4) {
+        processedValue = processedValue.substring(0, 4);
+      }
+    }
+    
+    // For mileage field, only allow numeric values
+    if (name === 'mileage') {
+      // Only allow numeric characters
+      processedValue = value.replace(/[^0-9]/g, '');
+    }
+    
     setFormData({
       ...formData,
-      [name]: value
+      [name]: processedValue
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError(''); // Clear any previous errors
+    
+    // Validate form data
+    const validationError = validateForm(formData);
+    if (validationError) {
+      setFormError(validationError);
+      showToast.error(validationError);
+      return;
+    }
     
     try {
       if (selectedVehicle) {
