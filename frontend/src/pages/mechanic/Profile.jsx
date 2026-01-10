@@ -21,6 +21,8 @@ const MechanicProfilePage = () => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [formErrors, setFormErrors] = useState({});
+  const [passwordErrors, setPasswordErrors] = useState({});
 
   useEffect(() => {
     if (user) {
@@ -33,21 +35,84 @@ const MechanicProfilePage = () => {
   }, [user]);
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Clear error for this field when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    
     setPasswordData({
       ...passwordData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Clear error for this field when user starts typing
+    if (passwordErrors[name]) {
+      setPasswordErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
+  // Validation function for profile form
+  const validateProfileForm = () => {
+    const errors = {};
+    
+    // Validate name (only alphabetic characters and spaces)
+    if (!formData.name || formData.name.trim() === '') {
+      errors.name = 'Name is required';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
+      errors.name = 'Name can only contain alphabetic characters and spaces';
+    }
+    
+    // Validate email format
+    if (!formData.email || formData.email.trim() === '') {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    // Validate phone if provided (must be exactly 10 digits)
+    if (formData.phone && formData.phone.trim() !== '') {
+      const phoneDigits = formData.phone.replace(/[^0-9]/g, ''); // Remove all non-digit characters
+      if (phoneDigits.length !== 10) {
+        errors.phone = 'Phone number must contain exactly 10 digits';
+      }
+    }
+    
+    return errors;
+  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form data
+    const errors = validateProfileForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      showToast.error('Please fix the errors in the form before submitting');
+      return;
+    }
+    
+    // Clear any previous errors
+    setFormErrors({});
+    
     try {
       setLoading(true);
       
@@ -76,17 +141,49 @@ const MechanicProfilePage = () => {
     }
   };
 
+  // Validation function for password change
+  const validatePasswordChange = () => {
+    const errors = {};
+    
+    // Validate current password
+    if (!passwordData.currentPassword || passwordData.currentPassword.trim() === '') {
+      errors.currentPassword = 'Current password is required';
+    }
+    
+    // Validate new password
+    if (!passwordData.newPassword || passwordData.newPassword.trim() === '') {
+      errors.newPassword = 'New password is required';
+    } else if (passwordData.newPassword.length < 6) {
+      errors.newPassword = 'Password must be at least 6 characters long';
+    } else if (passwordData.newPassword.length > 16) {
+      errors.newPassword = 'Password must be less than 16 characters';
+    } else if (!/(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>])/.test(passwordData.newPassword)) {
+      errors.newPassword = 'Password must contain at least one uppercase letter and one special character';
+    }
+    
+    // Validate confirm password
+    if (!passwordData.confirmPassword || passwordData.confirmPassword.trim() === '') {
+      errors.confirmPassword = 'Please confirm your new password';
+    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = 'New passwords do not match';
+    }
+    
+    return errors;
+  };
+  
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      showToast.error('New passwords do not match!');
+    
+    // Validate password data
+    const errors = validatePasswordChange();
+    if (Object.keys(errors).length > 0) {
+      setPasswordErrors(errors);
+      showToast.error('Please fix the errors in the password form');
       return;
     }
     
-    if (passwordData.newPassword.length < 6) {
-      showToast.error('Password must be at least 6 characters long!');
-      return;
-    }
+    // Clear any previous password errors
+    setPasswordErrors({});
     
     try {
       setLoading(true);
@@ -233,9 +330,12 @@ const MechanicProfilePage = () => {
                       id="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                      className={`mt-1 block w-full border ${formErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
                       required
                     />
+                    {formErrors.name && (
+                      <p className="mt-2 text-sm text-red-600">{formErrors.name}</p>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -247,22 +347,35 @@ const MechanicProfilePage = () => {
                       id="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                      className={`mt-1 block w-full border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
                       required
                     />
+                    {formErrors.email && (
+                      <p className="mt-2 text-sm text-red-600">{formErrors.email}</p>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                       Phone
                     </label>
-                    <input
-                      type="text"
-                      name="phone"
-                      id="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="phone"
+                        id="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className={`mt-1 block w-full border ${formErrors.phone ? 'border-red-500' : 'border-gray-300'} rounded-xl shadow-sm py-3 px-4 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <span className="text-sm text-gray-500">
+                          {formData.phone.replace(/[^0-9]/g, '').length}/10
+                        </span>
+                      </div>
+                    </div>
+                    {formErrors.phone && (
+                      <p className="mt-2 text-sm text-red-600">{formErrors.phone}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-end space-x-4 pt-4">
@@ -324,9 +437,12 @@ const MechanicProfilePage = () => {
                   id="currentPassword"
                   value={passwordData.currentPassword}
                   onChange={handlePasswordChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                  className={`mt-1 block w-full border ${passwordErrors.currentPassword ? 'border-red-500' : 'border-gray-300'} rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
                   required
                 />
+                {passwordErrors.currentPassword && (
+                  <p className="mt-2 text-sm text-red-600">{passwordErrors.currentPassword}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
@@ -338,9 +454,54 @@ const MechanicProfilePage = () => {
                   id="newPassword"
                   value={passwordData.newPassword}
                   onChange={handlePasswordChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                  className={`mt-1 block w-full border ${passwordErrors.newPassword ? 'border-red-500' : 'border-gray-300'} rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
                   required
                 />
+                {passwordErrors.newPassword && (
+                  <p className="mt-2 text-sm text-red-600">{passwordErrors.newPassword}</p>
+                )}
+                <div className="mt-2 text-xs text-gray-500">
+                  <p className="mb-1 font-medium text-gray-700">Password must contain:</p>
+                  <ul className="space-y-1">
+                    <li className={`flex items-center ${passwordData.newPassword && passwordData.newPassword.length >= 6 ? 'text-green-600' : 'text-gray-500'}`}>
+                      <span className="mr-2">{passwordData.newPassword && passwordData.newPassword.length >= 6 ? '✓' : '•'}</span>
+                      At least 6 characters
+                    </li>
+                    <li className={`flex items-center ${passwordData.newPassword && passwordData.newPassword.length <= 16 ? 'text-green-600' : 'text-gray-500'}`}>
+                      <span className="mr-2">{passwordData.newPassword && passwordData.newPassword.length <= 16 ? '✓' : '•'}</span>
+                      No more than 16 characters
+                    </li>
+                    <li className={`flex items-center ${passwordData.newPassword && /[A-Z]/.test(passwordData.newPassword) ? 'text-green-600' : 'text-gray-500'}`}>
+                      <span className="mr-2">{passwordData.newPassword && /[A-Z]/.test(passwordData.newPassword) ? '✓' : '•'}</span>
+                      At least one uppercase letter
+                    </li>
+                    <li className={`flex items-center ${passwordData.newPassword && /[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword) ? 'text-green-600' : 'text-gray-500'}`}>
+                      <span className="mr-2">{passwordData.newPassword && /[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword) ? '✓' : '•'}</span>
+                      At least one special character
+                    </li>
+                  </ul>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  <p className="mb-1 font-medium text-gray-700">Password must contain:</p>
+                  <ul className="space-y-1">
+                    <li className={`flex items-center ${passwordData.newPassword && passwordData.newPassword.length >= 6 ? 'text-green-600' : 'text-gray-500'}`}>
+                      <span className="mr-2">{passwordData.newPassword && passwordData.newPassword.length >= 6 ? '✓' : '•'}</span>
+                      At least 6 characters
+                    </li>
+                    <li className={`flex items-center ${passwordData.newPassword && passwordData.newPassword.length <= 16 ? 'text-green-600' : 'text-gray-500'}`}>
+                      <span className="mr-2">{passwordData.newPassword && passwordData.newPassword.length <= 16 ? '✓' : '•'}</span>
+                      No more than 16 characters
+                    </li>
+                    <li className={`flex items-center ${passwordData.newPassword && /[A-Z]/.test(passwordData.newPassword) ? 'text-green-600' : 'text-gray-500'}`}>
+                      <span className="mr-2">{passwordData.newPassword && /[A-Z]/.test(passwordData.newPassword) ? '✓' : '•'}</span>
+                      At least one uppercase letter
+                    </li>
+                    <li className={`flex items-center ${passwordData.newPassword && /[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword) ? 'text-green-600' : 'text-gray-500'}`}>
+                      <span className="mr-2">{passwordData.newPassword && /[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword) ? '✓' : '•'}</span>
+                      At least one special character
+                    </li>
+                  </ul>
+                </div>
               </div>
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
@@ -352,9 +513,12 @@ const MechanicProfilePage = () => {
                   id="confirmPassword"
                   value={passwordData.confirmPassword}
                   onChange={handlePasswordChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                  className={`mt-1 block w-full border ${passwordErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200`}
                   required
                 />
+                {passwordErrors.confirmPassword && (
+                  <p className="mt-2 text-sm text-red-600">{passwordErrors.confirmPassword}</p>
+                )}
               </div>
               <div className="flex justify-end pt-4">
                 <Button 
