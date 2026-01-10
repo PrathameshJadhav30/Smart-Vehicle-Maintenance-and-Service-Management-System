@@ -162,13 +162,13 @@ const Register = () => {
           <p className="mb-1">Requirements:</p>
           <div className="flex flex-wrap gap-2">
             <span className={`inline-flex items-center ${formData.password.length >= 6 && formData.password.length <= 16 ? 'text-green-600' : 'text-gray-400'}`}>
-              {formData.password.length >= 6 && formData.password.length <= 16 ? '✓' : '○'} 6-16 chars
+              {formData.password.length >= 6 && formData.password.length <= 16 ? '✓' : '○'} 6-16 characters
             </span>
             <span className={`inline-flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-              {/[A-Z]/.test(formData.password) ? '✓' : '○'} upper
+              {/[A-Z]/.test(formData.password) ? '✓' : '○'} uppercase Letter
             </span>
             <span className={`inline-flex items-center ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-              {/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? '✓' : '○'} special
+              {/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? '✓' : '○'} special character
             </span>
           </div>
         </div>
