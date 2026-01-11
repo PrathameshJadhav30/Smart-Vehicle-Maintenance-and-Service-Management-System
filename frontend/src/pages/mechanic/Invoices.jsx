@@ -120,6 +120,14 @@ const MechanicInvoicesPage = () => {
   };
 
   const updateTaskField = (index, field, value) => {
+    // If updating task cost, validate it's a positive number
+    if (field === 'task_cost') {
+      if (value !== '' && (isNaN(value) || parseFloat(value) <= 0)) {
+        // Don't update the field if invalid
+        return;
+      }
+    }
+    
     const updatedTasks = [...costEstimationData.tasks];
     updatedTasks[index][field] = value;
     setCostEstimationData(prev => ({
@@ -129,6 +137,14 @@ const MechanicInvoicesPage = () => {
   };
 
   const updatePartField = (index, field, value) => {
+    // If updating quantity, validate it's a positive number
+    if (field === 'quantity') {
+      if (value !== '' && (isNaN(value) || parseInt(value) <= 0)) {
+        // Don't update the field if invalid
+        return;
+      }
+    }
+    
     const updatedParts = [...costEstimationData.parts];
     updatedParts[index][field] = value;
     setCostEstimationData(prev => ({
@@ -161,22 +177,46 @@ const MechanicInvoicesPage = () => {
 
   const handleSaveCostEstimation = async () => {
     try {
+      // Validate that we have a selected job card
+      if (!editingJobCardId) {
+        throw new Error('No job card selected');
+      }
+      
       // Add all tasks
       for (const task of costEstimationData.tasks) {
+        // Only add tasks with both name and cost
         if (task.task_name && task.task_cost) {
-          await jobcardService.addTaskToJobCard(editingJobCardId, task);
+          // Validate task data
+          const taskCost = parseFloat(task.task_cost);
+          if (isNaN(taskCost) || taskCost <= 0) {
+            console.warn('Invalid task cost, skipping task:', task);
+            continue;
+          }
+          
+          await jobcardService.addTaskToJobCard(editingJobCardId, {
+            task_name: task.task_name.trim(),
+            task_cost: taskCost
+          });
         }
       }
       
       // Add all parts
       for (const part of costEstimationData.parts) {
+        // Only add parts with both ID and quantity
         if (part.part_id && part.quantity) {
-          // Create the part object with the correct structure
-          const partData = {
-            part_id: part.part_id,
-            quantity: parseInt(part.quantity)
-          };
-          await jobcardService.addSparePartToJobCard(editingJobCardId, partData);
+          // Validate part data
+          const partId = parseInt(part.part_id);
+          const quantity = parseInt(part.quantity);
+          
+          if (isNaN(partId) || partId <= 0 || isNaN(quantity) || quantity <= 0) {
+            console.warn('Invalid part data, skipping part:', part);
+            continue;
+          }
+          
+          await jobcardService.addSparePartToJobCard(editingJobCardId, {
+            part_id: partId,
+            quantity: quantity
+          });
         }
       }
       
@@ -186,7 +226,14 @@ const MechanicInvoicesPage = () => {
       showToast.success('Cost estimation saved successfully!');
     } catch (error) {
       console.error('Error saving cost estimation:', error);
-      showToast.error('Failed to save cost estimation. Please try again.');
+      // Show more detailed error message
+      if (error.response && error.response.data && error.response.data.message) {
+        showToast.error(`Failed to save cost estimation: ${error.response.data.message}`);
+      } else if (error.message) {
+        showToast.error(`Failed to save cost estimation: ${error.message}`);
+      } else {
+        showToast.error('Failed to save cost estimation. Please try again.');
+      }
     }
   };
   

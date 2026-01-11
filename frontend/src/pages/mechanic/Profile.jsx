@@ -481,27 +481,6 @@ const MechanicProfilePage = () => {
                     </li>
                   </ul>
                 </div>
-                <div className="mt-2 text-xs text-gray-500">
-                  <p className="mb-1 font-medium text-gray-700">Password must contain:</p>
-                  <ul className="space-y-1">
-                    <li className={`flex items-center ${passwordData.newPassword && passwordData.newPassword.length >= 6 ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className="mr-2">{passwordData.newPassword && passwordData.newPassword.length >= 6 ? '✓' : '•'}</span>
-                      At least 6 characters
-                    </li>
-                    <li className={`flex items-center ${passwordData.newPassword && passwordData.newPassword.length <= 16 ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className="mr-2">{passwordData.newPassword && passwordData.newPassword.length <= 16 ? '✓' : '•'}</span>
-                      No more than 16 characters
-                    </li>
-                    <li className={`flex items-center ${passwordData.newPassword && /[A-Z]/.test(passwordData.newPassword) ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className="mr-2">{passwordData.newPassword && /[A-Z]/.test(passwordData.newPassword) ? '✓' : '•'}</span>
-                      At least one uppercase letter
-                    </li>
-                    <li className={`flex items-center ${passwordData.newPassword && /[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword) ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className="mr-2">{passwordData.newPassword && /[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword) ? '✓' : '•'}</span>
-                      At least one special character
-                    </li>
-                  </ul>
-                </div>
               </div>
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">

@@ -251,10 +251,21 @@ const JobCardsPage = () => {
 
   const handleUpdateChange = (e) => {
     const { name, value } = e.target;
-    setUpdateData({
-      ...updateData,
-      [name]: value
-    });
+    
+    // If updating notes, validate length
+    if (name === 'notes' && value.length > 500) {
+      // Truncate to 500 characters
+      const truncatedValue = value.substring(0, 500);
+      setUpdateData({
+        ...updateData,
+        [name]: truncatedValue
+      });
+    } else {
+      setUpdateData({
+        ...updateData,
+        [name]: value
+      });
+    }
   };
 
   const handleUpdateSubmit = async (e) => {
@@ -283,6 +294,12 @@ const JobCardsPage = () => {
           notes: ''
         });
         showToast.info('No changes detected. Job card remains unchanged.');
+        return;
+      }
+      
+      // Validate notes length if provided
+      if (updateData.notes && updateData.notes.length > 500) {
+        showToast.error('Notes cannot exceed 500 characters');
         return;
       }
       
@@ -462,6 +479,14 @@ const JobCardsPage = () => {
   };
 
   const updateTaskField = (index, field, value) => {
+    // If updating task cost, validate it's a positive number
+    if (field === 'task_cost') {
+      if (value !== '' && (isNaN(value) || parseFloat(value) <= 0)) {
+        // Don't update the field if invalid
+        return;
+      }
+    }
+    
     const updatedTasks = [...costEstimationData.tasks];
     updatedTasks[index][field] = value;
     setCostEstimationData(prev => ({
@@ -471,6 +496,14 @@ const JobCardsPage = () => {
   };
 
   const updatePartField = (index, field, value) => {
+    // If updating quantity, validate it's a positive number
+    if (field === 'quantity') {
+      if (value !== '' && (isNaN(value) || parseInt(value) <= 0)) {
+        // Don't update the field if invalid
+        return;
+      }
+    }
+    
     const updatedParts = [...costEstimationData.parts];
     updatedParts[index][field] = value;
     setCostEstimationData(prev => ({
